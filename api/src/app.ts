@@ -1,18 +1,25 @@
 import express from 'express';
 import logger from './config/logger.ts';
-
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cors from 'cors';
-import cookieParser from 'cookie-parser'; // igonre: type
+import cookieParser from 'cookie-parser';
+
+import session from 'express-session';
+import passport from 'passport';
+
+import authRoutes from './routes/auth.router.ts';
 
 const app = express();
-
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+app.use(session({ secret: 'cats', resave: false, saveUninitialized: true }));
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use(
   morgan('combined', {
@@ -38,7 +45,7 @@ app.get('/api', (req, res) => {
   res.status(200).json({ message: 'Acquisitions API is running!' });
 });
 
-// app.use("/api/auth", authRoutes);
+app.use('/auth', authRoutes);
 // app.use("/api/users", usersRoutes);
 
 app.use((req, res) => {

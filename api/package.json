@@ -46,13 +46,17 @@
     "@arcjet/inspect": "^1.0.0-beta.12",
     "@arcjet/node": "^1.0.0-beta.12",
     "@neondatabase/serverless": "^1.0.2",
+    "@prisma/client": "^7.3.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "express": "^5.2.1",
+    "express-session": "^1.19.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
+    "passport": "^0.7.0",
+    "passport-google-oauth2": "^0.2.0",
     "winston": "^3.18.3",
     "zod": "^4.1.11"
   },
@@ -62,9 +66,12 @@
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/express-session": "^1.18.2",
     "@types/helmet": "^0.0.48",
     "@types/morgan": "^1.9.10",
     "@types/node": "^25.2.2",
+    "@types/passport": "^1.0.17",
+    "@types/passport-google-oauth2": "^0.1.10",
     "cross-env": "^10.1.0",
     "dotenv": "^17.2.4",
     "eslint": "^10.0.0",
@@ -76,6 +83,7 @@
     "prisma": "^7.3.0",
     "supertest": "^7.1.4",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }
