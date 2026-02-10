@@ -1,6 +1,7 @@
 import { Strategy as GoogleStrategy } from 'passport-google-oauth2';
 import passport from 'passport';
 import prisma from './database.ts';
+import { CreateGoogleUser } from '#src/services/google.service.ts';
 // import User from '../models/User.js'; // 1. Import your DB model
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -28,23 +29,16 @@ passport.use(
       done: any
     ) => {
       try {
-        // 2. Logic to Find or Create user in Database
-        // let user = await User.findOne({ googleId: profile.id });
         let user = await prisma.user.findUnique({
           where: { email: profile.emails[0].value },
         });
 
-        // if (!user) {
-        //   user = await User.create({
-        //     googleId: profile.id,
-        //     email: profile.emails[0].value,
-        //     name: profile.displayName,
-        //     avatar: profile.photos[0].value
-        //   });
-        // }
+        if (!user){
+          user = await CreateGoogleUser(profile); // Create user if not found, you can also return the created user here
+        }
 
         // For now, passing profile, but replace with your 'user' variable above
-        return done(null, user || profile);
+        return done(null, user);
       } catch (err) {
         return done(err, null);
       }
