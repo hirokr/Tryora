@@ -11,7 +11,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:gen": "prisma generate",
-    "db:mgtr": "prisma migrate",
+    "db:migrate": "prisma migrate",
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
     "dev:docker": "sh ./scripts/dev.sh",

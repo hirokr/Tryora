@@ -14,8 +14,8 @@ export default defineConfig({
     url:
       node_env === 'development'
         ? // @ts-ignore
-          process.env['DATABASE_URL_CLOUD']
+          process.env['DATABASE_URL_LOCAL']
         : // @ts-ignore
-          process.env['DATABASE_URL_LOCAL'],
+          process.env['DATABASE_URL_CLOUD'],
   },
 });

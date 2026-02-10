@@ -10,7 +10,7 @@ elif [ "$ACTION" = "stop" ]; then
     echo "Stopping Postgres server..."
     sudo docker stop my-postgres
 else
-    echo "Usage: ./scripts/local.sh [start|stop]"
+    echo "Usage: $0 {start|stop}"
     echo "$ACTION is not a valid action."
 fi
 
