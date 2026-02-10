@@ -10,8 +10,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate",
+    "db:gen": "prisma generate",
+    "db:mgtr": "prisma migrate",
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
     "dev:docker": "sh ./scripts/dev.sh",
@@ -57,6 +57,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@prisma/adapter-pg": "^7.3.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
