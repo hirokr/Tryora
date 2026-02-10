@@ -1,19 +1,25 @@
-// import arcjet, { shield, detectBot, slidingWindow } from '@arcjet/node';
+import arcjet, { shield, detectBot, slidingWindow } from '@arcjet/node';
 
-// const aj = arcjet({
-//   key: process.env.ARCJET_KEY,
-//   rules: [
-//     shield({ mode: 'LIVE' }),
-//     detectBot({
-//       mode: 'LIVE',
-//       allow: ['CATEGORY:SEARCH_ENGINE', 'CATEGORY:PREVIEW'],
-//     }),
-//     slidingWindow({
-//       mode: 'LIVE',
-//       interval: '2s',
-//       max: 5,
-//     }),
-//   ],
-// });
+const ajKey = process.env.ARCJET_KEY as string | undefined;
 
-// export default aj;
+if (!ajKey) {
+  throw new Error('ARCJET_KEY environment variable is required');
+}
+
+const aj = arcjet({
+  key: ajKey,
+  rules: [
+    shield({ mode: 'LIVE' }),
+    detectBot({
+      mode: 'LIVE',
+      allow: ['CATEGORY:SEARCH_ENGINE', 'CATEGORY:PREVIEW'],
+    }),
+    slidingWindow({
+      mode: 'LIVE',
+      interval: '2s',
+      max: 5,
+    }),
+  ],
+});
+
+export default aj;

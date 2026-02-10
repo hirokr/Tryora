@@ -9,7 +9,10 @@
     "types": [],
     "esModuleInterop": true,
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "emitDeclarationOnly": false,
+    "noEmit": false,
+    "allowImportingTsExtensions": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]

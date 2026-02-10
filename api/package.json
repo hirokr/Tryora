@@ -42,7 +42,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "express": "^5.2.1",
     "@arcjet/inspect": "^1.0.0-beta.12",
     "@arcjet/node": "^1.0.0-beta.12",
     "@neondatabase/serverless": "^1.0.2",
@@ -50,24 +49,31 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
+    "express": "^5.2.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
+    "prisma": "^7.3.0",
     "winston": "^3.18.3",
     "zod": "^4.1.11"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@eslint/js": "^9.37.0",
-    "nodemon": "^3.1.11",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3",
+    "@types/helmet": "^0.0.48",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^25.2.2",
     "cross-env": "^10.1.0",
-    "eslint": "^9.37.0",
+    "eslint": "^10.0.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
     "jest": "^30.2.0",
+    "nodemon": "^3.1.11",
     "prettier": "^3.6.2",
-    "supertest": "^7.1.4"
+    "supertest": "^7.1.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   }
 }
