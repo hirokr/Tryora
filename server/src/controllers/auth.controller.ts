@@ -37,7 +37,6 @@ export const refresh = async (req: Request, res: Response) => {
   }
 
   const hashRT = hashTokenCrypto(refreshToken);
-  const user = await findUserById(userId);
   const storedToken = await findRefreshToken(hashRT);
 
   if (!storedToken) {
@@ -111,7 +110,6 @@ export const signin = async (req: Request, res: Response) => {
 
   // TODO: Save session info (user agent, IP) in the database for active session management
   // ? Save session info in the database for active session management
-  // ! This is currently being handled in the session store, but we may want to also save it here for easier querying and management of active sessions per user
   // await saveUserSession(user.id, req.sessionID, req.get('user-agent'), req.ip);
 
   await saveToCookie(res, refreshToken, accessToken);
@@ -164,8 +162,3 @@ export const googleAuthFailure = async (req: Request, res: Response) => {
   res.send('Failed to authenticate..');
 };
 
-// todo:
-// ! Implement password reset flow
-// ? Implement email verification flow
-// * main implementation
-//  //
