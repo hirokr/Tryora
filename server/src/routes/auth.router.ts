@@ -3,6 +3,7 @@ import {
   googleAuth,
   googleAuthCallback,
   googleAuthFailure,
+  refresh,
   signin,
   signout,
   signup,
@@ -24,7 +25,7 @@ router.post('/signup', signup);
 router.post('/signin', signin);
 
 // Get new access token using refresh token
-// router.get('/refresh');
+router.get('/refresh', refresh);
 
 // Implement signout route
 router.get('/signout', signout);

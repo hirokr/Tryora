@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from 'jose';
+import crypto from 'crypto';
 
 // Separate secrets for each token type
 const ACCESS_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
@@ -89,3 +90,7 @@ export const saveToCookie = async (
     sameSite: process.env.COOKIE_SAME_SITE || 'strict',
   });
 };
+
+export function hashTokenCrypto(token: string) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}

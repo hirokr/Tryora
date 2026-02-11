@@ -1,12 +1,17 @@
 import { Request, Response } from 'express';
 import passport from 'passport';
 import '../config/google.config.ts';
-import { createUser, findUserByEmail } from '#src/services/user.service.ts';
+import {
+  createUser,
+  findUserByEmail,
+  findUserById,
+} from '#src/services/user.service.ts';
 
 import { ReturnUserDto } from '#src/services/dto/createUser.dto.ts';
 import {
   clearTokens,
   generateTokens,
+  hashTokenCrypto,
   saveToCookie,
   verifyRefreshToken,
 } from '#src/utils/jwt/tokens.ts';
@@ -27,12 +32,12 @@ export const refresh = async (req: Request, res: Response) => {
   }
 
   const userId: string | null = await verifyRefreshToken(refreshToken);
-
   if (!userId) {
     return res.status(401).json({ message: 'Invalid refresh token' });
   }
 
-  const hashRT = await hashing(refreshToken);
+  const hashRT = hashTokenCrypto(refreshToken);
+  const user = await findUserById(userId);
   const storedToken = await findRefreshToken(hashRT);
 
   if (!storedToken) {
@@ -41,9 +46,11 @@ export const refresh = async (req: Request, res: Response) => {
 
   const { accessToken, refreshToken: newRefreshToken } =
     await generateTokens(userId);
-  const hashedRefreshToken = await hashing(newRefreshToken);
 
+  const hashedRefreshToken = hashTokenCrypto(newRefreshToken);
   await saveRefreshToken(userId, hashedRefreshToken);
+
+
   await saveToCookie(res, newRefreshToken, accessToken);
   res.status(200).json({ message: 'Token refreshed' });
 };
@@ -98,7 +105,7 @@ export const signin = async (req: Request, res: Response) => {
   }
 
   const { accessToken, refreshToken } = await generateTokens(user.id);
-  const hashedRefreshToken = await hashing(refreshToken);
+  const hashedRefreshToken = hashTokenCrypto(refreshToken);
 
   await saveRefreshToken(user.id, hashedRefreshToken);
 
