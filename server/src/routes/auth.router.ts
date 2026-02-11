@@ -2,13 +2,10 @@ import { Router } from 'express';
 
 import '../config/google.config.ts';
 import passport from 'passport';
+import { isLoggedIn } from '#src/middlewares/authenticate.middleware.ts';
 
 const router = Router();
 
-
-function isLoggedIn(req: any, res: any, next: any) {
-  req.user ? next() : res.sendStatus(401);
-}
 
 
 router.get('/login', (req, res) => {
