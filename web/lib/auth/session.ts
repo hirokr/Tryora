@@ -1,18 +1,11 @@
 "use server";
 
+import { Session } from "@/types/auth.type";
 import { jwtVerify, SignJWT } from "jose";
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-export type Session = {
-	user: {
-		id: string;
-		name: string;
-	};
-	accessToken: string;
-	refreshToken: string;
-};
 
 const secretKey = process.env.SESSION_SECRET_KEY;
 if (!secretKey || secretKey.length === 0) {
@@ -23,12 +16,12 @@ if (!secretKey || secretKey.length === 0) {
 const encodedKey = new TextEncoder().encode(secretKey);
 
 export async function createSession(payload: Session) {
-	const expiredAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+	const expiredAt = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000); // 15 days
 
 	const session = await new SignJWT(payload)
 		.setProtectedHeader({ alg: "HS256" })
 		.setIssuedAt()
-		.setExpirationTime("7d")
+		.setExpirationTime("15d")
 		.sign(encodedKey);
 
 	(await cookies()).set("session", session, {
