@@ -1,4 +1,4 @@
-import prisma from "#src/config/database.ts";
+import prisma from '#src/config/database.ts';
 
 export async function saveRefreshToken(userId: string, refreshToken: string) {
   try {
@@ -15,7 +15,6 @@ export async function saveRefreshToken(userId: string, refreshToken: string) {
   }
 }
 
-
 export async function findRefreshToken(token: string) {
   try {
     const refreshToken = await prisma.refreshToken.findUnique({
@@ -27,3 +26,20 @@ export async function findRefreshToken(token: string) {
     throw err;
   }
 }
+
+export const saveToCookie = async (
+  res: any,
+  refreshToken: string,
+  accessToken: string
+) => {
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.COOKIE_SAME_SITE || 'strict',
+  });
+  res.cookie('accessToken', accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.COOKIE_SAME_SITE || 'strict',
+  });
+};

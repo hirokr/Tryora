@@ -2,11 +2,12 @@ import { Request, Response } from 'express';
 import passport from 'passport';
 import '../config/google.config.ts';
 import { createUser, findUserByEmail } from '#src/services/user.service.ts';
-import { hashPassword, verifyPassword } from '#src/utils/auth/password.ts';
+
 import { ReturnUserDto } from '#src/services/dto/createUser.dto.ts';
 import { generateTokens } from '#src/utils/jwt/tokens.ts';
-import { saveRefreshToken } from '#src/services/token.service.ts';
+import { saveRefreshToken, saveToCookie } from '#src/services/token.service.ts';
 import { saveUserSession } from '#src/services/session.service.ts';
+import { hashing, verifyHash } from '#src/utils/auth/hash.ts';
 
 export const refresh = async (req: Request, res: Response) => {
   return 'refresh token';
@@ -29,7 +30,7 @@ export const signup = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = await hashing(password);
 
     const newUser: ReturnUserDto = await createUser({
       ...req.body,
@@ -55,7 +56,7 @@ export const signin = async (req: Request, res: Response) => {
     return res.status(400).json({ message: 'Invalid email or password' });
   }
 
-  const isPasswordValid = await verifyPassword(
+  const isPasswordValid = await verifyHash(
     user.passwordHash as string,
     password
   );
@@ -64,12 +65,17 @@ export const signin = async (req: Request, res: Response) => {
   }
 
   const { accessToken, refreshToken } = await generateTokens(user.id);
+  const hashedRefreshToken = await hashing(refreshToken);
 
-  await saveRefreshToken(user.id, refreshToken);
+  await saveRefreshToken(user.id, hashedRefreshToken);
 
   await saveUserSession(user.id, req.sessionID, req.get('user-agent'), req.ip);
 
-  
+  await saveToCookie(res, hashedRefreshToken, accessToken);
+
+  const secureUser: ReturnUserDto = user;
+
+  res.status(200).json({ message: 'Signin successful', user: secureUser });
 };
 
 export const signout = async (req: Request, res: Response) => {
