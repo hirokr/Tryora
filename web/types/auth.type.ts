@@ -47,6 +47,8 @@ export type Session = {
 		name: string;
 		email: string;
 		avatarUrl?: string;
+		emailVerified: boolean;
+		isActive: boolean;
 	};
 	accessToken: string;
 	refreshToken: string;

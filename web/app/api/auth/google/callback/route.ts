@@ -1,30 +1,41 @@
 import { createSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { NextRequest } from "next/server";
+import { cookies } from "next/headers";
 
 export async function GET(req: NextRequest) {
 	const { searchParams } = new URL(req.url);
 
-	const accessToken = searchParams.get("accessToken");
-	const refreshToken = searchParams.get("refreshToken");
-	const userId = searchParams.get("userId");
+	const userId = searchParams.get("id");
 	const name = searchParams.get("name");
 	const email = searchParams.get("email");
 	const avatarUrl = searchParams.get("avatarUrl") || undefined;
+	const emailVerified = searchParams.get("emailVerified");
+	const isActive = searchParams.get("isActive");
 
-	if (!accessToken || !refreshToken || !userId || !name || !email) {
+	const cookieStore = await cookies();
+	const accessToken = req.cookies.get("accessToken")?.value;
+	const refreshToken = req.cookies.get("refreshToken")?.value;
+
+	if (!userId || !name || !email || !accessToken || !refreshToken) {
 		throw new Error("Invalid query parameters");
 	}
+
 	await createSession({
 		user: {
 			id: userId,
 			name,
 			email,
 			avatarUrl,
+			emailVerified: emailVerified === "true",
+			isActive: isActive === "true",
 		},
 		accessToken,
 		refreshToken,
 	});
+
+	cookieStore.delete("accessToken");
+	cookieStore.delete("refreshToken");
 
 	redirect("/");
 }
