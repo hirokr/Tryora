@@ -4,6 +4,7 @@ import { Store } from 'express-session';
 export class PrismaSessionStore extends Store {
   async get(sid: string, callback: (err: any, session?: any) => void) {
     try {
+      console.log(sid);
       const session = await prisma.userSession.findUnique({
         where: { sessionId: sid },
       });
@@ -27,6 +28,12 @@ export class PrismaSessionStore extends Store {
 
   async set(sid: string, session: any, callback?: (err?: any) => void) {
     try {
+      // Only persist sessions for authenticated users
+      if (!session.userId) {
+        callback?.();
+        return;
+      }
+
       const expiresAt = new Date(
         session.cookie.expires || Date.now() + 15 * 24 * 60 * 60 * 1000
       );
@@ -39,7 +46,7 @@ export class PrismaSessionStore extends Store {
         },
         create: {
           sessionId: sid,
-          userId: session.userId || '',
+          userId: session.userId,
           userAgent: session.userAgent,
           ipAddress: session.ipAddress,
           expiresAt,
@@ -54,7 +61,8 @@ export class PrismaSessionStore extends Store {
 
   async destroy(sid: string, callback?: (err?: any) => void) {
     try {
-      await prisma.userSession.delete({
+      // Use deleteMany to avoid errors if session doesn't exist
+      await prisma.userSession.deleteMany({
         where: { sessionId: sid },
       });
       callback?.();
@@ -74,6 +82,12 @@ export class PrismaSessionStore extends Store {
 
   async touch(sid: string, session: any, callback?: (err?: any) => void) {
     try {
+      // Only update sessions for authenticated users
+      if (!session.userId) {
+        callback?.();
+        return;
+      }
+
       await prisma.userSession.update({
         where: { sessionId: sid },
         data: { lastActiveAt: new Date() },

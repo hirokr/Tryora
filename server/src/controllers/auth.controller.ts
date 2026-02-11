@@ -34,7 +34,7 @@ export const signup = async (req: Request, res: Response) => {
 
     const newUser: ReturnUserDto = await createUser({
       ...req.body,
-      password: hashedPassword,
+      passwordHash: hashedPassword,
     });
 
     // TODO: Send verification email here

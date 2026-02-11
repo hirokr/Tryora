@@ -27,11 +27,26 @@ export async function findUserById(id: string) {
 
 export async function createUser(data: CreateUserDto): Promise<ReturnUserDto> {
   try {
+    const { email, name, passwordHash, avatarUrl } = data;
     const user = await prisma.user.create({
-      data,
+      data: {
+        email,
+        name,
+        passwordHash,
+        avatarUrl,
+      },
     });
 
-    return user as ReturnUserDto;
+    const newUser: ReturnUserDto = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatar: user.avatarUrl || undefined,
+      emailVerified: user.emailVerified,
+      isActive: user.isActive,
+    };
+
+    return newUser;
   } catch (err) {
     console.error('Error in creating user:', err);
     throw err;

@@ -20,11 +20,11 @@ router.get('/google/failure', googleAuthFailure);
 // TODO: Impement facebook and github auth routes
 
 // Local auth routes
-router.get('/signup', signup);
-router.get('/signin', signin);
+router.post('/signup', signup);
+router.post('/signin', signin);
 
 // Get new access token using refresh token
-router.get('/refresh');
+// router.get('/refresh');
 
 // Implement signout route
 router.get('/signout', signout);

@@ -1,13 +1,13 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions"]
-  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
-  output          = "../src/generated"
+  provider = "prisma-client"
+  // previewFeatures = ["postgresqlExtensions"]
+  // binaryTargets   = ["native",/[]\ "linux-musl-openssl-3.0.x"]
+  output   = "../src/generated"
 }
 
 datasource db {
-  provider   = "postgresql"
-  extensions = [vector]
+  provider = "postgresql"
+  // extensions = [vector]
 }
 
 model User {

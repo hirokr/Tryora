@@ -1,8 +1,8 @@
 export type CreateUserDto = {
   email: string;
   name: string;
-  avatar?: string;
-  password: string;
+  avatarUrl?: string;
+  passwordHash: string;
 };
 
 export type ReturnUserDto = {
