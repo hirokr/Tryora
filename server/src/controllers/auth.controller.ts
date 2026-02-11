@@ -2,8 +2,11 @@ import { Request, Response } from 'express';
 import passport from 'passport';
 import '../config/google.config.ts';
 import { createUser, findUserByEmail } from '#src/services/user.service.ts';
-import { hashPassword } from '#src/utils/auth/hashPassword.ts';
+import { hashPassword, verifyPassword } from '#src/utils/auth/password.ts';
 import { ReturnUserDto } from '#src/services/dto/createUser.dto.ts';
+import { generateTokens } from '#src/utils/jwt/tokens.ts';
+import { saveRefreshToken } from '#src/services/token.service.ts';
+import { saveUserSession } from '#src/services/session.service.ts';
 
 export const refresh = async (req: Request, res: Response) => {
   return 'refresh token';
@@ -44,7 +47,30 @@ export const signup = async (req: Request, res: Response) => {
   }
 };
 
-export const signin = async (req: Request, res: Response) => {};
+export const signin = async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+  const user = await findUserByEmail(email);
+
+  if (!user) {
+    return res.status(400).json({ message: 'Invalid email or password' });
+  }
+
+  const isPasswordValid = await verifyPassword(
+    user.passwordHash as string,
+    password
+  );
+  if (!isPasswordValid) {
+    return res.status(400).json({ message: 'Invalid email or password' });
+  }
+
+  const { accessToken, refreshToken } = await generateTokens(user.id);
+
+  await saveRefreshToken(user.id, refreshToken);
+
+  await saveUserSession(user.id, req.sessionID, req.get('user-agent'), req.ip);
+
+  
+};
 
 export const signout = async (req: Request, res: Response) => {
   req.logout(err => {

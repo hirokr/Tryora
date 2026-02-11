@@ -55,6 +55,7 @@ export default [
       'prisma/**',
       'dist/**',
       '.eslintrc.js',
+      './src/generated/**',
     ],
   },
 ];

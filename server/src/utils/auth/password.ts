@@ -1,0 +1,16 @@
+import { hash, verify } from 'argon2';
+
+export const hashPassword = async (password: string) => {
+  const hashedPass = await hash(password);
+  return hashedPass;
+};
+
+export const verifyPassword = async (hashedPassword: string, password: string) => {
+  try {
+    const isValid = await verify(hashedPassword, password);
+    return isValid;
+  } catch (err) {
+    console.error('Error in verifying password:', err);
+    throw err;
+  }
+};

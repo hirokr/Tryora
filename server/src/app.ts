@@ -9,6 +9,7 @@ import session from 'express-session';
 import passport from 'passport';
 
 import authRoutes from './routes/auth.router.ts';
+import { PrismaSessionStore } from './services/session.service.ts';
 
 const app = express();
 app.use(helmet());
@@ -17,7 +18,18 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-app.use(session({ secret: 'cats', resave: false, saveUninitialized: true }));
+app.use(
+  session({
+    secret: 'cats',
+    resave: false,
+    saveUninitialized: true,
+    store: new PrismaSessionStore(),
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 15 * 24 * 60 * 60 * 1000,
+    },
+  })
+);
 app.use(passport.initialize());
 app.use(passport.session());
 
