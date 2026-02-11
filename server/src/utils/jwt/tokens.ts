@@ -27,7 +27,6 @@ export const generateAccessToken = (userId: string) => {
     .sign(ACCESS_SECRET);
 };
 
-
 export const verifyAccessToken = async (token: string) => {
   try {
     const { payload } = (await jwtVerify(token, ACCESS_SECRET)) as {
@@ -38,7 +37,6 @@ export const verifyAccessToken = async (token: string) => {
     return null;
   }
 };
-
 
 export const generateRefreshToken = (userId: string) => {
   return new SignJWT({ userId })
@@ -51,10 +49,25 @@ export const generateRefreshToken = (userId: string) => {
 export const verifyRefreshToken = async (token: string) => {
   try {
     const { payload } = (await jwtVerify(token, REFRESH_SECRET)) as {
-      payload: { userId: string };
+      payload: { userId: string } | undefined;
     };
-    return payload.userId;
+    return payload?.userId || null;
   } catch (error) {
     return null;
   }
 };
+
+export const clearTokens = (res: any) => {
+  res.clearCookie('refreshToken');
+  res.clearCookie('accessToken');
+};
+
+export const hasExpired = (token: string, type: 'access' | 'refresh') => {
+  const secret = type === 'access' ? ACCESS_SECRET : REFRESH_SECRET;
+  try {
+    jwtVerify(token, secret);
+    return false; // Token is valid and not expired
+  } catch (error) {
+    return true; // Token is invalid or expired
+  }
+}

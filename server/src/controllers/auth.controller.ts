@@ -4,14 +4,41 @@ import '../config/google.config.ts';
 import { createUser, findUserByEmail } from '#src/services/user.service.ts';
 
 import { ReturnUserDto } from '#src/services/dto/createUser.dto.ts';
-import { generateTokens } from '#src/utils/jwt/tokens.ts';
-import { saveRefreshToken, saveToCookie } from '#src/services/token.service.ts';
+import { generateTokens, verifyRefreshToken } from '#src/utils/jwt/tokens.ts';
+import {
+  findRefreshToken,
+  saveRefreshToken,
+  saveToCookie,
+} from '#src/services/token.service.ts';
 import { saveUserSession } from '#src/services/session.service.ts';
 import { hashing, verifyHash } from '#src/utils/auth/hash.ts';
 
 export const refresh = async (req: Request, res: Response) => {
-  return 'refresh token';
+  const { refreshToken } = req.cookies;
 
+  if (!refreshToken) {
+    return res.status(401).json({ message: 'Refresh token missing' });
+  }
+
+  const userId: string | null = await verifyRefreshToken(refreshToken);
+
+  if (!userId) {
+    return res.status(401).json({ message: 'Invalid refresh token' });
+  }
+
+  const hashRT = await hashing(refreshToken);
+  const storedToken = await findRefreshToken(hashRT);
+
+  if (!storedToken) {
+    return res.status(401).json({ message: 'Refresh token not found' });
+  }
+
+  const { accessToken, refreshToken: newRefreshToken } =
+    await generateTokens(userId);
+  const hashedRefreshToken = await hashing(newRefreshToken);
+
+  await saveRefreshToken(userId, hashedRefreshToken);
+  await saveToCookie(res, newRefreshToken, accessToken);
   res.status(200).json({ message: 'Token refreshed' });
 };
 
@@ -69,9 +96,12 @@ export const signin = async (req: Request, res: Response) => {
 
   await saveRefreshToken(user.id, hashedRefreshToken);
 
+  // TODO: Save session info (user agent, IP) in the database for active session management
+  // ? Save session info in the database for active session management
+  // ! This is currently being handled in the session store, but we may want to also save it here for easier querying and management of active sessions per user
   // await saveUserSession(user.id, req.sessionID, req.get('user-agent'), req.ip);
 
-  await saveToCookie(res, hashedRefreshToken, accessToken);
+  await saveToCookie(res, refreshToken, accessToken);
 
   const secureUser: ReturnUserDto = {
     id: user.id,
@@ -86,6 +116,8 @@ export const signin = async (req: Request, res: Response) => {
 };
 
 export const signout = async (req: Request, res: Response) => {
+  const { userId } = req?.user as { userId: string }; //todo: type assertion for userId
+
   req.logout(err => {
     if (err) return res.sendStatus(500);
     req.session.destroy(err => {
