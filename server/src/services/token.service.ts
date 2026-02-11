@@ -27,23 +27,6 @@ export async function findRefreshToken(token: string) {
   }
 }
 
-export const saveToCookie = async (
-  res: any,
-  refreshToken: string,
-  accessToken: string
-) => {
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.COOKIE_SAME_SITE || 'strict',
-  });
-  res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.COOKIE_SAME_SITE || 'strict',
-  });
-};
-
 
 export async function deleteRefreshToken(token: string) {
   try {

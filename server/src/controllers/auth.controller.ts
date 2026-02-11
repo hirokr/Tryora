@@ -4,12 +4,18 @@ import '../config/google.config.ts';
 import { createUser, findUserByEmail } from '#src/services/user.service.ts';
 
 import { ReturnUserDto } from '#src/services/dto/createUser.dto.ts';
-import { generateTokens, verifyRefreshToken } from '#src/utils/jwt/tokens.ts';
 import {
+  clearTokens,
+  generateTokens,
+  saveToCookie,
+  verifyRefreshToken,
+} from '#src/utils/jwt/tokens.ts';
+import {
+  deleteUserRefreshTokens,
   findRefreshToken,
   saveRefreshToken,
-  saveToCookie,
 } from '#src/services/token.service.ts';
+// todo: implement session management and session store
 import { saveUserSession } from '#src/services/session.service.ts';
 import { hashing, verifyHash } from '#src/utils/auth/hash.ts';
 
@@ -117,6 +123,10 @@ export const signin = async (req: Request, res: Response) => {
 
 export const signout = async (req: Request, res: Response) => {
   const { userId } = req?.user as { userId: string }; //todo: type assertion for userId
+
+  // todo: remove current user session from database not all the user sessions
+  await deleteUserRefreshTokens(userId); // Invalidate all refresh tokens for the user
+  await clearTokens(res); // Clear cookies
 
   req.logout(err => {
     if (err) return res.sendStatus(500);

@@ -71,3 +71,21 @@ export const hasExpired = (token: string, type: 'access' | 'refresh') => {
     return true; // Token is invalid or expired
   }
 }
+
+
+export const saveToCookie = async (
+  res: any,
+  refreshToken: string,
+  accessToken: string
+) => {
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.COOKIE_SAME_SITE || 'strict',
+  });
+  res.cookie('accessToken', accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.COOKIE_SAME_SITE || 'strict',
+  });
+};
