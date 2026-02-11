@@ -1,7 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { FormState, LoginFormSchema, SignupFormSchema } from "@/types/auth.type";
+import {
+	FormState,
+	LoginFormSchema,
+	SignupFormSchema,
+} from "@/types/auth.type";
 import { createSession, updateTokens } from "./session";
 import { BACKEND_URL } from "@/constants/constants";
 
@@ -104,7 +108,10 @@ export const refreshToken = async (oldRefreshToken: string) => {
 
 		const { accessToken, refreshToken } = await response.json();
 		// update session with new tokens
-		const updateRes = await fetch("http://localhost:3000/api/auth/update", {
+		const FRONTEND_URL =
+			process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost:3000";
+
+		const updateRes = await fetch(`${FRONTEND_URL}/api/auth/update`, {
 			method: "POST",
 			body: JSON.stringify({
 				accessToken,

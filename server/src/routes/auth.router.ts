@@ -1,31 +1,31 @@
 import { Router } from 'express';
-
-import '../config/google.config.ts';
-import passport from 'passport';
-import { isLoggedIn } from '#src/middlewares/authenticate.middleware.ts';
+import { isLoggedIn } from '#src/middlewares/authenticate.ts';
+import { googleAuth, googleAuthCallback, googleAuthFailure } from '#src/controllers/auth.controller.ts';
 
 const router = Router();
 
+// TODO: Fix the routes
 
+// Google OAuth2 routes 
+router.get('/google', googleAuth);
+router.get('/google/callback', googleAuthCallback);
+router.get('/google/failure', googleAuthFailure);
 
-router.get('/login', (req, res) => {
+// TODO: Impement facebook and github auth routes
+
+router.get('/refresh', )
+
+router.get('/signup', (req, res) => {
   res.send("<a href='/auth/google'>Login with Google</a>");
 });
 
-router.get('/google', (req, res) => {
-  passport.authenticate('google', { scope: ['email', 'profile'] })(req, res);
-  
+
+router.get('/signin', (req, res) => {
+  res.send("<a href='/auth/google'>Login with Google</a>");
 });
 
-router.get(
-  '/google/callback',
-  passport.authenticate('google', {
-    successRedirect: '/auth/secret',
-    failureRedirect: '/auth/google/failure',
-  })
-);
 
-router.get('/logout', (req, res) => {
+router.get('/signout', (req, res) => {
   req.logout((err) => {
     if (err) return res.sendStatus(500);
     req.session.destroy((err) => {
@@ -34,9 +34,6 @@ router.get('/logout', (req, res) => {
   });
 });
 
-router.get('/auth/google/failure', (req, res) => {
-  res.send('Failed to authenticate..');
-});
 
 
 router.get('/secret', isLoggedIn, (req, res) => {
