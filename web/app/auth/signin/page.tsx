@@ -2,7 +2,6 @@ import React from "react";
 import SignInForm from "./signupInFrom";
 import { BACKEND_URL } from "@/constants/constants";
 
-
 const SignInPage = () => {
 	return (
 		<div className='bg-white p-8 rounded-lg shadow-lg w-96 flex flex-col justify-center items-center '>
@@ -12,7 +11,7 @@ const SignInPage = () => {
 			<hr />
 			<a
 				className='border px-4 py-2 rounded bg-sky-600 text-white'
-				href={`${BACKEND_URL}/auth/google/login`}
+				href={`${BACKEND_URL}/auth/google`}
 			>
 				Sign In With Google
 			</a>

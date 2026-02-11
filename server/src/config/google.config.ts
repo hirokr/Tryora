@@ -33,11 +33,13 @@ passport.use(
     ) => {
       try {
         let user = await findUserByEmail(profile.emails[0].value);
+        console.log('user:', user);
 
         if (!user) {
           user = await CreateGoogleUser(profile); // Create user if not found, you can also return the created user here
         }
 
+        console.log('user after creation:', user);
         return done(null, user);
       } catch (err) {
         return done(err, null);
