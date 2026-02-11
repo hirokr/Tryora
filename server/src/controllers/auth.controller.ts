@@ -156,7 +156,7 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
   })(req, res);
 };
 
-// @desc    Google OAuth2 failure route
+// @desc    Google OAuth2 failure routea
 // @route   GET /auth/google/failure
 export const googleAuthFailure = async (req: Request, res: Response) => {
   res.send('Failed to authenticate..');

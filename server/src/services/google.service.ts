@@ -17,7 +17,7 @@ export async function CreateGoogleUser(profile: any) {
       },
     });
 
-    return user as ReturnUserDto;
+    return user;
   } catch (err) {
     console.error('Error in creating user:', err);
     throw err;
