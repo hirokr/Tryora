@@ -71,6 +71,8 @@ export async function signIn(
 			user: {
 				id: result.id,
 				name: result.name,
+				email: result.email,
+				avatarUrl: result?.avatarUrl || undefined,
 			},
 			accessToken: result.accessToken,
 			refreshToken: result.refreshToken,
