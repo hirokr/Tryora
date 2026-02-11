@@ -1,7 +1,6 @@
 import { createSession } from "@/lib/auth/session";
 import { redirect } from "next/navigation";
 import { NextRequest } from "next/server";
-import { cookies } from "next/headers";
 
 export async function GET(req: NextRequest) {
 	const { searchParams } = new URL(req.url);
@@ -13,9 +12,8 @@ export async function GET(req: NextRequest) {
 	const emailVerified = searchParams.get("emailVerified");
 	const isActive = searchParams.get("isActive");
 
-	const cookieStore = await cookies();
-	const accessToken = req.cookies.get("accessToken")?.value;
-	const refreshToken = req.cookies.get("refreshToken")?.value;
+	const accessToken = searchParams.get("accessToken")
+	const refreshToken = searchParams.get("refreshToken")
 
 	if (!userId || !name || !email || !accessToken || !refreshToken) {
 		throw new Error("Invalid query parameters");
@@ -34,8 +32,6 @@ export async function GET(req: NextRequest) {
 		refreshToken,
 	});
 
-	cookieStore.delete("accessToken");
-	cookieStore.delete("refreshToken");
 
 	redirect("/");
 }

@@ -169,12 +169,10 @@ export const googleAuthCallback = [
       const hashedRefreshToken = hashTokenCrypto(refreshToken);
       await saveRefreshToken(user.id, hashedRefreshToken);
 
-      await saveToCookie(res, refreshToken, accessToken);
-
       const frontend = process.env.FRONTEND_URL || 'http://localhost:3000';
 
       return res.redirect(
-        `${frontend}/api/auth/google/callback?id=${user.id}&email=${user.email}&name=${user.name}&avatar=${user.avatar || ''}&emailVerified=${user.emailVerified}&isActive=${user.isActive}`
+        `${frontend}/api/auth/google/callback?id=${user.id}&email=${user.email}&name=${user.name}&avatar=${user.avatar || ''}&emailVerified=${user.emailVerified}&isActive=${user.isActive}&accessToken=${accessToken}&refreshToken=${refreshToken}`
       );
     } catch (error) {
       console.error('Error in Google auth callback:', error);
