@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import passport from 'passport';
 import '../config/google.config.ts';
 import { createUser, findUserByEmail } from '#src/services/user.service.ts';
-import { hashPassword } from '#src/utils/jwt/hashPassword.ts';
+import { hashPassword } from '#src/utils/auth/hashPassword.ts';
 import { ReturnUserDto } from '#src/services/dto/createUser.dto.ts';
 
 export const refresh = async (req: Request, res: Response) => {
@@ -44,16 +44,15 @@ export const signup = async (req: Request, res: Response) => {
   }
 };
 
-export const signin = async (req: Request, res: Response) => {
-  return 'refresh token';
-
-  res.status(200).json({ message: 'Token refreshed' });
-};
+export const signin = async (req: Request, res: Response) => {};
 
 export const signout = async (req: Request, res: Response) => {
-  return 'refresh token';
-
-  res.status(200).json({ message: 'Token refreshed' });
+  req.logout(err => {
+    if (err) return res.sendStatus(500);
+    req.session.destroy(err => {
+      res.send('Signout Success!');
+    });
+  });
 };
 
 // @desc    Initiate Google OAuth2 login
@@ -75,11 +74,6 @@ export const googleAuthCallback = async (req: Request, res: Response) => {
 // @route   GET /auth/google/failure
 export const googleAuthFailure = async (req: Request, res: Response) => {
   res.send('Failed to authenticate..');
-};
-
-export const logout = async (req: Request, res: Response) => {
-  return 'logout';
-  res.status(200).json({ message: 'Logged out successfully' });
 };
 
 // todo:
