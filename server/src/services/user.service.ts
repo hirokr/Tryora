@@ -1,4 +1,5 @@
 import prisma from '#src/config/database.ts';
+import { CreateUserDto } from './dto/createUser.dto.ts';
 
 export async function findUserByEmail(email: string) {
   try {
@@ -24,12 +25,7 @@ export async function findUserById(id: string) {
   }
 }
 
-export async function createUser(data: {
-  email: string;
-  name: string;
-  avatar: string | undefined;
-  password: string;
-}) {
+export async function createUser(data: CreateUserDto) {
   try {
     const user = await prisma.user.create({
       data,
@@ -40,3 +36,18 @@ export async function createUser(data: {
     throw err;
   }
 }
+
+export async function verifyUserEmail(userId: string) {
+  try {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { emailVerified: true, isActive: true },
+    });
+    return user;
+  } catch (err) {
+    console.error('Error in verifying email:', err);
+    throw err;
+  }
+}
+
+

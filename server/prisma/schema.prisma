@@ -1,10 +1,8 @@
-// This is your Prisma schema file for the Multi-Layer Fashion Try-On Platform
-// Learn more about Prisma: https://pris.ly/d/prisma-schema
-
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
   binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
+  output = "../src/generated"
 }
 
 datasource db {
@@ -12,9 +10,6 @@ datasource db {
   extensions = [vector]
 }
 
-// ============================================================================
-// USER MANAGEMENT
-// ============================================================================
 
 model User {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid

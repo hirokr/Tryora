@@ -19,34 +19,12 @@
     "prod:docker": "sh ./scripts/prod.sh",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest"
   },
-  "imports": {
-    "#src/*": "./src/*",
-    "#config/*": "./src/config/*",
-    "#controllers/*": "./src/controllers/*",
-    "#models/*": "./src/models/*",
-    "#routes/*": "./src/routes/*",
-    "#services/*": "./src/services/*",
-    "#middlewares/*": "./src/middlewares/*",
-    "#utils/*": "./src/utils/*",
-    "#validations/*": "./src/validations/*"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/hirokr/AI-Shop.git"
-  },
-  "bugs": {
-    "url": "https://github.com/hirokr/AI-Shop/issues"
-  },
-  "homepage": "https://github.com/hirokr/AI-Shop/blob/main/README.md",
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
     "@arcjet/inspect": "^1.0.0-beta.12",
     "@arcjet/node": "^1.0.0-beta.12",
     "@neondatabase/serverless": "^1.0.2",
     "@prisma/client": "^7.3.0",
+    "argon2": "^0.44.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -85,5 +63,28 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
-  }
+  },
+  "imports": {
+    "#src/*": "./src/*",
+    "#config/*": "./src/config/*",
+    "#controllers/*": "./src/controllers/*",
+    "#models/*": "./src/models/*",
+    "#routes/*": "./src/routes/*",
+    "#services/*": "./src/services/*",
+    "#middlewares/*": "./src/middlewares/*",
+    "#utils/*": "./src/utils/*",
+    "#validations/*": "./src/validations/*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hirokr/AI-Shop.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hirokr/AI-Shop/issues"
+  },
+  "homepage": "https://github.com/hirokr/AI-Shop/blob/main/README.md",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
 }
