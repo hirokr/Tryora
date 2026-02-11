@@ -1,11 +1,8 @@
 // middleware/auth.middleware.ts
 import { verifyAccessToken } from '#src/utils/jwt/tokens.ts';
-import { Request, Response, NextFunction } from 'express';
-
-
-export interface AuthRequest extends Request {
-  userId?: string;
-}
+import { Response, NextFunction } from 'express';
+import { AuthRequest } from '#src/types/authRequest.type.ts';
+// import { findUserById } from '#src/services/user.service.ts';
 
 export async function authMiddleware(
   req: AuthRequest,
@@ -21,12 +18,17 @@ export async function authMiddleware(
 
     const token = authHeader.split(' ')[1];
 
-    const userid  = await verifyAccessToken(token);
-
+    const userid = await verifyAccessToken(token);
+    
     if (!userid || typeof userid !== 'string') {
       return res.status(401).json({ message: 'Invalid token payload' });
     }
 
+    // const user = await findUserById(userid);
+    // if (!user) {
+    //   return res.status(401).json({ message: 'User not found' });
+    // }
+    
     req.userId = userid;
 
     next();

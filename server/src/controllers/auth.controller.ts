@@ -23,6 +23,7 @@ import {
 // todo: implement session management and session store
 import { saveUserSession } from '#src/services/session.service.ts';
 import { hashing, verifyHash } from '#src/utils/auth/hash.ts';
+import { AuthRequest } from '#src/types/authRequest.type.ts';
 
 export const refresh = async (req: Request, res: Response) => {
   const { refreshToken } = req.cookies;
@@ -125,10 +126,14 @@ export const signin = async (req: Request, res: Response) => {
   res.status(200).json({ message: 'Signin successful', user: secureUser });
 };
 
-export const signout = async (req: Request, res: Response) => {
-  const { userId } = req?.user as { userId: string }; //todo: type assertion for userId
+// @desc    Signout user and invalidate refresh token
+// @route   GET /auth/signout
+export const signout = async (req: AuthRequest, res: Response) => {
+  const { userId } = req;
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
 
-  // todo: remove current user session from database not all the user sessions
   await deleteUserRefreshTokens(userId); // Invalidate all refresh tokens for the user
   await clearTokens(res); // Clear cookies
 
@@ -142,9 +147,6 @@ export const signout = async (req: Request, res: Response) => {
 
 // @desc    Initiate Google OAuth2 login
 // @route   GET /auth/google
-// export const googleAuth = async (req: Request, res: Response) => {
-//   passport.authenticate('google', { scope: ['email', 'profile'] })(req, res);
-// };
 export const googleAuth = passport.authenticate('google', {
   scope: ['email', 'profile'],
 });

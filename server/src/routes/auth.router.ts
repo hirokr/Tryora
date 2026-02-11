@@ -8,10 +8,9 @@ import {
   signout,
   signup,
 } from '#src/controllers/auth.controller.ts';
+import { authMiddleware } from '#src/middlewares/authenticate.ts';
 
 const router = Router();
-
-// TODO: Fix the routes
 
 // Google OAuth2 routes
 router.get('/google', googleAuth);
@@ -28,6 +27,6 @@ router.post('/signin', signin);
 router.get('/refresh', refresh);
 
 // Implement signout route
-router.get('/signout', signout);
+router.get('/signout', authMiddleware, signout);
 
 export default router;

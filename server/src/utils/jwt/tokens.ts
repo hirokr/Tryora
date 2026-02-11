@@ -9,7 +9,7 @@ if (!ACCESS_SECRET || !REFRESH_SECRET) {
   throw new Error('JWT secrets are not defined in environment variables');
 }
 
-const ACCESS_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
+const ACCESS_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '5m';
 const REFRESH_EXPIRES_IN = process.env.REFRESH_JWT_EXPIRES_IN || '15d';
 
 export const generateTokens = async (userId: string) => {
