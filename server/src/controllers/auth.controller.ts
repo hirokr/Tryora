@@ -69,11 +69,18 @@ export const signin = async (req: Request, res: Response) => {
 
   await saveRefreshToken(user.id, hashedRefreshToken);
 
-  await saveUserSession(user.id, req.sessionID, req.get('user-agent'), req.ip);
+  // await saveUserSession(user.id, req.sessionID, req.get('user-agent'), req.ip);
 
   await saveToCookie(res, hashedRefreshToken, accessToken);
 
-  const secureUser: ReturnUserDto = user;
+  const secureUser: ReturnUserDto = {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    avatar: user.avatarUrl || undefined,
+    emailVerified: user.emailVerified,
+    isActive: user.isActive,
+  };
 
   res.status(200).json({ message: 'Signin successful', user: secureUser });
 };

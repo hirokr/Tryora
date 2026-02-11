@@ -96,7 +96,7 @@ model RefreshToken {
 
 model UserSession {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId       String   @map("user_id") @db.Uuid
+  userId       String?  @map("user_id") @db.Uuid
   sessionId    String   @unique @map("session_id") @db.VarChar(255)
   userAgent    String?  @map("user_agent") @db.Text
   ipAddress    String?  @map("ip_address") @db.VarChar(45)
@@ -105,7 +105,7 @@ model UserSession {
   expiresAt    DateTime @map("expires_at") @db.Timestamp
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([sessionId])
