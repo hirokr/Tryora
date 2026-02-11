@@ -1,0 +1,482 @@
+// // This is your Prisma schema file for the Multi-Layer Fashion Try-On Platform
+// // Learn more about Prisma: https://pris.ly/d/prisma-schema
+
+// generator client {
+//   provider        = "prisma-client-js"
+//   previewFeatures = ["postgresqlExtensions"]
+//   binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
+// }
+
+// datasource db {
+//   provider   = "postgresql"
+//   extensions = [vector]
+// }
+
+// // ============================================================================
+// // USER MANAGEMENT
+// // ============================================================================
+
+// model User {
+//   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   email         String    @unique @db.VarChar(255)
+//   passwordHash  String?   @map("password_hash") @db.VarChar(255)
+//   fullName      String?   @map("full_name") @db.VarChar(255)
+//   avatarUrl     String?   @map("avatar_url") @db.Text
+//   emailVerified Boolean   @default(false) @map("email_verified")
+//   isActive      Boolean   @default(true) @map("is_active")
+//   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamp
+//   updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamp
+//   deletedAt     DateTime? @map("deleted_at") @db.Timestamp
+
+//   // OAuth fields
+//   oauthProvider String? @map("oauth_provider") @db.VarChar(50) // 'google', 'facebook', etc.
+//   oauthId       String? @map("oauth_id") @db.VarChar(255)
+
+//   // Relations
+//   preferences       UserPreferences?
+//   bodyImages        UserBodyImage[]
+//   events            Event[]
+//   garments          Garment[]
+//   outfits           Outfit[]
+//   tryonResults      TryonResult[]
+//   processingJobs    ProcessingJob[]
+//   recommendationLog RecommendationLog[]
+//   refreshTokens     RefreshToken[]
+//   sessions          UserSession[]
+
+//   @@index([email])
+//   @@index([oauthProvider, oauthId])
+//   @@map("users")
+// }
+
+// model UserPreferences {
+//   userId            String   @id @map("user_id") @db.Uuid
+//   preferredColors   Json?    @map("preferred_colors") // ["blue", "black", "white"]
+//   styleTags         Json?    @map("style_tags") // ["casual", "minimalist"]
+//   sizeProfile       Json?    @map("size_profile") // {"top": "M", "bottom": "32", "shoe": "10"}
+//   bodyMeasurements  Json?    @map("body_measurements") // {"height": 175, "chest": 95, ...}
+//   notificationPrefs Json?    @default("{}") @map("notification_prefs") // {"email": true, "push": false}
+//   updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamp
+
+//   // RelationsVarChar
+//   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+//   @@map("user_preferences")
+// }
+
+// model UserBodyImage {
+//   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   userId       String    @map("user_id") @db.Uuid
+//   imageUrl     String    @map("image_url") @db.Text
+//   thumbnailUrl String?   @map("thumbnail_url") @db.Text
+//   poseData     Json?     @map("pose_data") // MediaPipe keypoints
+//   isDefault    Boolean   @default(false) @map("is_default")
+//   metadata     Json? // Additional metadata (original filename, dimensions, etc.)
+//   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamp
+//   deletedAt    DateTime? @map("deleted_at") @db.Timestamp
+
+//   // Relations
+//   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   tryonResults TryonResult[]
+
+//   @@index([userId, isDefault])
+//   @@index([userId, createdAt(sort: Desc)])
+//   @@map("user_body_images")
+// }
+
+// model RefreshToken {
+//   id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   userId    String    @map("user_id") @db.Uuid
+//   token     String    @unique @db.Text
+//   expiresAt DateTime  @map("expires_at") @db.Timestamp
+//   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp
+//   revokedAt DateTime? @map("revoked_at") @db.Timestamp
+
+//   // Relations
+//   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+//   @@index([userId])
+//   @@index([expiresAt])
+//   @@map("refresh_tokens")
+// }
+
+// model UserSession {
+//   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   userId       String   @map("user_id") @db.Uuid
+//   sessionId    String   @unique @map("session_id") @db.VarChar(255)
+//   userAgent    String?  @map("user_agent") @db.Text
+//   ipAddress    String?  @map("ip_address") @db.VarChar(45)
+//   lastActiveAt DateTime @default(now()) @map("last_active_at") @db.Timestamp
+//   expiresAt    DateTime @map("expires_at") @db.Timestamp
+//   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp
+
+//   // Relations
+//   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+//   @@index([userId])
+//   @@index([sessionId])
+//   @@index([expiresAt])
+//   @@map("user_sessions")
+// }
+
+// // ============================================================================
+// // EVENT MANAGEMENT
+// // ============================================================================
+
+// model Event {
+//   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   userId         String    @map("user_id") @db.Uuid
+//   name           String    @db.VarChar(255)
+//   eventType      String?   @map("event_type") @db.VarChar(50) // "formal", "casual", "business"
+//   date           DateTime? @db.Date
+//   location       String?   @db.VarChar(255)
+//   weatherContext Json?     @map("weather_context") // {"temp": 72, "condition": "sunny"}
+//   notes          String?   @db.Text
+//   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamp
+//   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamp
+//   deletedAt      DateTime? @map("deleted_at") @db.Timestamp
+
+//   // Relations
+//   user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   outfits           Outfit[]
+//   recommendationLog RecommendationLog[]
+
+//   @@index([userId, date])
+//   @@index([eventType])
+//   @@map("events")
+// }
+
+// // ============================================================================
+// // GARMENT CATALOG
+// // ============================================================================
+
+// model Garment {
+//   id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   userId            String? @map("user_id") @db.Uuid // NULL for public/system catalog
+//   name              String  @db.VarChar(255)
+//   category          String  @db.VarChar(50) // "top", "bottom", "dress", "outerwear", "shoes"
+//   subCategory       String? @map("sub_category") @db.VarChar(50) // "shirt", "jeans", "sneakers"
+//   brand             String? @db.VarChar(100)
+//   colorTags         Json?   @default("[]") @map("color_tags") // ["blue", "navy"]
+//   styleTags         Json?   @default("[]") @map("style_tags") // ["casual", "vintage"]
+//   seasonTags        Json?   @default("[]") @map("season_tags") // ["spring", "summer"]
+//   imageUrl          String  @map("image_url") @db.Text
+//   thumbnailUrl      String? @map("thumbnail_url") @db.Text
+//   processedImageUrl String? @map("processed_image_url") @db.Text // Background removed version
+//   model3dUrl        String? @map("model_3d_url") @db.Text // GLTF model URL
+//   metadata          Json?   @default("{}") // Custom fields, original filename, etc.
+
+//   // For similarity search (Phase 2)
+//   // embedding   Unsupported("vector(512)")? // CLIP embedding - requires pgvector extension
+
+//   // Audit fields
+//   isPublic  Boolean   @default(false) @map("is_public") // Available to all users
+//   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp
+//   updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamp
+//   deletedAt DateTime? @map("deleted_at") @db.Timestamp
+
+//   // Relations
+//   user        User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   outfitItems OutfitItem[]
+
+//   @@index([userId, category])
+//   @@index([category, isPublic])
+//   @@index([createdAt(sort: Desc)])
+//   // @@index([embedding], type: Ivfflat) // For vector similarity search - Phase 2
+//   @@map("garments")
+// }
+
+// // ============================================================================
+// // OUTFIT MANAGEMENT
+// // ============================================================================
+
+// model Outfit {
+//   id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   userId      String  @map("user_id") @db.Uuid
+//   name        String? @db.VarChar(255)
+//   description String? @db.Text
+//   eventId     String? @map("event_id") @db.Uuid
+
+//   // Preview/thumbnail of the outfit (generated try-on result)
+//   previewImageUrl String? @map("preview_image_url") @db.Text
+
+//   isFavorite Boolean   @default(false) @map("is_favorite")
+//   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamp
+//   updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamp
+//   deletedAt  DateTime? @map("deleted_at") @db.Timestamp
+
+//   // Relations
+//   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   event        Event?        @relation(fields: [eventId], references: [id], onDelete: SetNull)
+//   outfitItems  OutfitItem[]
+//   tryonResults TryonResult[]
+
+//   @@index([userId, createdAt(sort: Desc)])
+//   @@index([userId, eventId])
+//   @@index([userId, isFavorite])
+//   @@map("outfits")
+// }
+
+// model OutfitItem {
+//   outfitId   String @map("outfit_id") @db.Uuid
+//   garmentId  String @map("garment_id") @db.Uuid
+//   layerOrder Int    @map("layer_order") @db.Integer // 1=base, 2=mid, 3=outer
+//   metadata   Json?  @default("{}") // Position adjustments, visibility, etc.
+
+//   // Relations
+//   outfit  Outfit  @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+//   garment Garment @relation(fields: [garmentId], references: [id], onDelete: Cascade)
+
+//   @@id([outfitId, garmentId])
+//   @@index([outfitId, layerOrder])
+//   @@map("outfit_items")
+// }
+
+// // ============================================================================
+// // VIRTUAL TRY-ON
+// // ============================================================================
+
+// model TryonResult {
+//   id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   userId      String  @map("user_id") @db.Uuid
+//   bodyImageId String  @map("body_image_id") @db.Uuid
+//   outfitId    String? @map("outfit_id") @db.Uuid
+
+//   resultImageUrl String  @map("result_image_url") @db.Text
+//   thumbnailUrl   String? @map("thumbnail_url") @db.Text
+
+//   // Processing metadata
+//   generationParams Json?   @map("generation_params") // Model version, settings
+//   processingTimeMs Int?    @map("processing_time_ms") @db.Integer
+//   modelVersion     String? @map("model_version") @db.VarChar(50)
+
+//   // User interaction
+//   isFavorite Boolean @default(false) @map("is_favorite")
+//   viewCount  Int     @default(0) @map("view_count") @db.Integer
+
+//   createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp
+//   deletedAt DateTime? @map("deleted_at") @db.Timestamp
+
+//   // Relations
+//   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   bodyImage UserBodyImage @relation(fields: [bodyImageId], references: [id], onDelete: Cascade)
+//   outfit    Outfit?       @relation(fields: [outfitId], references: [id], onDelete: SetNull)
+
+//   @@index([userId, createdAt(sort: Desc)])
+//   @@index([userId, isFavorite])
+//   @@index([bodyImageId])
+//   @@index([outfitId])
+//   @@map("tryon_results")
+// }
+
+// // ============================================================================
+// // BACKGROUND JOB PROCESSING
+// // ============================================================================
+
+// enum JobStatus {
+//   QUEUED
+//   PROCESSING
+//   COMPLETED
+//   FAILED
+//   CANCELLED
+
+//   @@map("job_status")
+// }
+
+// enum JobType {
+//   TRYON_GENERATION
+//   POSE_ESTIMATION
+//   BACKGROUND_REMOVAL
+//   IMAGE_PROCESSING
+//   GARMENT_SEGMENTATION
+//   MODEL_3D_GENERATION
+//   RECOMMENDATION_GENERATION
+
+//   @@map("job_type")
+// }
+
+// model ProcessingJob {
+//   id      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   userId  String?   @map("user_id") @db.Uuid
+//   jobType JobType   @map("job_type")
+//   status  JobStatus @default(QUEUED)
+
+//   // Job data
+//   inputData  Json  @map("input_data") // Job-specific input parameters
+//   resultData Json? @map("result_data") // Job-specific output data
+
+//   // Error handling
+//   errorMessage String? @map("error_message") @db.Text
+//   retryCount   Int     @default(0) @map("retry_count") @db.Integer
+//   maxRetries   Int     @default(3) @map("max_retries") @db.Integer
+
+//   // Timing
+//   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamp
+//   startedAt   DateTime? @map("started_at") @db.Timestamp
+//   completedAt DateTime? @map("completed_at") @db.Timestamp
+
+//   // Priority (higher number = higher priority)
+//   priority Int @default(0) @db.Integer
+
+//   // Relations
+//   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+//   @@index([status, createdAt])
+//   @@index([userId, status])
+//   @@index([jobType, status])
+//   @@index([priority, createdAt])
+//   @@map("processing_jobs")
+// }
+
+// // ============================================================================
+// // RECOMMENDATIONS
+// // ============================================================================
+
+// model RecommendationLog {
+//   id      String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   userId  String  @map("user_id") @db.Uuid
+//   eventId String? @map("event_id") @db.Uuid
+
+//   // Recommendations
+//   recommendedOutfitIds  Json @default("[]") @map("recommended_outfit_ids") // Array of outfit UUIDs
+//   recommendedGarmentIds Json @default("[]") @map("recommended_garment_ids") // Array of garment UUIDs
+
+//   // Algorithm details
+//   algorithmVersion String @map("algorithm_version") @db.VarChar(50)
+//   algorithmParams  Json?  @map("algorithm_params") // Parameters used
+
+//   // User feedback
+//   userFeedback  Json?  @map("user_feedback") // {"clicked": [id1, id2], "liked": [id1]}
+//   feedbackScore Float? @map("feedback_score") @db.Real // Overall satisfaction (1-5)
+
+//   createdAt DateTime @default(now()) @map("created_at") @db.Timestamp
+
+//   // Relations
+//   user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   event Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+//   @@index([userId, createdAt(sort: Desc)])
+//   @@index([eventId])
+//   @@map("recommendation_logs")
+// }
+
+// // ============================================================================
+// // SYSTEM ANALYTICS & MONITORING
+// // ============================================================================
+
+// model SystemMetric {
+//   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   metricName  String   @map("metric_name") @db.VarChar(100)
+//   metricValue Float    @map("metric_value") @db.Real
+//   metricUnit  String?  @map("metric_unit") @db.VarChar(50)
+//   tags        Json?    @default("{}") // Additional dimensions
+//   timestamp   DateTime @default(now()) @db.Timestamp
+
+//   @@index([metricName, timestamp(sort: Desc)])
+//   @@index([timestamp])
+//   @@map("system_metrics")
+// }
+
+// model AuditLog {
+//   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   userId     String?  @map("user_id") @db.Uuid
+//   action     String   @db.VarChar(100) // "user.created", "garment.deleted", etc.
+//   entityType String   @map("entity_type") @db.VarChar(50) // "user", "garment", etc.
+//   entityId   String?  @map("entity_id") @db.Uuid
+//   changes    Json? // Before/after for updates
+//   ipAddress  String?  @map("ip_address") @db.VarChar(45)
+//   userAgent  String?  @map("user_agent") @db.Text
+//   timestamp  DateTime @default(now()) @db.Timestamp
+
+//   @@index([userId, timestamp(sort: Desc)])
+//   @@index([entityType, entityId])
+//   @@index([action, timestamp(sort: Desc)])
+//   @@map("audit_logs")
+// }
+
+// // ============================================================================
+// // CONTENT MODERATION (Phase 2)
+// // ============================================================================
+
+// enum ModerationStatus {
+//   PENDING
+//   APPROVED
+//   REJECTED
+//   FLAGGED
+
+//   @@map("moderation_status")
+// }
+
+// model ContentModeration {
+//   id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   entityType String @map("entity_type") @db.VarChar(50) // "body_image", "garment", etc.
+//   entityId   String @map("entity_id") @db.Uuid
+//   imageUrl   String @map("image_url") @db.Text
+
+//   status ModerationStatus @default(PENDING)
+
+//   // AI moderation results
+//   aiScore  Float? @map("ai_score") @db.Real // Confidence score
+//   aiLabels Json?  @map("ai_labels") // Detected labels/categories
+
+//   // Manual review
+//   reviewerId  String?   @map("reviewer_id") @db.Uuid
+//   reviewNotes String?   @map("review_notes") @db.Text
+//   reviewedAt  DateTime? @map("reviewed_at") @db.Timestamp
+
+//   createdAt DateTime @default(now()) @map("created_at") @db.Timestamp
+
+//   @@index([status, createdAt])
+//   @@index([entityType, entityId])
+//   @@map("content_moderation")
+// }
+
+// // ============================================================================
+// // FUTURE FEATURES (Commented Out - Uncomment when implementing)
+// // ============================================================================
+
+// // Social Features (Phase 3)
+// // model UserFollow {
+// //   followerId  String   @map("follower_id") @db.Uuid
+// //   followingId String   @map("following_id") @db.Uuid
+// //   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp
+// //
+// //   follower  User @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
+// //   following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+// //
+// //   @@id([followerId, followingId])
+// //   @@map("user_follows")
+// // }
+
+// // model OutfitShare {
+// //   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+// //   outfitId   String   @map("outfit_id") @db.Uuid
+// //   userId     String   @map("user_id") @db.Uuid
+// //   shareUrl   String   @unique @map("share_url") @db.VarChar(255)
+// //   viewCount  Int      @default(0) @map("view_count") @db.Integer
+// //   likeCount  Int      @default(0) @map("like_count") @db.Integer
+// //   expiresAt  DateTime? @map("expires_at") @db.Timestamp
+// //   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp
+// //
+// //   outfit Outfit @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+// //   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+// //
+// //   @@map("outfit_shares")
+// // }
+
+// // E-Commerce Integration (Phase 3)
+// // model Product {
+// //   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+// //   garmentId    String?  @map("garment_id") @db.Uuid
+// //   merchantId   String   @map("merchant_id") @db.VarChar(255)
+// //   productUrl   String   @map("product_url") @db.Text
+// //   price        Decimal  @db.Decimal(10, 2)
+// //   currency     String   @db.VarChar(3)
+// //   inStock      Boolean  @default(true) @map("in_stock")
+// //   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp
+// //   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp
+// //
+// //   garment Garment? @relation(fields: [garmentId], references: [id])
+// //
+// //   @@map("products")
+// // }
