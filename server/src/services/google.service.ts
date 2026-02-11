@@ -1,5 +1,4 @@
 import prisma from '#src/config/database.ts';
-import { ReturnUserDto } from './dto/createUser.dto.ts';
 
 export async function CreateGoogleUser(profile: any) {
   try {
