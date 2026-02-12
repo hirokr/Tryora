@@ -99,18 +99,43 @@ describe('Auth routes', () => {
       const response = await request(app).post('/auth/signup').send({});
 
       expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toMatch(/required|invalid/i);
+    });
+
+    it('returns 400 when name is too short', async () => {
+      const response = await request(app)
+        .post('/auth/signup')
+        .send({ email: 'test@example.com', password: 'Password1!', name: 'A' });
+
+      expect(response.status).toBe(400);
       expect(response.body).toHaveProperty(
         'message',
-        'Email, password and name are required'
+        'Name must be at least 2 characters long.'
       );
+    });
+
+    it('returns 400 when password is too weak', async () => {
+      const response = await request(app)
+        .post('/auth/signup')
+        .send({
+          email: 'test@example.com',
+          password: 'weak',
+          name: 'John Doe',
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toMatch(/at least 8 characters/i);
     });
 
     it('returns 400 when user already exists', async () => {
       mockFindUserByEmail.mockResolvedValue({ id: 'user-1' });
 
-      const response = await request(app)
-        .post('/auth/signup')
-        .send({ email: 'a@b.com', password: 'secret', name: 'A' });
+      const response = await request(app).post('/auth/signup').send({
+        email: 'test@example.com',
+        password: 'Password1!',
+        name: 'John Doe',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('message', 'User already exists');
@@ -121,26 +146,28 @@ describe('Auth routes', () => {
       mockHashing.mockResolvedValue('hashed-pass');
       mockCreateUser.mockResolvedValue({
         id: 'user-1',
-        email: 'a@b.com',
-        name: 'A',
+        email: 'test@example.com',
+        name: 'John Doe',
         emailVerified: false,
         isActive: false,
       });
 
-      const response = await request(app)
-        .post('/auth/signup')
-        .send({ email: 'a@b.com', password: 'secret', name: 'A' });
+      const response = await request(app).post('/auth/signup').send({
+        email: 'test@example.com',
+        password: 'Password1!',
+        name: 'John Doe',
+      });
 
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty(
         'message',
         'User registered successfully'
       );
-      expect(mockHashing).toHaveBeenCalledWith('secret');
+      expect(mockHashing).toHaveBeenCalledWith('Password1!');
       expect(mockCreateUser).toHaveBeenCalledWith(
         expect.objectContaining({
-          email: 'a@b.com',
-          name: 'A',
+          email: 'test@example.com',
+          name: 'John Doe',
           passwordHash: 'hashed-pass',
         })
       );
@@ -151,9 +178,11 @@ describe('Auth routes', () => {
       mockHashing.mockResolvedValue('hashed-pass');
       mockCreateUser.mockRejectedValue(new Error('db down'));
 
-      const response = await request(app)
-        .post('/auth/signup')
-        .send({ email: 'a@b.com', password: 'secret', name: 'A' });
+      const response = await request(app).post('/auth/signup').send({
+        email: 'test@example.com',
+        password: 'Password1!',
+        name: 'John Doe',
+      });
 
       expect(response.status).toBe(500);
       expect(response.body).toHaveProperty('message', 'user creation failed');
@@ -161,12 +190,24 @@ describe('Auth routes', () => {
   });
 
   describe('POST /auth/signin', () => {
+    it('returns 400 when password is too short', async () => {
+      const response = await request(app)
+        .post('/auth/signin')
+        .send({ email: 'test@example.com', password: 'short' });
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty(
+        'message',
+        'Password must be at least 8 characters long.'
+      );
+    });
+
     it('returns 400 when email is not found', async () => {
       mockFindUserByEmail.mockResolvedValue(null);
 
       const response = await request(app)
         .post('/auth/signin')
-        .send({ email: 'a@b.com', password: 'secret' });
+        .send({ email: 'test@example.com', password: 'Password1!' });
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty(
@@ -178,8 +219,8 @@ describe('Auth routes', () => {
     it('returns 400 when password is invalid', async () => {
       mockFindUserByEmail.mockResolvedValue({
         id: 'user-1',
-        email: 'a@b.com',
-        name: 'A',
+        email: 'test@example.com',
+        name: 'John Doe',
         passwordHash: 'hashed-pass',
         emailVerified: false,
         isActive: true,
@@ -188,7 +229,7 @@ describe('Auth routes', () => {
 
       const response = await request(app)
         .post('/auth/signin')
-        .send({ email: 'a@b.com', password: 'wrong' });
+        .send({ email: 'test@example.com', password: 'WrongPass1!' });
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty(
@@ -200,8 +241,8 @@ describe('Auth routes', () => {
     it('returns user and sets tokens on success', async () => {
       mockFindUserByEmail.mockResolvedValue({
         id: 'user-1',
-        email: 'a@b.com',
-        name: 'A',
+        email: 'test@example.com',
+        name: 'John Doe',
         passwordHash: 'hashed-pass',
         emailVerified: true,
         isActive: true,
@@ -217,7 +258,7 @@ describe('Auth routes', () => {
 
       const response = await request(app)
         .post('/auth/signin')
-        .send({ email: 'a@b.com', password: 'secret' });
+        .send({ email: 'test@example.com', password: 'Password1!' });
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('message', 'Signin successful');
