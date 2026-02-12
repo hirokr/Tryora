@@ -4,10 +4,8 @@ import '../config/google.config.ts';
 import {
   createUser,
   findUserByEmail,
-  findUserById,
 } from '#src/services/user.service.ts';
 
-import { ReturnUserDto } from '#src/services/dto/createUser.dto.ts';
 import {
   clearTokens,
   createSessionToken,
@@ -24,7 +22,6 @@ import {
   saveRefreshToken,
 } from '#src/services/token.service.ts';
 // todo: implement session management and session store
-import { saveUserSession } from '#src/services/session.service.ts';
 import { hashing, verifyHash } from '#src/utils/auth/hash.ts';
 import { AuthRequest } from '#src/types/authRequest.type.ts';
 import {
@@ -32,6 +29,8 @@ import {
   makeUserSessionCacheKey,
   setCache,
 } from '#src/utils/redis.ts';
+import z from 'zod';
+import { ReturnUserDto } from '#src/types/user.type.ts';
 
 // TODO: Fix The Refresh Token Race Condition
 export const refresh = async (req: Request, res: Response) => {
@@ -212,7 +211,7 @@ export const googleAuthCallback = [
 
       if (!user) {
         return res.status(401).json({ message: 'Authentication failed' });
-      } 
+      }
 
       const newSessionId = createSessionToken();
       const { accessToken, refreshToken } = await generateTokens(
@@ -230,7 +229,10 @@ export const googleAuthCallback = [
       );
 
       // saving to cache for quick session validation
-      await setCache(makeUserSessionCacheKey(user.id, newSessionId), refreshToken);
+      await setCache(
+        makeUserSessionCacheKey(user.id, newSessionId),
+        refreshToken
+      );
 
       const frontend = process.env.FRONTEND_URL || 'http://localhost:3000';
 
@@ -247,7 +249,7 @@ export const googleAuthCallback = [
 
 // @desc    Google OAuth2 failure route
 // @route   GET /auth/google/failure
-// todo: keep one failior route
+// todo: keep one failure route
 export const googleAuthFailure = async (req: Request, res: Response) => {
   const frontend = process.env.FRONTEND_URL || 'http://localhost:3000';
   res.redirect(`${frontend}/auth/failure`);

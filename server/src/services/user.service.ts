@@ -1,5 +1,5 @@
 import prisma from '#src/config/database.ts';
-import { CreateUserDto, ReturnUserDto } from './dto/createUser.dto.ts';
+import { CreateUserDto, ReturnUserDto } from '#src/types/user.type.ts';
 
 export async function findUserByEmail(email: string) {
   try {

@@ -8,7 +8,14 @@ import {
   signout,
   signup,
 } from '#src/controllers/auth.controller.ts';
-import { authMiddleware } from '#src/middlewares/authenticate.middleware.ts';
+import {
+  authMiddleware,
+  validateRequest,
+} from '#src/middlewares/authenticate.middleware.ts';
+import {
+  SigninFormSchema,
+  SignupFormSchema,
+} from '#src/validations/auth.validation.ts';
 
 const router = Router();
 
@@ -20,8 +27,8 @@ router.get('/google/failure', googleAuthFailure);
 // TODO: Impement facebook and github auth routes
 
 // Local auth routes
-router.post('/signup', signup);
-router.post('/signin', signin);
+router.post('/signup', validateRequest(SignupFormSchema), signup);
+router.post('/signin', validateRequest(SigninFormSchema), signin);
 
 // Get new access token using refresh token
 router.get('/refresh', refresh);
