@@ -79,18 +79,21 @@ model UserBodyImage {
 }
 
 model RefreshToken {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String    @map("user_id") @db.Uuid
-  token     String    @unique @db.Text
-  expiresAt DateTime  @map("expires_at") @db.Timestamp
-  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp
-  revokedAt DateTime? @map("revoked_at") @db.Timestamp
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique @db.Text
+  sessionId String   @unique @map("session_id") @db.VarChar(255)
+  userAgent String?  @map("user_agent") @db.Text
+  ipAddress String?  @map("ip_address") @db.VarChar(45)
+  expiresAt DateTime @map("expires_at") @db.Timestamp
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([expiresAt])
+  @@index([sessionId])
   @@map("refresh_tokens")
 }
 

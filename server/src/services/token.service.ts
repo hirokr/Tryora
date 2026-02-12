@@ -1,11 +1,20 @@
 import prisma from '#src/config/database.ts';
 
-export async function saveRefreshToken(userId: string, refreshToken: string) {
+export async function saveRefreshToken(
+  userId: string,
+  refreshToken: string,
+  sessionId: string,
+  userAgent?: string,
+  ipAddress?: string
+) {
   try {
     await prisma.refreshToken.create({
       data: {
         userId,
         token: refreshToken,
+        sessionId,
+        userAgent,
+        ipAddress,
         expiresAt: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days
       },
     });
@@ -27,7 +36,6 @@ export async function findRefreshToken(token: string) {
   }
 }
 
-
 export async function deleteRefreshToken(token: string) {
   try {
     await prisma.refreshToken.deleteMany({ where: { token } });
@@ -46,3 +54,19 @@ export async function deleteUserRefreshTokens(userId: string) {
   }
 }
 
+export async function isValidSession(userId: string, sessionId: string) {
+  try {
+    const token = await prisma.refreshToken.findFirst({
+      where: {
+        userId,
+        sessionId,
+        expiresAt: { gt: new Date() },
+        isActive: true,
+      },
+    });
+    return !!token;
+  } catch (err) {
+    console.error('Error in validating session:', err);
+    throw err;
+  }
+}

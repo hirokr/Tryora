@@ -8,7 +8,7 @@ import {
   signout,
   signup,
 } from '#src/controllers/auth.controller.ts';
-import { authMiddleware } from '#src/middlewares/authenticate.ts';
+import { authMiddleware } from '#src/middlewares/authenticate.middleware.ts';
 
 const router = Router();
 

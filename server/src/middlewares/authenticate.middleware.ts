@@ -2,7 +2,8 @@
 import { verifyAccessToken } from '#src/utils/jwt/tokens.ts';
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '#src/types/authRequest.type.ts';
-// import { findUserById } from '#src/services/user.service.ts';
+import { getSetCache, makeUserSessionCacheKey } from '#src/utils/redis.ts';
+import { isValidSession } from '#src/services/token.service.ts';
 
 export async function authMiddleware(
   req: AuthRequest,
@@ -18,18 +19,29 @@ export async function authMiddleware(
 
     const token = authHeader.split(' ')[1];
 
-    const userid = await verifyAccessToken(token);
-    
-    if (!userid || typeof userid !== 'string') {
+    const getData = await verifyAccessToken(token);
+    const { userId, sessionId } = getData || {};
+
+    if (
+      !userId ||
+      typeof userId !== 'string' ||
+      !sessionId ||
+      typeof sessionId !== 'string'
+    ) {
       return res.status(401).json({ message: 'Invalid token payload' });
     }
 
-    // const user = await findUserById(userid);
-    // if (!user) {
-    //   return res.status(401).json({ message: 'User not found' });
-    // }
-    
-    req.userId = userid;
+    const cacheKey = makeUserSessionCacheKey(userId, sessionId);
+    const isActiveSession = await getSetCache(cacheKey, () =>
+      isValidSession(userId, sessionId)
+    );
+
+    if (!isActiveSession) {
+      return res.status(401).json({ message: 'Invalid or expired session' });
+    }
+
+    req.userId = userId;
+    req.sessionId = sessionId;
 
     next();
   } catch (err) {

@@ -12,16 +12,16 @@ if (!ACCESS_SECRET || !REFRESH_SECRET) {
 const ACCESS_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '5m';
 const REFRESH_EXPIRES_IN = process.env.REFRESH_JWT_EXPIRES_IN || '15d';
 
-export const generateTokens = async (userId: string) => {
+export const generateTokens = async (userId: string, sessionId: string) => {
   const [accessToken, refreshToken] = await Promise.all([
-    generateAccessToken(userId),
+    generateAccessToken(userId, sessionId),
     generateRefreshToken(userId),
   ]);
   return { accessToken, refreshToken };
 };
 
-export const generateAccessToken = (userId: string) => {
-  return new SignJWT({ userId })
+export const generateAccessToken = (userId: string, sessionId: string) => {
+  return new SignJWT({ userId, sessionId })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(ACCESS_EXPIRES_IN)
@@ -31,9 +31,9 @@ export const generateAccessToken = (userId: string) => {
 export const verifyAccessToken = async (token: string) => {
   try {
     const { payload } = (await jwtVerify(token, ACCESS_SECRET)) as {
-      payload: { userId: string };
+      payload: { userId: string; sessionId: string };
     };
-    return payload.userId;
+    return { userId: payload.userId, sessionId: payload.sessionId };
   } catch (error) {
     return null;
   }
@@ -71,9 +71,9 @@ export const hasExpired = (token: string, type: 'access' | 'refresh') => {
   } catch (error) {
     return true; // Token is invalid or expired
   }
-}
+};
 
-
+// DONE: Save tokens in cookies with secure and httpOnly flags
 export const saveToCookie = async (
   res: any,
   refreshToken: string,
@@ -81,6 +81,7 @@ export const saveToCookie = async (
 ) => {
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
+    Expires: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.COOKIE_SAME_SITE || 'strict',
   });
@@ -94,3 +95,5 @@ export const saveToCookie = async (
 export function hashTokenCrypto(token: string) {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
+
+export const createSessionToken = () => crypto.randomBytes(32).toString('hex');
