@@ -116,16 +116,47 @@ describe('Auth routes', () => {
     });
 
     it('returns 400 when password is too weak', async () => {
-      const response = await request(app)
-        .post('/auth/signup')
-        .send({
-          email: 'test@example.com',
-          password: 'weak',
-          name: 'John Doe',
-        });
+      const response = await request(app).post('/auth/signup').send({
+        email: 'test@example.com',
+        password: 'weak',
+        name: 'John Doe',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toMatch(/at least 8 characters/i);
+    });
+
+    it('returns 400 when password lacks special character', async () => {
+      const response = await request(app).post('/auth/signup').send({
+        email: 'test@example.com',
+        password: 'Password1',
+        name: 'John Doe',
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toMatch(/special character/i);
+    });
+
+    it('returns 400 when password lacks number', async () => {
+      const response = await request(app).post('/auth/signup').send({
+        email: 'test@example.com',
+        password: 'Password!',
+        name: 'John Doe',
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toMatch(/number/i);
+    });
+
+    it('returns 400 when email is invalid', async () => {
+      const response = await request(app).post('/auth/signup').send({
+        email: 'not-an-email',
+        password: 'Password1!',
+        name: 'John Doe',
+      });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toMatch(/valid email/i);
     });
 
     it('returns 400 when user already exists', async () => {
@@ -200,6 +231,15 @@ describe('Auth routes', () => {
         'message',
         'Password must be at least 8 characters long.'
       );
+    });
+
+    it('returns 400 when email is invalid', async () => {
+      const response = await request(app)
+        .post('/auth/signin')
+        .send({ email: 'not-an-email', password: 'Password1!' });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toMatch(/valid email/i);
     });
 
     it('returns 400 when email is not found', async () => {
@@ -279,6 +319,36 @@ describe('Auth routes', () => {
         'access-1'
       );
     });
+
+    it('does not leak password hash in response', async () => {
+      mockFindUserByEmail.mockResolvedValue({
+        id: 'user-1',
+        email: 'test@example.com',
+        name: 'John Doe',
+        passwordHash: 'hashed-pass',
+        emailVerified: true,
+        isActive: true,
+      });
+      mockVerifyHash.mockResolvedValue(true);
+      mockCreateSessionToken.mockReturnValue('session-1');
+      mockGenerateTokens.mockResolvedValue({
+        accessToken: 'access-1',
+        refreshToken: 'refresh-1',
+      });
+      mockHashTokenCrypto.mockReturnValue('hashed-refresh');
+
+      const response = await request(app)
+        .post('/auth/signin')
+        .send({ email: 'test@example.com', password: 'Password1!' });
+
+      expect(response.body.user).toEqual({
+        id: 'user-1',
+        email: 'test@example.com',
+        name: 'John Doe',
+        emailVerified: true,
+        isActive: true,
+      });
+    });
   });
 
   describe('GET /auth/refresh', () => {
@@ -343,6 +413,24 @@ describe('Auth routes', () => {
         'access-2'
       );
     });
+
+    it('revokes old session when rotating tokens', async () => {
+      mockVerifyRefreshToken.mockResolvedValue('user-1');
+      mockHashTokenCrypto.mockReturnValue('hashed-refresh');
+      mockFindRefreshToken.mockResolvedValue({ sessionId: 'old-session' });
+      mockCreateSessionToken.mockReturnValue('new-session');
+      mockGenerateTokens.mockResolvedValue({
+        accessToken: 'access-2',
+        refreshToken: 'refresh-2',
+      });
+
+      await request(app)
+        .get('/auth/refresh')
+        .set('Cookie', 'refreshToken=valid');
+
+      expect(mockRevokeSession).toHaveBeenCalledWith('user-1', 'old-session');
+      expect(mockDeleteCurrentRefreshToken).not.toHaveBeenCalled();
+    });
   });
 
   describe('GET /auth/signout', () => {
@@ -351,6 +439,25 @@ describe('Auth routes', () => {
 
       expect(response.status).toBe(401);
       expect(response.body).toHaveProperty('message', 'Unauthorized');
+    });
+
+    it('returns 401 when auth header is malformed', async () => {
+      const response = await request(app)
+        .get('/auth/signout')
+        .set('Authorization', 'InvalidFormat');
+
+      expect(response.status).toBe(401);
+      expect(response.body).toHaveProperty('message', 'Unauthorized');
+    });
+
+    it('returns 401 when token is invalid', async () => {
+      mockVerifyAccessToken.mockResolvedValue(null);
+
+      const response = await request(app)
+        .get('/auth/signout')
+        .set('Authorization', 'Bearer invalid-token');
+
+      expect(response.status).toBe(401);
     });
 
     it('clears tokens and revokes session on success', async () => {
@@ -376,6 +483,22 @@ describe('Auth routes', () => {
         'user-session:user-1:session-1'
       );
       expect(mockClearTokens).toHaveBeenCalled();
+    });
+
+    it('invalidates cache on signout', async () => {
+      mockVerifyAccessToken.mockResolvedValue({
+        userId: 'user-1',
+        sessionId: 'session-1',
+      });
+      mockIsValidSession.mockResolvedValue(true);
+
+      await request(app)
+        .get('/auth/signout')
+        .set('Authorization', 'Bearer access-1');
+
+      expect(mockInvalidateCache).toHaveBeenCalledWith(
+        'user-session:user-1:session-1'
+      );
     });
   });
 });
