@@ -5,10 +5,13 @@ import morgan from 'morgan';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 
+import redis from 'redis';
+
 import session from 'express-session';
 import passport from 'passport';
 
 import authRoutes from './routes/auth.router.ts';
+import { de } from 'zod/locales';
 // import { PrismaSessionStore } from './services/session.service.ts';
 
 const app = express();
@@ -17,6 +20,15 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Redis session store setup (commented out for now)
+export const redisClient = redis.createClient({
+  url: process.env.REDIS_URL,
+  socket: {
+    host: process.env.REDIS_HOST,
+    port: Number(process.env.REDIS_PORT),
+  },
+});
 
 // Store sessions in PostgreSQL via Prisma
 app.use(
