@@ -10,45 +10,74 @@ import {
 import { ReturnUserDto } from '#src/services/dto/createUser.dto.ts';
 import {
   clearTokens,
+  createSessionToken,
   generateTokens,
   hashTokenCrypto,
   saveToCookie,
   verifyRefreshToken,
 } from '#src/utils/jwt/tokens.ts';
 import {
-  deleteUserRefreshTokens,
+  deleteAllRefreshTokens,
+  deleteCurrentRefreshToken,
   findRefreshToken,
+  revokeSession,
   saveRefreshToken,
 } from '#src/services/token.service.ts';
 // todo: implement session management and session store
 import { saveUserSession } from '#src/services/session.service.ts';
 import { hashing, verifyHash } from '#src/utils/auth/hash.ts';
 import { AuthRequest } from '#src/types/authRequest.type.ts';
+import {
+  invalidateCache,
+  makeUserSessionCacheKey,
+  setCache,
+} from '#src/utils/redis.ts';
 
+// TODO: Fix The Refresh Token Race Condition
 export const refresh = async (req: Request, res: Response) => {
   const { refreshToken } = req.cookies;
+  const { ip, 'user-agent': userAgent } = req.headers;
 
+  // Validate refresh token
   if (!refreshToken) {
     return res.status(401).json({ message: 'Refresh token missing' });
   }
 
+  // Checking the refrehs token validity from the token itself
   const userId: string | null = await verifyRefreshToken(refreshToken);
   if (!userId) {
     return res.status(401).json({ message: 'Invalid refresh token' });
   }
 
+  // Check if refresh token exists in DB and is active
   const hashRT = hashTokenCrypto(refreshToken);
   const storedToken = await findRefreshToken(hashRT);
 
   if (!storedToken) {
-    return res.status(401).json({ message: 'Refresh token not found' });
+    return res.status(401).json({ message: 'Invalid Refresh Token' });
   }
 
-  const { accessToken, refreshToken: newRefreshToken } =
-    await generateTokens(userId);
+  // Revoking old refresh token and session
+  await revokeSession(userId, storedToken.sessionId);
+  await invalidateCache(makeUserSessionCacheKey(userId, storedToken.sessionId));
+
+  // Generate new tokens and save to DB and cookies
+  const newSessionId = createSessionToken();
+  const newCacheKey = makeUserSessionCacheKey(userId, newSessionId);
+  const { accessToken, refreshToken: newRefreshToken } = await generateTokens(
+    userId,
+    newSessionId
+  );
+  await setCache(newCacheKey, newRefreshToken);
 
   const hashedRefreshToken = hashTokenCrypto(newRefreshToken);
-  await saveRefreshToken(userId, hashedRefreshToken);
+  await saveRefreshToken(
+    userId,
+    hashedRefreshToken,
+    newSessionId,
+    userAgent,
+    ip as string
+  );
 
   await saveToCookie(res, newRefreshToken, accessToken);
   res.status(200).json({ message: 'Token refreshed' });
@@ -89,6 +118,7 @@ export const signup = async (req: Request, res: Response) => {
 
 export const signin = async (req: Request, res: Response) => {
   const { email, password } = req.body;
+  const { ip, 'user-agent': userAgent } = req.headers;
   const user = await findUserByEmail(email);
 
   if (!user) {
@@ -103,14 +133,21 @@ export const signin = async (req: Request, res: Response) => {
     return res.status(400).json({ message: 'Invalid email or password' });
   }
 
-  const { accessToken, refreshToken } = await generateTokens(user.id);
+  const getSessionId = createSessionToken();
+
+  const { accessToken, refreshToken } = await generateTokens(
+    user.id,
+    getSessionId
+  );
   const hashedRefreshToken = hashTokenCrypto(refreshToken);
 
-  await saveRefreshToken(user.id, hashedRefreshToken);
-
-  // TODO: Save session info (user agent, IP) in the database for active session management
-  // ? Save session info in the database for active session management
-  // await saveUserSession(user.id, req.sessionID, req.get('user-agent'), req.ip);
+  await saveRefreshToken(
+    user.id,
+    hashedRefreshToken,
+    getSessionId,
+    userAgent,
+    ip as string
+  );
 
   await saveToCookie(res, refreshToken, accessToken);
 
@@ -129,13 +166,23 @@ export const signin = async (req: Request, res: Response) => {
 // @desc    Signout user and invalidate refresh token
 // @route   GET /auth/signout
 export const signout = async (req: AuthRequest, res: Response) => {
-  const { userId } = req;
+  const { userId, sessionId } = req;
   if (!userId) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  await deleteUserRefreshTokens(userId); // Invalidate all refresh tokens for the user
-  await clearTokens(res); // Clear cookies
+  // DONE: Invalidate session and cache
+  if (sessionId) {
+    await deleteCurrentRefreshToken(sessionId || '');
+    await revokeSession(userId, sessionId);
+    await invalidateCache(makeUserSessionCacheKey(userId, sessionId));
+  } else {
+    // DONE: delete all refresh tokens for the user if no sessionId is found (edge case)
+    await deleteAllRefreshTokens(userId);
+  }
+
+  // DONE: Clear cookies
+  await clearTokens(res);
 
   req.logout(err => {
     if (err) return res.sendStatus(500);
@@ -160,16 +207,30 @@ export const googleAuthCallback = [
   }),
   async (req: Request, res: Response) => {
     try {
-      const user = req.user as ReturnUserDto; // Type assertion for user object returned by passport
+      const user = req.user as ReturnUserDto;
+      const { ip, 'user-agent': userAgent } = req.headers;
 
       if (!user) {
         return res.status(401).json({ message: 'Authentication failed' });
-      }
+      } 
 
-      const { accessToken, refreshToken } = await generateTokens(user.id);
+      const newSessionId = createSessionToken();
+      const { accessToken, refreshToken } = await generateTokens(
+        user.id,
+        newSessionId
+      );
 
       const hashedRefreshToken = hashTokenCrypto(refreshToken);
-      await saveRefreshToken(user.id, hashedRefreshToken);
+      await saveRefreshToken(
+        user.id,
+        hashedRefreshToken,
+        newSessionId,
+        userAgent,
+        ip as string
+      );
+
+      // saving to cache for quick session validation
+      await setCache(makeUserSessionCacheKey(user.id, newSessionId), refreshToken);
 
       const frontend = process.env.FRONTEND_URL || 'http://localhost:3000';
 
