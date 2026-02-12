@@ -44,7 +44,9 @@ export const getSetCache = async <T>(
     return null as any;
   }
 
-  await redisClient.setex(key, DEFAULT_EXPIRATION, JSON.stringify(freshData));
+  await redisClient.set(key, JSON.stringify(freshData), {
+    EX: DEFAULT_EXPIRATION,
+  });
 
   return freshData;
 };
@@ -67,7 +69,9 @@ export const setCache = async (
   expiration?: number
 ) => {
   const exp = expiration || DEFAULT_EXPIRATION;
-  await redisClient.setex(key, exp, JSON.stringify(value));
+  await redisClient.set(key, JSON.stringify(value), {
+    EX: exp,
+  });
 };
 
 // DONE: Create a utility function to generate cache key for user sessions
