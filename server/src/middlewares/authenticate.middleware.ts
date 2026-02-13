@@ -1,16 +1,18 @@
 // middleware/auth.middleware.ts
 import { verifyAccessToken } from '#src/utils/jwt/tokens.ts';
-import { Response, NextFunction, Request } from 'express';
-import { AuthRequest } from '#src/types/authRequest.type.ts';
+import { Response, NextFunction, Request, RequestHandler } from 'express';
+import {
+  AuthRequest,
+} from '#src/types/authRequest.type.ts';
 import { getSetCache, makeUserSessionCacheKey } from '#src/utils/redis.ts';
 import { isValidSession } from '#src/services/token.service.ts';
 import { z, ZodError } from 'zod/v3';
 
-export async function authMiddleware(
+export const authMiddleware = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-) {
+) => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -41,14 +43,13 @@ export async function authMiddleware(
       return res.status(401).json({ message: 'Invalid or expired session' });
     }
 
-    req.userId = userId;
-    req.sessionId = sessionId;
-
+    (req as AuthRequest).userId = userId;
+    (req as AuthRequest).sessionId = sessionId;
     next();
   } catch (err) {
     return res.status(401).json({ message: 'Invalid or expired token' });
   }
-}
+};
 
 export const validateRequest =
   <T extends z.ZodTypeAny>(schema: T) =>

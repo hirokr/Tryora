@@ -13,3 +13,9 @@ export type ReturnUserDto = {
   emailVerified: boolean;
   isActive: boolean;
 };
+
+export type UpdateUserProfileDto = {
+  userId: string;
+  name?: string;
+  avatarUrl?: string;
+};

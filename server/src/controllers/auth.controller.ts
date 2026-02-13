@@ -1,14 +1,11 @@
-import { Request, Response } from 'express';
+import { Request, RequestHandler, Response } from 'express';
 import passport from 'passport';
 import '../config/google.config.ts';
-import {
-  createUser,
-  findUserByEmail,
-} from '#src/services/user.service.ts';
+import { createUser, findUserByEmail } from '#src/services/user.service.ts';
 
 import {
   clearTokens,
-  createSessionToken,
+  createRandomToken,
   generateTokens,
   hashTokenCrypto,
   saveToCookie,
@@ -61,7 +58,7 @@ export const refresh = async (req: Request, res: Response) => {
   await invalidateCache(makeUserSessionCacheKey(userId, storedToken.sessionId));
 
   // Generate new tokens and save to DB and cookies
-  const newSessionId = createSessionToken();
+  const newSessionId = createRandomToken();
   const newCacheKey = makeUserSessionCacheKey(userId, newSessionId);
   const { accessToken, refreshToken: newRefreshToken } = await generateTokens(
     userId,
@@ -132,7 +129,7 @@ export const signin = async (req: Request, res: Response) => {
     return res.status(400).json({ message: 'Invalid email or password' });
   }
 
-  const getSessionId = createSessionToken();
+  const getSessionId = createRandomToken();
 
   const { accessToken, refreshToken } = await generateTokens(
     user.id,
@@ -165,10 +162,10 @@ export const signin = async (req: Request, res: Response) => {
 // @desc    Signout user and invalidate refresh token
 // @route   GET /auth/signout
 export const signout = async (req: AuthRequest, res: Response) => {
-  const { userId, sessionId } = req;
-  if (!userId) {
-    return res.status(401).json({ message: 'Unauthorized' });
+  if (!req.userId) {
+    return res.status(401).json({ message: 'User not authenticated' });
   }
+  const { userId, sessionId } = req;
 
   // DONE: Invalidate session and cache
   if (sessionId) {
@@ -213,7 +210,7 @@ export const googleAuthCallback = [
         return res.status(401).json({ message: 'Authentication failed' });
       }
 
-      const newSessionId = createSessionToken();
+      const newSessionId = createRandomToken();
       const { accessToken, refreshToken } = await generateTokens(
         user.id,
         newSessionId

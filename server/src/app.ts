@@ -10,9 +10,8 @@ import redis from 'redis';
 import session from 'express-session';
 import passport from 'passport';
 
-import authRoutes from './routes/auth.router.ts';
-import { de } from 'zod/locales';
-// import { PrismaSessionStore } from './services/session.service.ts';
+import authRoutes from './routes/auth.route.ts';
+import usersRoutes from './routes/user.route.ts';
 
 const app = express();
 app.use(helmet());
@@ -71,7 +70,7 @@ app.get('/api', (req, res) => {
 });
 
 app.use('/auth', authRoutes);
-// app.use("/api/users", usersRoutes);
+app.use('/api/user', usersRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
