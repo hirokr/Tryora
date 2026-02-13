@@ -50,7 +50,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
       user;
     return res.status(200).json(userProfile);
   } catch (error) {
-    console.error('Error fetching user profile:', error);
+    //  console.error('Error fetching user profile:', error);
     return res.status(500).json({ message: 'Failed to fetch user profile' });
   }
 };
@@ -101,7 +101,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       .status(200)
       .json({ message: 'Profile updated successfully', user: updatedUser });
   } catch (error) {
-    console.error('Error updating user profile:', error);
+    // console.error('Error updating user profile:', error);
     return res.status(500).json({ message: 'Failed to update user profile' });
   }
 };
@@ -165,7 +165,7 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
 
     return res.status(200).json({ message: 'Password changed successfully' });
   } catch (error) {
-    console.error('Error changing password:', error);
+    // console.error('Error changing password:', error);
     return res.status(500).json({ message: 'Failed to change password' });
   }
 };
@@ -224,7 +224,7 @@ export const resetPassword = async (req: Request, res: Response) => {
       message: 'Password reset functionality requires token table in database',
     });
   } catch (error) {
-    console.error('Error resetting password:', error);
+    // console.error('Error resetting password:', error);
     return res.status(500).json({ message: 'Failed to reset password' });
   }
 };
@@ -264,7 +264,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
       .status(501)
       .json({ message: 'Email verification requires token table in database' });
   } catch (error) {
-    console.error('Error verifying email:', error);
+    // console.error('Error verifying email:', error);
     return res.status(500).json({ message: 'Failed to verify email' });
   }
 };
@@ -334,7 +334,7 @@ export const resendVerificationEmail = async (
       .status(200)
       .json({ message: 'Verification email sent successfully' });
   } catch (error) {
-    console.error('Error resending verification email:', error);
+    // console.error('Error resending verification email:', error);
     return res
       .status(500)
       .json({ message: 'Failed to send verification email' });
@@ -404,7 +404,7 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
 
     return res.status(200).json({ message: 'Account deleted successfully' });
   } catch (error) {
-    console.error('Error deleting account:', error);
+    // console.error('Error deleting account:', error);
     return res.status(500).json({ message: 'Failed to delete account' });
   }
 };

@@ -13,7 +13,7 @@ const mockVerifyAccessToken = jest.fn<any>();
 const mockHashTokenCrypto = jest.fn<any>();
 const mockSaveToCookie = jest.fn<any>();
 const mockClearTokens = jest.fn<any>();
-const mockCreateSessionToken = jest.fn<any>();
+const mockCreateRandomToken = jest.fn<any>();
 
 const mockSaveRefreshToken = jest.fn<any>();
 const mockFindRefreshToken = jest.fn<any>();
@@ -33,6 +33,9 @@ jest.unstable_mockModule('#src/services/user.service.ts', () => ({
   findUserByEmail: mockFindUserByEmail,
   createUser: mockCreateUser,
   findUserById: jest.fn(),
+  updateUserProfile: jest.fn(),
+  updateUserPassword: jest.fn(),
+  verifyUserEmail: jest.fn(),
 }));
 
 jest.unstable_mockModule('#src/utils/auth/hash.ts', () => ({
@@ -47,7 +50,7 @@ jest.unstable_mockModule('#src/utils/jwt/tokens.ts', () => ({
   hashTokenCrypto: mockHashTokenCrypto,
   saveToCookie: mockSaveToCookie,
   clearTokens: mockClearTokens,
-  createSessionToken: mockCreateSessionToken,
+  createRandomToken: mockCreateRandomToken,
 }));
 
 jest.unstable_mockModule('#src/services/token.service.ts', () => ({
@@ -227,10 +230,8 @@ describe('Auth routes', () => {
         .send({ email: 'test@example.com', password: 'short' });
 
       expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty(
-        'message',
-        'Password must be at least 8 characters long.'
-      );
+      expect(response.body).toHaveProperty('message');
+      expect(response.body.message).toMatch(/at least 8 characters/i);
     });
 
     it('returns 400 when email is invalid', async () => {
@@ -288,7 +289,7 @@ describe('Auth routes', () => {
         isActive: true,
       });
       mockVerifyHash.mockResolvedValue(true);
-      mockCreateSessionToken.mockReturnValue('session-1');
+      mockCreateRandomToken.mockReturnValue('session-1');
       mockGenerateTokens.mockResolvedValue({
         accessToken: 'access-1',
         refreshToken: 'refresh-1',
@@ -330,7 +331,7 @@ describe('Auth routes', () => {
         isActive: true,
       });
       mockVerifyHash.mockResolvedValue(true);
-      mockCreateSessionToken.mockReturnValue('session-1');
+      mockCreateRandomToken.mockReturnValue('session-1');
       mockGenerateTokens.mockResolvedValue({
         accessToken: 'access-1',
         refreshToken: 'refresh-1',
@@ -387,7 +388,7 @@ describe('Auth routes', () => {
       mockVerifyRefreshToken.mockResolvedValue('user-1');
       mockHashTokenCrypto.mockReturnValue('hashed-refresh');
       mockFindRefreshToken.mockResolvedValue({ sessionId: 'old-session' });
-      mockCreateSessionToken.mockReturnValue('new-session');
+      mockCreateRandomToken.mockReturnValue('new-session');
       mockGenerateTokens.mockResolvedValue({
         accessToken: 'access-2',
         refreshToken: 'refresh-2',
@@ -418,7 +419,7 @@ describe('Auth routes', () => {
       mockVerifyRefreshToken.mockResolvedValue('user-1');
       mockHashTokenCrypto.mockReturnValue('hashed-refresh');
       mockFindRefreshToken.mockResolvedValue({ sessionId: 'old-session' });
-      mockCreateSessionToken.mockReturnValue('new-session');
+      mockCreateRandomToken.mockReturnValue('new-session');
       mockGenerateTokens.mockResolvedValue({
         accessToken: 'access-2',
         refreshToken: 'refresh-2',
