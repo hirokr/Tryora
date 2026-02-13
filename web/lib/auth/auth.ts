@@ -1,13 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import {
-	FormState,
-	LoginFormSchema,
-	SignupFormSchema,
-} from "@/types/auth.type";
+import { LoginFormSchema, SignupFormSchema } from "@/validation/auth.valid";
+
 import { createSession, updateTokens } from "./session";
 import { BACKEND_URL } from "@/constants/constants";
+import { FormState } from "@/types/auth.type";
 
 export async function signUp(
 	state: FormState,
@@ -77,6 +75,8 @@ export async function signIn(
 				name: result.name,
 				email: result.email,
 				avatarUrl: result?.avatarUrl || undefined,
+				emailVerified: result.emailVerified,
+				isActive: result.isActive,
 			},
 			accessToken: result.accessToken,
 			refreshToken: result.refreshToken,
