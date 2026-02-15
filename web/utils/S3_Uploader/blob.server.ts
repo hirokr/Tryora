@@ -1,99 +1,45 @@
 "use server";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-import { createClient } from "@supabase/supabase-js";
+const region = process.env.S3_REGION;
+const endpoint = process.env.S3_ENDPOINT;
+const accessKeyId = process.env.S3_ACCESS_KEY;
+const secretAccessKey = process.env.S3_SECRET_KEY;
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-	throw new Error("Missing Supabase configuration in environment variables");
+if (!region || !endpoint || !accessKeyId || !secretAccessKey) {
+	throw new Error("Missing S3 configuration in environment variables");
 }
 
-// Use service role key on server for admin operations
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const s3 = new S3Client({
+	region: region,
+	endpoint: endpoint,
+	credentials: {
+		accessKeyId: accessKeyId,
+		secretAccessKey: secretAccessKey,
+	},
+	forcePathStyle: true,
+});
 
-export async function generateUploadSignedUrl(
-	bucket: string,
-	path: string,
-	expiresIn: number = 3600,
-) {
-	try {
-		const { data, error } = await supabase.storage
-			.from(bucket)
-			.createSignedUrl(path, expiresIn);
-
-		if (error) {
-			throw new Error(`Failed to generate signed URL: ${error.message}`);
-		}
-
-		return data.signedUrl;
-	} catch (error) {
-		console.error("Error generating upload URL:", error);
-		throw error;
-	}
+export async function getUploadUrl(bucket: string, key: string) {
+	// TODO: Validate user session here!
+	const command = new PutObjectCommand({ Bucket: bucket, Key: key });
+	const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+	return url;
 }
 
-export async function uploadFile(
-	bucket: string,
-	path: string,
-	fileBuffer: Buffer,
-	contentType: string,
-) {
-	try {
-		const { data, error } = await supabase.storage
-			.from(bucket)
-			.upload(path, fileBuffer, {
-				contentType: contentType,
-				upsert: false,
-			});
 
-		if (error) {
-			throw new Error(`Upload failed: ${error.message}`);
-		}
+// TODO: fix CORS for supabase using the following SQL commands in psql or pgAdmin:
+// insert into storage.buckets (id, name, public)
+// values ('my-bucket', 'my-bucket', true)
+// on conflict (id) do nothing;
 
-		// Get public URL
-		const { data: publicUrlData } = supabase.storage
-			.from(bucket)
-			.getPublicUrl(path);
-
-		return {
-			path: data.path,
-			publicUrl: publicUrlData.publicUrl,
-			fullPath: data.fullPath,
-		};
-	} catch (error) {
-		console.error("Error uploading file:", error);
-		throw error;
-	}
-}
-
-export async function deleteFile(bucket: string, path: string) {
-	try {
-		const { error } = await supabase.storage.from(bucket).remove([path]);
-
-		if (error) {
-			throw new Error(`Delete failed: ${error.message}`);
-		}
-
-		return { success: true };
-	} catch (error) {
-		console.error("Error deleting file:", error);
-		throw error;
-	}
-}
-
-export async function listFiles(bucket: string, path?: string) {
-	try {
-		const { data, error } = await supabase.storage.from(bucket).list(path);
-
-		if (error) {
-			throw new Error(`List failed: ${error.message}`);
-		}
-
-		return data;
-	} catch (error) {
-		console.error("Error listing files:", error);
-		throw error;
-	}
-}
+// -- Replace 'http://localhost:3000' with your production URL later
+// insert into storage.buckets (id, name, public, cors_rules)
+// values ('my-bucket', 'my-bucket', true, '[{
+//   "allowed_origins": ["http://localhost:3000"],
+//   "allowed_methods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+//   "allowed_headers": ["*"],
+//   "max_age_seconds": 3600
+// }]')
+// on conflict (id) do update set cors_rules = excluded.cors_rules;
