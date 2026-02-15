@@ -396,7 +396,7 @@ describe('Auth routes', () => {
       mockSetCache.mockResolvedValue(undefined);
       mockSaveRefreshToken.mockResolvedValue(undefined);
       mockRevokeSession.mockResolvedValue(undefined);
-      mockInvalidateCache.mockResolvedValue(undefined);
+      // mockInvalidateCache.mockResolvedValue(undefined);
 
       const response = await request(app)
         .get('/auth/refresh')
@@ -406,7 +406,8 @@ describe('Auth routes', () => {
       expect(response.body).toHaveProperty('message', 'Token refreshed');
       expect(mockRevokeSession).toHaveBeenCalledWith('user-1', 'old-session');
       expect(mockInvalidateCache).toHaveBeenCalledWith(
-        'user-session:user-1:old-session'
+        'user-session:user-1:old-session',
+        'user-1'
       );
       expect(mockSaveToCookie).toHaveBeenCalledWith(
         expect.anything(),
@@ -481,7 +482,8 @@ describe('Auth routes', () => {
       expect(mockDeleteCurrentRefreshToken).toHaveBeenCalledWith('session-1');
       expect(mockRevokeSession).toHaveBeenCalledWith('user-1', 'session-1');
       expect(mockInvalidateCache).toHaveBeenCalledWith(
-        'user-session:user-1:session-1'
+        'user-session:user-1:session-1',
+        'user-1'
       );
       expect(mockClearTokens).toHaveBeenCalled();
     });
@@ -498,7 +500,8 @@ describe('Auth routes', () => {
         .set('Authorization', 'Bearer access-1');
 
       expect(mockInvalidateCache).toHaveBeenCalledWith(
-        'user-session:user-1:session-1'
+        'user-session:user-1:session-1',
+        'user-1'
       );
     });
   });

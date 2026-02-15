@@ -1,22 +1,21 @@
 import { AuthRequest } from '#src/types/authRequest.type.ts';
 import { Request, Response } from 'express';
-import prisma from '#src/config/database.ts';
 import {
   findUserById,
   updateUserPassword,
   updateUserProfile,
-  verifyUserEmail,
 } from '#src/services/user.service.ts';
 import { hashing, verifyHash } from '#src/utils/auth/hash.ts';
 import { sendVerificationEmail } from '#src/utils/mail/sendMail.ts';
 import { generateAccessToken } from '#src/utils/jwt/tokens.ts';
 import { clearTokens } from '#src/utils/jwt/tokens.ts';
-import { deleteCurrentRefreshToken } from '#src/services/token.service.ts';
+import { deleteAllRefreshTokens, deleteCurrentRefreshToken } from '#src/services/token.service.ts';
 import crypto from 'crypto';
 import {
   ChangePasswordSchema,
   updateProfileSchema,
 } from '#src/validations/user.validation.ts';
+import { deleteUserCache } from '#src/utils/redis.ts';
 
 /**
  * Get the authenticated user's profile
@@ -388,16 +387,17 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     }
 
     // Soft delete: mark account as deleted
-    await prisma.user.update({
-      where: { id: req.userId },
-      data: {
-        deletedAt: new Date(),
-        isActive: false,
-      },
+    await updateUserProfile({
+      userId: req.userId,
+      deletedAt: new Date(),
+      isActive: false,
     });
 
     // Clear all refresh tokens for this user
-    await deleteCurrentRefreshToken(req.userId);
+    await deleteAllRefreshTokens(req.userId);
+
+    // Delete all the user's cache entries (sessions, profile, etc.)
+    // await deleteUserCache(req.userId);
 
     // Clear authentication cookies
     clearTokens(res);

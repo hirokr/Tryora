@@ -36,9 +36,9 @@ export async function findRefreshToken(token: string) {
   }
 }
 
-export async function deleteAllRefreshTokens(token: string) {
+export async function deleteAllRefreshTokens(userId: string) {
   try {
-    await prisma.refreshToken.deleteMany({ where: { token } });
+    await prisma.refreshToken.deleteMany({ where: { userId } });
   } catch (err) {
     console.error('Error in deleting refresh token:', err);
     throw err;
@@ -46,9 +46,9 @@ export async function deleteAllRefreshTokens(token: string) {
 }
 
 export async function deleteCurrentRefreshToken(sessionId: string) {
-    try {
-      await prisma.refreshToken.deleteMany({ where: { sessionId } });
-    } catch (err) {
+  try {
+    await prisma.refreshToken.deleteMany({ where: { sessionId } });
+  } catch (err) {
     console.error('Error in deleting user refresh tokens:', err);
     throw err;
   }
@@ -63,6 +63,7 @@ export async function isValidSession(userId: string, sessionId: string) {
         expiresAt: { gt: new Date() },
         isActive: true,
       },
+      select: { userId: true, sessionId: true },
     });
     return !!token;
   } catch (err) {

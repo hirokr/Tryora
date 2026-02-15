@@ -1,4 +1,4 @@
-import { Request, RequestHandler, Response } from 'express';
+import { Request, Response } from 'express';
 import passport from 'passport';
 import '../config/google.config.ts';
 import { createUser, findUserByEmail } from '#src/services/user.service.ts';
@@ -18,7 +18,6 @@ import {
   revokeSession,
   saveRefreshToken,
 } from '#src/services/token.service.ts';
-// todo: implement session management and session store
 import { hashing, verifyHash } from '#src/utils/auth/hash.ts';
 import { AuthRequest } from '#src/types/authRequest.type.ts';
 import {
@@ -55,7 +54,10 @@ export const refresh = async (req: Request, res: Response) => {
 
   // Revoking old refresh token and session
   await revokeSession(userId, storedToken.sessionId);
-  await invalidateCache(makeUserSessionCacheKey(userId, storedToken.sessionId));
+  await invalidateCache(
+    makeUserSessionCacheKey(userId, storedToken.sessionId),
+    userId
+  );
 
   // Generate new tokens and save to DB and cookies
   const newSessionId = createRandomToken();
@@ -64,7 +66,7 @@ export const refresh = async (req: Request, res: Response) => {
     userId,
     newSessionId
   );
-  await setCache(newCacheKey, newRefreshToken);
+  await setCache(newCacheKey, userId, newRefreshToken);
 
   const hashedRefreshToken = hashTokenCrypto(newRefreshToken);
   await saveRefreshToken(
@@ -167,17 +169,17 @@ export const signout = async (req: AuthRequest, res: Response) => {
   }
   const { userId, sessionId } = req;
 
-  // DONE: Invalidate session and cache
+  // Invalidate session and cache
   if (sessionId) {
     await deleteCurrentRefreshToken(sessionId || '');
     await revokeSession(userId, sessionId);
-    await invalidateCache(makeUserSessionCacheKey(userId, sessionId));
+    await invalidateCache(makeUserSessionCacheKey(userId, sessionId), userId);
   } else {
-    // DONE: delete all refresh tokens for the user if no sessionId is found (edge case)
+    // delete all refresh tokens for the user if no sessionId is found (edge case)
     await deleteAllRefreshTokens(userId);
   }
 
-  // DONE: Clear cookies
+  // Clear cookies
   await clearTokens(res);
 
   req.logout(err => {
@@ -228,6 +230,7 @@ export const googleAuthCallback = [
       // saving to cache for quick session validation
       await setCache(
         makeUserSessionCacheKey(user.id, newSessionId),
+        user.id,
         refreshToken
       );
 

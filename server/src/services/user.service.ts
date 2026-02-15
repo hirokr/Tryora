@@ -62,12 +62,11 @@ export async function updateUserProfile(
   data: UpdateUserProfileDto
 ): Promise<ReturnUserDto> {
   try {
-    const { userId, name, avatarUrl } = data;
+    const { userId, ...updateData } = data;
     const user = await prisma.user.update({
       where: { id: userId },
       data: {
-        name,
-        avatarUrl,
+        ...updateData,
       },
     });
 

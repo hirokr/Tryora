@@ -18,4 +18,6 @@ export type UpdateUserProfileDto = {
   userId: string;
   name?: string;
   avatarUrl?: string;
+  isActive?: boolean;
+  deletedAt?: Date | null;
 };

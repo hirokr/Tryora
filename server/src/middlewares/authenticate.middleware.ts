@@ -1,9 +1,7 @@
 // middleware/auth.middleware.ts
 import { verifyAccessToken } from '#src/utils/jwt/tokens.ts';
 import { Response, NextFunction, Request, RequestHandler } from 'express';
-import {
-  AuthRequest,
-} from '#src/types/authRequest.type.ts';
+import { AuthRequest } from '#src/types/authRequest.type.ts';
 import { getSetCache, makeUserSessionCacheKey } from '#src/utils/redis.ts';
 import { isValidSession } from '#src/services/token.service.ts';
 import { z, ZodError } from 'zod/v3';
@@ -25,12 +23,7 @@ export const authMiddleware = async (
     const getData = await verifyAccessToken(token);
     const { userId, sessionId } = getData || {};
 
-    if (
-      !userId ||
-      typeof userId !== 'string' ||
-      !sessionId ||
-      typeof sessionId !== 'string'
-    ) {
+    if (!userId || !sessionId) {
       return res.status(401).json({ message: 'Invalid token payload' });
     }
 

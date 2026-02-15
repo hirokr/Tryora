@@ -8,6 +8,7 @@ const mockUpdateUserPassword = jest.fn<any>();
 const mockVerifyHash = jest.fn<any>();
 const mockHashing = jest.fn<any>();
 const mockDeleteCurrentRefreshToken = jest.fn<any>();
+const mockDeleteAllRefreshTokens = jest.fn<any>();
 const mockClearTokens = jest.fn<any>();
 const mockVerifyAccessToken = jest.fn<any>();
 const mockGetSetCache = jest.fn<any>();
@@ -48,10 +49,10 @@ jest.unstable_mockModule('#src/utils/jwt/tokens.ts', () => ({
 
 jest.unstable_mockModule('#src/services/token.service.ts', () => ({
   deleteCurrentRefreshToken: mockDeleteCurrentRefreshToken,
+  deleteAllRefreshTokens: mockDeleteAllRefreshTokens,
   isValidSession: mockIsValidSession,
   saveRefreshToken: jest.fn(),
   findRefreshToken: jest.fn(),
-  deleteAllRefreshTokens: jest.fn(),
   revokeSession: jest.fn(),
 }));
 
@@ -63,6 +64,7 @@ jest.unstable_mockModule('#src/utils/redis.ts', () => ({
   invalidateCache: jest.fn(),
   getCache: jest.fn(),
   setCache: jest.fn(),
+  deleteUserCache: jest.fn(),
 }));
 
 jest.unstable_mockModule('#src/config/database.ts', () => ({
@@ -618,12 +620,12 @@ describe('User routes', () => {
     it('deletes account successfully with correct password', async () => {
       mockFindUserById.mockResolvedValue(mockUser);
       mockVerifyHash.mockResolvedValue(true);
-      mockPrismaUpdate.mockResolvedValue({
+      mockUpdateUserProfile.mockResolvedValue({
         ...mockUser,
         deletedAt: new Date(),
         isActive: false,
       });
-      mockDeleteCurrentRefreshToken.mockResolvedValue(undefined);
+      mockDeleteAllRefreshTokens.mockResolvedValue(undefined);
       mockClearTokens.mockImplementation(() => {});
 
       const response = await request(app)
@@ -640,13 +642,12 @@ describe('User routes', () => {
         'hashed-password',
         'Password1!'
       );
-      expect(mockPrismaUpdate).toHaveBeenCalledWith({
-        where: { id: 'user-123' },
-        data: expect.objectContaining({
-          isActive: false,
-        }),
+      expect(mockUpdateUserProfile).toHaveBeenCalledWith({
+        userId: 'user-123',
+        deletedAt: expect.any(Date),
+        isActive: false,
       });
-      expect(mockDeleteCurrentRefreshToken).toHaveBeenCalledWith('user-123');
+      expect(mockDeleteAllRefreshTokens).toHaveBeenCalledWith('user-123');
     });
 
     it('returns 400 when password is not provided', async () => {
