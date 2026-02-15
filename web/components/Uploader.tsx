@@ -2,11 +2,9 @@
 
 import { UploadButton } from "@/utils/uploadthing";
 
-
-
 export default function Uploader() {
 	return (
-		<main className='flex min-h-screen flex-col items-center justify-between p-24'>
+		<div className='flex min-h-screen flex-col items-center justify-between p-24'>
 			<UploadButton
 				endpoint='imageUploader'
 				onClientUploadComplete={(res) => {
@@ -19,6 +17,6 @@ export default function Uploader() {
 					alert(`ERROR! ${error.message}`);
 				}}
 			/>
-		</main>
+		</div>
 	);
 }
