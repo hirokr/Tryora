@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect } from "react";
 import { getUserPrefrence, saveUserPrefrence } from "@/lib/UserPrefrence";
 
-export function ModeToggle() {
+export function ThemeToggle() {
 	const { setTheme, theme } = useTheme();
 
 	useEffect(() => {

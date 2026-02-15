@@ -1,9 +1,7 @@
-import { ModeToggle } from "@/components/theme/toggle-theme";
-
 export default function Home() {
 	return (
 		<main>
-			<ModeToggle />
+			<h1 className='text-2xl font-bold'>Home Page</h1>
 		</main>
 	);
 }
