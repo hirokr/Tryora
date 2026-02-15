@@ -1,11 +1,10 @@
 "use server";
 
-import { Session } from "@/types/auth.type";
+import { Session } from "@/types/auth";
 import { jwtVerify, SignJWT } from "jose";
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-
 
 const secretKey = process.env.SESSION_SECRET_KEY;
 if (!secretKey || secretKey.length === 0) {

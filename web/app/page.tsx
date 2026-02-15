@@ -1,9 +1,9 @@
-import Uploader from "@/components/Uploader/Uploader";
+import { ModeToggle } from "@/components/theme/toggle-theme";
 
 export default function Home() {
 	return (
-		<main className=''>
-			<Uploader />
+		<main>
+			<ModeToggle />
 		</main>
 	);
 }
