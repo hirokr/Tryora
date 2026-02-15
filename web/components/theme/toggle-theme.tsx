@@ -10,20 +10,21 @@ export function ModeToggle() {
 	const { setTheme, theme } = useTheme();
 
 	useEffect(() => {
-		const setUserTheme = async () =>{
-			const data = await getUserPrefrence() 
-			if (data?.theme) setTheme(data.theme)
-		}
-		setUserTheme()
+		const setUserTheme = async () => {
+			const data = await getUserPrefrence();
+			if (data?.theme) setTheme(data.theme);
+		};
+		setUserTheme();
 	}, []);
 
 	const ChangeTheme = () => {
 		if (theme === "light") {
 			setTheme("dark");
+			saveUserPrefrence({ theme: "dark" });
 		} else {
 			setTheme("light");
+			saveUserPrefrence({ theme: "light" });
 		}
-		saveUserPrefrence({theme: theme as tring})
 	};
 
 	return (
