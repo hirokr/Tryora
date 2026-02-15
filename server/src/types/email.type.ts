@@ -1,5 +1,3 @@
-
-
 export interface VerificationEmailProps {
   userName: string;
   otpCode: string;

@@ -9,7 +9,10 @@ import { hashing, verifyHash } from '#src/utils/auth/hash.ts';
 import { sendVerificationEmail } from '#src/utils/mail/sendMail.ts';
 import { generateAccessToken } from '#src/utils/jwt/tokens.ts';
 import { clearTokens } from '#src/utils/jwt/tokens.ts';
-import { deleteAllRefreshTokens, deleteCurrentRefreshToken } from '#src/services/token.service.ts';
+import {
+  deleteAllRefreshTokens,
+  deleteCurrentRefreshToken,
+} from '#src/services/token.service.ts';
 import crypto from 'crypto';
 import {
   ChangePasswordSchema,

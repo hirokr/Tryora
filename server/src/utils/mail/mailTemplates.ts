@@ -1,4 +1,7 @@
-import { VerificationEmailProps, WelcomeEmailProps } from "#src/types/email.type.ts";
+import {
+  VerificationEmailProps,
+  WelcomeEmailProps,
+} from '#src/types/email.type.ts';
 
 export function generateVerificationEmail({
   userName = 'User',

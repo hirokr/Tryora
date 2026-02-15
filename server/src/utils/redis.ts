@@ -58,7 +58,6 @@ export const invalidateCache = async (
   key: string,
   userId: string
 ): Promise<void> => {
-
   const indexKey = `user-session-index:${userId}`;
   await redisClient.sRem(indexKey, key);
   await redisClient.del(key);
