@@ -19,6 +19,8 @@ export const metadata: Metadata = {
 	description: "First Try then Buy",
 };
 
+<meta name='apple-mobile-web-app-title' content='Tryora' />;
+
 export default function RootLayout({
 	children,
 }: Readonly<{
