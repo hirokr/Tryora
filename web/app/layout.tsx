@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "AI Shop",
+	title: "Tryora",
 	description: "First Try then Buy",
 };
 

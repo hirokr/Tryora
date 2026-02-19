@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { LoginFormSchema, SignupFormSchema } from "@/validation/auth.valid";
 
-import { createSession, updateTokens } from "./session";
+import { createSession } from "./session";
 import { BACKEND_URL } from "@/constants/constants";
 import { FormState } from "@/types/auth";
 

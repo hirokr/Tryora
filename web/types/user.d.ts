@@ -1,3 +1,3 @@
-export type UserPrefrence = {
-  theme: string;
-}
+export type UserPreference = {
+	theme: string;
+};
