@@ -53,7 +53,7 @@ const SignInForm = () => {
 
 				<SubmitButton>Sign In</SubmitButton>
 				<div className='flex justify-between text-sm'>
-					<p> Don't have an account? </p>
+					<p> Don{"'"}t have an account? </p>
 					<Link className='text-sm underline' href='/auth/signup'>
 						Sign Up
 					</Link>
