@@ -1,0 +1,70 @@
+services:
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: Tryora-web
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - SESSION_SECRET_KEY=${SESSION_SECRET_KEY:-dev_session_secret_change_me}
+    depends_on:
+      - server
+      - ai-server
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: Tryora-server
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=production
+      - PORT=8000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL_LOCAL=${DATABASE_URL_LOCAL:-postgresql://postgres:postgres@postgres:5432/tryora?schema=public}
+      - DATABASE_URL_CLOUD=${DATABASE_URL_CLOUD:-postgresql://postgres:postgres@postgres:5432/tryora?schema=public}
+    depends_on:
+      - redis
+      - postgres
+
+  ai-server:
+    build:
+      context: ./ai-server
+      dockerfile: Dockerfile
+    container_name: Tryora-ai-server
+    ports:
+      - "8888:8888"
+    environment:
+      - ENV=production
+      - API_KEY=local_dev_key
+
+  redis:
+    image: redis:7-alpine
+    container_name: Tryora-redis
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: Tryora-postgres
+    environment:
+      - POSTGRES_DB=tryora
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+networks:
+  default:
+    name: Tryora-network
+
+volumes:
+  postgres_data:

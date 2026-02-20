@@ -1,0 +1,31 @@
+services:
+  web:
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - SESSION_SECRET_KEY=${SESSION_SECRET_KEY:-dev_session_secret_change_me}
+    command: npm run dev -- --hostname 0.0.0.0 --port 3000
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+
+  server:
+    environment:
+      - NODE_ENV=development
+      - PORT=8000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL_LOCAL=${DATABASE_URL_LOCAL:-postgresql://postgres:postgres@postgres:5432/tryora?schema=public}
+    command: sh -c "npx prisma migrate deploy && npm run dev"
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+
+  ai-server:
+    environment:
+      - ENV=development
+      - API_KEY=local_dev_key
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8888 --reload
+    volumes:
+      - ./ai-server:/app

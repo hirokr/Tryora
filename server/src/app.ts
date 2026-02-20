@@ -52,9 +52,9 @@ app.use(
 );
 
 app.get('/', (req, res) => {
-  logger.info('Hello from Ai Shop!');
+  logger.info('Hello from Tryora!');
 
-  res.status(200).send('Hello from Ai Shop!');
+  res.status(200).send('Hello from Tryora!');
 });
 
 app.get('/health', (req, res) => {
@@ -66,7 +66,7 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/api', (req, res) => {
-  res.status(200).json({ message: 'Ai Shop API is running!' });
+  res.status(200).json({ message: 'Tryora API is running!' });
 });
 
 app.use('/auth', authRoutes);

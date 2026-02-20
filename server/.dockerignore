@@ -35,6 +35,10 @@ logs/
 # Coverage directory used by tools like istanbul
 coverage/
 
+# Build artifacts
+dist/
+*.tsbuildinfo
+
 # Dependency directories
 jspm_packages/
 

@@ -6,15 +6,19 @@ import { jwtVerify, SignJWT } from "jose";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-const secretKey = process.env.SESSION_SECRET_KEY;
-if (!secretKey || secretKey.length === 0) {
-	throw new Error(
-		"SESSION_SECRET_KEY is missing or empty. Set a non-empty secret in your environment.",
-	);
+function getEncodedKey() {
+	const secretKey = process.env.SESSION_SECRET_KEY;
+	if (!secretKey || secretKey.length === 0) {
+		throw new Error(
+			"SESSION_SECRET_KEY is missing or empty. Set a non-empty secret in your environment.",
+		);
+	}
+
+	return new TextEncoder().encode(secretKey);
 }
-const encodedKey = new TextEncoder().encode(secretKey);
 
 export async function createSession(payload: Session) {
+	const encodedKey = getEncodedKey();
 	const expiredAt = new Date(Date.now() + 15 * 24 * 60 * 60 * 1000); // 15 days
 
 	const session = await new SignJWT(payload)
@@ -33,6 +37,7 @@ export async function createSession(payload: Session) {
 }
 
 export async function getSession() {
+	const encodedKey = getEncodedKey();
 	const cookie = (await cookies()).get("session")?.value;
 	if (!cookie) return null;
 
@@ -59,6 +64,7 @@ export async function updateTokens({
 	accessToken: string;
 	refreshToken: string;
 }) {
+	const encodedKey = getEncodedKey();
 	const cookie = (await cookies()).get("session")?.value;
 	if (!cookie) return null;
 
