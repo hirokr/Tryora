@@ -84,12 +84,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hirokr/AI-Shop.git"
+    "url": "git+https://github.com/hirokr/Tryora.git"
   },
   "bugs": {
-    "url": "https://github.com/hirokr/AI-Shop/issues"
+    "url": "https://github.com/hirokr/Tryora/issues"
   },
-  "homepage": "https://github.com/hirokr/AI-Shop/blob/main/README.md",
+  "homepage": "https://github.com/hirokr/Tryora/blob/main/README.md",
   "keywords": [],
   "author": "",
   "license": "ISC",
