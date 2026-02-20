@@ -1,3 +1,4 @@
+import GSAPProvider from "./gsapProvider";
 import { ThemeProvider } from "./theme-provider";
 import UploaderLayout from "./UploadThing-provider";
 
@@ -8,17 +9,17 @@ export default function MainProvider({
 }) {
 	return (
 		<>
-    <UploaderLayout>
-      
-			<ThemeProvider
-				attribute='class'
-				defaultTheme='system'
-				enableSystem
-				disableTransitionOnChange
-			>
-				{children}
-			</ThemeProvider>
-        </UploaderLayout>
+			<UploaderLayout>
+				<ThemeProvider
+					attribute='class'
+					defaultTheme='system'
+					enableSystem
+					disableTransitionOnChange
+				>
+					<GSAPProvider />
+					{children}
+				</ThemeProvider>
+			</UploaderLayout>
 		</>
 	);
 }
