@@ -61,7 +61,7 @@ export const sendPasswordResetEmail = async ({
   userName,
   expiryMinutes,
   resetLink,
-  supportEmail = '',
+  supportEmail = 'tryora@support.com',
 }: VerificationEmailProps & { to: string; resetLink: string }) => {
   try {
     const html = generateVerificationEmail({
