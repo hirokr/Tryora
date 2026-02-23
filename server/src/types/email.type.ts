@@ -1,6 +1,6 @@
 export interface VerificationEmailProps {
   userName: string;
-  otpCode: string;
+  otpCode?: string;
   verificationLink: string;
   expiryMinutes?: number;
   supportEmail?: string;

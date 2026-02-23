@@ -27,6 +27,10 @@ import {
 } from '#src/utils/redis.ts';
 import z from 'zod';
 import { ReturnUserDto } from '#src/types/user.type.ts';
+import {
+  sendVerificationEmail,
+  sendWelcomeEmail,
+} from '#src/utils/mail/sendMail.ts';
 
 // TODO: Fix The Refresh Token Race Condition
 export const refresh = async (req: Request, res: Response) => {
@@ -38,7 +42,7 @@ export const refresh = async (req: Request, res: Response) => {
     return res.status(401).json({ message: 'Refresh token missing' });
   }
 
-  // Checking the refrehs token validity from the token itself
+  // Checking the refreshes token validity from the token itself
   const userId: string | null = await verifyRefreshToken(refreshToken);
   if (!userId) {
     return res.status(401).json({ message: 'Invalid refresh token' });
@@ -83,7 +87,7 @@ export const refresh = async (req: Request, res: Response) => {
 
 export const signup = async (req: Request, res: Response) => {
   try {
-    const { email, password, name, avatarUrl } = req.body;
+    const { email, password, name } = req.body;
 
     if (!email || !password || !name) {
       return res
@@ -97,13 +101,21 @@ export const signup = async (req: Request, res: Response) => {
     }
 
     const hashedPassword = await hashing(password);
+    const verificationToken = createRandomToken();
 
     const newUser: ReturnUserDto = await createUser({
       ...req.body,
       passwordHash: hashedPassword,
+      verificationToken,
     });
 
-    // TODO: Send verification email here
+    // TODO: Test
+    sendVerificationEmail({
+      to: newUser.email,
+      userName: newUser.name,
+      verificationLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`,
+      expiryMinutes: 1440, // 24 hours
+    });
 
     res
       .status(201)
@@ -235,6 +247,12 @@ export const googleAuthCallback = [
       );
 
       const frontend = process.env.FRONTEND_URL || 'http://localhost:3000';
+      sendWelcomeEmail({
+        to: user.email,
+        userName: user.name,
+        dashboardLink: `${frontend}`, //TODO: add dashboard link
+
+      });
 
       return res.redirect(
         `${frontend}/api/auth/google/callback?id=${user.id}&email=${user.email}&name=${user.name}&avatar=${user.avatar || ''}&emailVerified=${user.emailVerified}&isActive=${user.isActive}&accessToken=${accessToken}&refreshToken=${refreshToken}`

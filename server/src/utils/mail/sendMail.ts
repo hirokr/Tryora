@@ -11,7 +11,7 @@ import {
 export const sendVerificationEmail = async ({
   to,
   userName,
-  otpCode,
+  otpCode = '',
   verificationLink,
   expiryMinutes,
 }: VerificationEmailProps & { to: string }) => {
@@ -53,5 +53,31 @@ export const sendWelcomeEmail = async ({
   } catch (error) {
     console.error('Error sending email:', error);
     throw new Error('Failed to send welcome email');
+  }
+};
+
+export const sendPasswordResetEmail = async ({
+  to,
+  userName,
+  expiryMinutes,
+  resetLink,
+  supportEmail = '',
+}: VerificationEmailProps & { to: string; resetLink: string }) => {
+  try {
+    const html = generateVerificationEmail({
+      userName,
+      verificationLink: resetLink,
+      expiryMinutes,
+      supportEmail,
+    });
+    await nodemailerTransporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to,
+      subject: 'Password Reset Request',
+      html,
+    });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    throw new Error('Failed to send password reset email');
   }
 };

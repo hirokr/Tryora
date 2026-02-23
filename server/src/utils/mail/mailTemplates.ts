@@ -8,8 +8,8 @@ export function generateVerificationEmail({
   otpCode = '',
   verificationLink = '',
   expiryMinutes = 10,
-  supportEmail = 'support@aishop.com',
-  brandName = 'Aishop',
+  supportEmail = 'support@tryora.com',
+  brandName = 'tryora',
 }: VerificationEmailProps) {
   const year = new Date().getFullYear();
 
@@ -123,8 +123,8 @@ export function generateVerificationEmail({
 export function generateWelcomeEmail({
   userName = 'User',
   dashboardLink = '#',
-  supportEmail = 'support@aishop.com',
-  brandName = 'Aishop',
+  supportEmail = 'support@tryora.com',
+  brandName = 'tryora',
 }: WelcomeEmailProps) {
   const year = new Date().getFullYear();
 
@@ -192,6 +192,90 @@ export function generateWelcomeEmail({
 
               <p style="font-size:13px;line-height:1.6;color:#6b7280;margin:0;">
                 Need help? Contact us at ${supportEmail}.
+              </p>
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding:24px;background:#f9fafb;font-size:12px;color:#9ca3af;">
+              © ${year} ${brandName}. All rights reserved.
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+}
+
+export function generatePasswordResetEmail({
+  userName = 'User',
+  resetLink = '',
+  expiryMinutes = 10,
+  supportEmail = '',
+}) {
+  const year = new Date().getFullYear();
+  const brandName = 'tryora';
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Password Reset Request</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f6f8;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f6f8;padding:20px 0;">
+    <tr>
+      <td align="center">
+
+        <table width="100%" cellpadding="0" cellspacing="0" border="0"
+          style="max-width:600px;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.05);">
+
+          <!-- Header -->
+          <tr>
+            <td align="center" style="background-color:#111827;padding:24px;">
+              <h1 style="color:#ffffff;margin:0;font-size:24px;font-weight:bold;">
+                Password Reset Request
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px 24px;color:#333333;">
+
+              <p style="margin:0 0 16px 0;font-size:16px;">
+                Hi ${userName},
+              </p>
+
+              <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;">
+                We received a request to reset your password. Click the button below to reset it.
+              </p>  
+              
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:16px 0;">
+                <tr>
+                  <td align="center">
+                    <a href="${resetLink}"
+                      style="background-color:#111827;color:#ffffff;text-decoration:none;
+                            padding:14px 32px;border-radius:8px;
+                            font-size:15px;font-weight:bold;
+                            display:inline-block;">
+                      Reset Password
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 16px 0;font-size:14px;color:#6b7280;">
+                This link will expire in ${expiryMinutes} minutes.
               </p>
 
             </td>

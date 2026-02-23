@@ -38,6 +38,7 @@ export async function createUser(data: CreateUserDto): Promise<ReturnUserDto> {
         email,
         name,
         passwordHash,
+        verificationToken: data.verificationToken,
         avatarUrl,
       },
     });
@@ -99,15 +100,32 @@ export async function updateUserPassword(
   }
 }
 
-export async function verifyUserEmail(userId: string) {
+export async function verifyUserEmail(
+  userId: string,
+  verificationToken: string
+) {
   try {
     const user = await prisma.user.update({
-      where: { id: userId },
+      where: { id: userId, verificationToken: verificationToken },
       data: { emailVerified: true, isActive: true },
     });
     return user as ReturnUserDto;
   } catch (err) {
     console.error('Error in verifying email:', err);
     throw err;
+  }
+}
+
+export async function findUserByVerificationToken(token: any) {
+  try {
+    const user = prisma.user.findFirst({
+      where: {
+        verificationToken: token,
+        deletedAt: null,
+      },
+    });
+    return user;
+  } catch (error) {
+    throw error;
   }
 }
