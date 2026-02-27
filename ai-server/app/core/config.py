@@ -1,5 +1,3 @@
-from os import name
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
 from typing import Optional
@@ -23,5 +21,5 @@ class Settings(BaseSettings):
 
 settings = Settings() #type: ignore
 
-if name == "__main__":
+if __name__ == "__main__":
   print(settings.MASTER_APIKEY)
