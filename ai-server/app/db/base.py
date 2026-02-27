@@ -1,6 +1,6 @@
 # from ..core.config import settings as config_settings
 # from .vectordb import VectorStore
-
+# DONE: This file is meant to handle all database interactions, including vector DB operations.
 # vector_db = VectorStore(
 #     host=config_settings.CHROMADB_HOST, 
 #     port=config_settings.CHROMADB_PORT

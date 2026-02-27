@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.18.4",
+    "apify-client>=2.5.0",
     "chromadb>=1.5.1",
     "fastapi[standard]>=0.129.0",
     "httpx>=0.28.1",
