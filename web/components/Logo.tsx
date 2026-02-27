@@ -1,10 +1,11 @@
 import * as React from "react";
-export const Logo = (props: React.PropsWithChildren) => (
+export const Logo = (props: React.PropsWithChildren & { className?: string }) => (
 	<svg
 		xmlns='http://www.w3.org/2000/svg'
 		xmlnsXlink='http://www.w3.org/1999/xlink'
 		width={288}
 		height={299}
+		className={props.className}
 		{...props}
 	>
 		<svg
@@ -13,6 +14,7 @@ export const Logo = (props: React.PropsWithChildren) => (
 			width={288}
 			height={299}
 			viewBox='0 0 288 299'
+			className={props.className}
 			{...props}
 		>
 			<image
