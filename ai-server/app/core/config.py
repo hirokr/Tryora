@@ -9,6 +9,10 @@ class Settings(BaseSettings):
     MASTER_APIKEY: str = Field(..., validation_alias="MASTER_APIKEY")
     SERPER_APIKEY: str = Field(..., validation_alias="SERPER_APIKEY")
     OPEN_ROUTER_APIKEY: str = Field(..., validation_alias="OPEN_ROUTER_APIKEY")
+
+    # Chromadb configuration
+    CHROMADB_HOST: str = Field(..., validation_alias="CHROMADB_HOST")
+    CHROMADB_PORT: int = Field(..., validation_alias="CHROMADB_PORT")
     
     PROJECT_NAME: str = "TRYORA AI Server"
     DEBUG: bool = False
