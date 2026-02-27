@@ -1,7 +1,6 @@
 # BASE
 import json
-
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends , HTTPException
 from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -31,14 +30,6 @@ async def get_data(server_name: str = Depends(checkApiKey)):
 @app.get("/")
 async def get():
     return {"message": "Hello, here is your data."}
-
-
-import json
-from fastapi import HTTPException
-from pathlib import Path
-
-# Assuming BASE_DIR and vector_db are initialized globally
-BASE_DIR = Path(__file__).resolve().parent
 
 
 # TODO: remove this endpoint after testing, it's just for demo purposes. In production, you would have a more secure and robust way to handle embeddings and vector DB interactions.

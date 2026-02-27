@@ -14,7 +14,6 @@ class Settings(BaseSettings):
     
     PROJECT_NAME: str = "TRYORA AI Server"
     DEBUG: bool = False
-    DEBUG: bool = False
 
     # Tell Pydantic to read from a .env file
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
