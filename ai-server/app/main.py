@@ -39,10 +39,10 @@ async def get():
 
 
 @app.get('/search')
-async def search(query: str):
+async def search(query: str, limit: int = 5):
     # Pass the actual query from the URL parameter
     web_search = WebSearch()
-    results = await web_search.search(query=query, num_results=5)
+    results = await web_search.search(query=query, num_results=limit)
     
     # Professional projects usually log the search for debugging
     print(f"Searching for: {query} | Results found: {len(results)}")
@@ -53,7 +53,7 @@ async def search(query: str):
 @app.get('/scrap')
 async def scrape():
     web_scrapper = WebScrapper()
-    url = '"https://www.linkedin.com/in/hirokrr"'
+    url = '"https://www.linkedin.com/in/prohor04"'
     results = await web_scrapper.scrape(url=url)
     
     # Professional projects usually log the search for debugging
