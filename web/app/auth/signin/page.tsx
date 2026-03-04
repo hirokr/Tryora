@@ -11,7 +11,7 @@ const SignInPage = () => {
 			<hr />
 			<a
 				className='border px-4 py-2 rounded bg-sky-600 text-white'
-				href={`${BACKEND_URL}/auth/google`}
+				href={`${BACKEND_URL}/api/auth/google`}
 			>
 				Sign In With Google
 			</a>

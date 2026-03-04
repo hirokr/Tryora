@@ -63,7 +63,7 @@ app.get('/api', (req, res) => {
   res.status(200).json({ message: 'Tryora API is running!' });
 });
 
-app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/user', usersRoutes);
 
 const openapiSpecification = swaggerJsdoc(swaggerOptions);

@@ -10,6 +10,8 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - SESSION_SECRET_KEY=${SESSION_SECRET_KEY:-dev_session_secret_change_me}
+      - BACKEND_URL=http://server:8000
+      - AI_SERVER_URL=http://ai-server:8888
     depends_on:
       - server
       - ai-server
@@ -43,9 +45,6 @@ services:
     environment:
       - ENV=production
       - API_KEY=local_dev_key
-      - DATABASE_URL=${DATABASE_URL_LOCAL:-postgresql://postgres:postgres@postgres:5432/tryora?schema=public}
-    depends_on:
-      - postgres
 
   redis:
     image: redis:7-alpine

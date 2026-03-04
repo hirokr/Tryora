@@ -1,7 +1,8 @@
 datasource db {
   provider = "postgresql"
   // eslint-disable-next-line no-template-curly-in-string
-  url      = env("DATABASE_URL")
+  // eslint-disable-next-line no-undef
+  url      = env("DATABASE_URL") 
 }
 
 generator client_py {

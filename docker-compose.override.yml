@@ -4,19 +4,25 @@ services:
       - NODE_ENV=development
       - PORT=3000
       - SESSION_SECRET_KEY=${SESSION_SECRET_KEY:-dev_session_secret_change_me}
+      - BACKEND_URL=http://server:8000
+      - AI_SERVER_URL=http://ai-server:8888
     command: npm run dev -- --hostname 0.0.0.0 --port 3000
     volumes:
       - ./web:/app
       - /app/node_modules
 
   server:
+    container_name: Tryora-server
+    env_file:
+      - ./server/.env
     environment:
+      # REMOVE the manual EMAIL_HOST, USER, and PASS lines
       - NODE_ENV=development
       - PORT=8000
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_URL=redis://redis:6379
-      - DATABASE_URL_LOCAL=${DATABASE_URL_LOCAL:-postgresql://postgres:postgres@localhost:5433/tryora}
+      - DATABASE_URL_LOCAL=${DATABASE_URL_LOCAL:-postgresql://postgres:postgres@postgres:5432/tryora?schema=public}
     command: sh -c "npx prisma migrate deploy && npm run dev"
     volumes:
       - ./server:/app
@@ -26,7 +32,6 @@ services:
     environment:
       - ENV=development
       - API_KEY=local_dev_key
-      - DATABASE_URL=${DATABASE_URL_LOCAL:-postgresql://postgres:postgres@postgres:5432/tryora?schema=public}
-    command: sh -c "prisma generate --schema prisma/schema.prisma && uvicorn app.main:app --host 0.0.0.0 --port 8888 --reload"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8888 --reload
     volumes:
       - ./ai-server:/app
