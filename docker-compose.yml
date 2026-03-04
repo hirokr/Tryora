@@ -32,8 +32,10 @@ services:
       - DATABASE_URL_LOCAL=${DATABASE_URL_LOCAL:-postgresql://postgres:postgres@postgres:5432/tryora?schema=public}
       - DATABASE_URL_CLOUD=${DATABASE_URL_CLOUD:-postgresql://postgres:postgres@postgres:5432/tryora?schema=public}
     depends_on:
-      - redis
-      - postgres
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
 
   ai-server:
     build:
@@ -45,6 +47,9 @@ services:
     environment:
       - ENV=production
       - API_KEY=local_dev_key
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   redis:
     image: redis:7-alpine
@@ -63,6 +68,11 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tryora"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 networks:
   default:

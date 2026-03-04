@@ -2,15 +2,22 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir \
     "alembic>=1.18.4" \
     "fastapi[standard]>=0.129.0" \
     "httpx>=0.28.1" \
     "loguru>=0.7.3" \
     "pydantic-settings>=2.13.1" \
-    "sqlmodel>=0.0.35"
+    "sqlmodel>=0.0.35" \
+    "prisma>=0.15.0"
 
 COPY . .
+
+RUN prisma generate --schema prisma/schema.prisma
 
 EXPOSE 8888
 
