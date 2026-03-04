@@ -10,6 +10,8 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - SESSION_SECRET_KEY=${SESSION_SECRET_KEY:-dev_session_secret_change_me}
+      - BACKEND_URL=http://server:8000
+      - AI_SERVER_URL=http://ai-server:8888
     depends_on:
       - server
       - ai-server
@@ -30,8 +32,10 @@ services:
       - DATABASE_URL_LOCAL=${DATABASE_URL_LOCAL:-postgresql://postgres:postgres@postgres:5432/tryora?schema=public}
       - DATABASE_URL_CLOUD=${DATABASE_URL_CLOUD:-postgresql://postgres:postgres@postgres:5432/tryora?schema=public}
     depends_on:
-      - redis
-      - postgres
+      redis:
+        condition: service_started
+      postgres:
+        condition: service_healthy
 
   ai-server:
     build:
@@ -43,6 +47,9 @@ services:
     environment:
       - ENV=production
       - API_KEY=local_dev_key
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   redis:
     image: redis:7-alpine
@@ -61,10 +68,16 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tryora"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 networks:
   default:
     name: Tryora-network
+    external: true
 
 volumes:
   postgres_data:

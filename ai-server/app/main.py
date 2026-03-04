@@ -4,20 +4,28 @@ from fastapi import FastAPI, Depends , HTTPException
 from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 
+# Prisma DB
+from .db.prisma_connect import db, lifespan
+
 # CONFIG
 from .middleware.secure_keys import checkApiKey
 from .api.v1.health import router as health_router
 from .middleware.audit_log import AuditLogMiddleware
 
 # LLM APIs
-from .LLM.openapi import open_api
+# from .LLM.openapi import open_api
 
 # vector DB
-from .db.base import vector_db
+# from .db.base import vector_db
 
+#searching 
+from .domains.searching.webSearch import WebSearch
+
+#scraping
+# from .domains.scrapping.web_scrapper import WebScrapper
 
 # Init FastAPI app
-app = FastAPI(title="Tryora AI server", description="A server for managing AI operations for the Tryora platform", version="1.0.0")
+app = FastAPI(title="Tryora AI server", description="A server for managing AI operations for the Tryora platform", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(AuditLogMiddleware)
 
@@ -32,50 +40,32 @@ async def get():
     return {"message": "Hello, here is your data."}
 
 
-# TODO: remove this endpoint after testing, it's just for demo purposes. In production, you would have a more secure and robust way to handle embeddings and vector DB interactions.
-@app.get("/embeddings")
-async def get_embeddings():
-    file_path = BASE_DIR / "firstEmbedding.json"
+@app.get('/search')
+async def search(query: str, limit: int = 5):
+    # Pass the actual query from the URL parameter
+    web_search = WebSearch()
+    results = await web_search.search(query=query, num_results=limit)
     
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="firstEmbedding.json not found")
-
-    # Use a context manager to read the file
-    with open(file_path, "r") as f:
-        try:
-            data = json.load(f)
-        except json.JSONDecodeError:
-            raise HTTPException(status_code=500, detail="Invalid JSON format in file")
-
-    # Extract the embedding list
-    embedding_vector = data.get("embedding")
+    # Professional projects usually log the search for debugging
+    print(f"Searching for: {query} | Results found: {len(results)}")
     
-    if not embedding_vector or not isinstance(embedding_vector, list):
-        raise HTTPException(status_code=400, detail="File missing 'embedding' list")
+    return {"query": query, "results": results}
 
-    # 1. Add to Vector DB
-    vector_db.add_document(
-        doc_id="doc1",
-        embedding=embedding_vector,
-        document="This is a sample document for testing.",
-        metadata={"source": "test"}
+
+@app.get("/users")
+async def get_users():
+    # Use the client directly
+    users = await db.user.find_many()
+    
+    return {"users": users}
+
+@app.post("/users")
+async def create_user(email: str, name: str = "Default Name"):
+    user = await db.user.create(
+        data={
+            "email": email,
+            "name": name,
+        }
     )
-    
-    # Return the results from the DB, not just the input
-    return {"status": "success", "results": embedding_vector}
 
-
-@app.get("/embeddings/search")
-async def search_embeddings():
-    """
-    NOTE: Real search requires a numerical vector. 
-    You cannot pass ['my_embeddings'] (strings) to a Vector DB.
-    """
-    # For a real search, you'd usually get this from an LLM or a request body
-    # Here we use a dummy vector of 1536 dimensions (Standard OpenAI size) 
-    # or whatever size your DB expects.
-    mock_query_vector = [0.1] * 1536 
-
-    results = vector_db.search(query_embedding=mock_query_vector, n_results=3)
-    
-    return {"search_results": results}
+    return user

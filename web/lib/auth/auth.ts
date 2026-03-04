@@ -22,8 +22,9 @@ export async function signUp(
 			error: validationFields.error.flatten().fieldErrors,
 		};
 	}
+	console.log(`${BACKEND_URL}/api/auth/signup`);
 
-	const response = await fetch(`${BACKEND_URL}/auth/signup`, {
+	const response = await fetch(`${BACKEND_URL}/api/auth/signup`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -57,7 +58,7 @@ export async function signIn(
 		};
 	}
 
-	const response = await fetch(`${BACKEND_URL}/auth/signin`, {
+	const response = await fetch(`${BACKEND_URL}/api/auth/signin`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -65,34 +66,33 @@ export async function signIn(
 		body: JSON.stringify(validatedFields.data),
 	});
 
-	if (response.ok) {
-		const result = await response.json();
-		// TODO: Create The Session For Authenticated User.
+	const data = await response.json();
+	console.log(data);
 
+	if (response.ok) {
 		await createSession({
 			user: {
-				id: result.id,
-				name: result.name,
-				email: result.email,
-				avatarUrl: result?.avatarUrl || undefined,
-				emailVerified: result.emailVerified,
-				isActive: result.isActive,
+				id: data.user.id,
+				name: data.user.name,
+				email: data.user.email,
+				avatarUrl: data.user?.avatar || undefined,
+				emailVerified: data.user.emailVerified,
+				isActive: data.user.isActive,
 			},
-			accessToken: result.accessToken,
-			refreshToken: result.refreshToken,
+			accessToken: data.accessToken ?? "",
+			refreshToken: data.refreshToken ?? "",
 		});
 		redirect("/");
 	} else {
 		return {
-			message:
-				response.status === 401 ? "Invalid Credentials!" : response.statusText,
+			message: data?.message || response.statusText,
 		};
 	}
 }
 
 export const refreshToken = async (oldRefreshToken: string) => {
 	try {
-		const response = await fetch(`${BACKEND_URL}/auth/refresh`, {
+		const response = await fetch(`${BACKEND_URL}/api/auth/refresh`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",

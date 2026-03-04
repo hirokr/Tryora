@@ -6,9 +6,12 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 
 import redis from 'redis';
-
 import session from 'express-session';
 import passport from 'passport';
+
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
+import { swaggerOptions } from './docs/swagger/index.ts';
 
 import authRoutes from './routes/auth.route.ts';
 import usersRoutes from './routes/user.route.ts';
@@ -19,15 +22,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-
-// Redis session store setup (commented out for now)
-export const redisClient = redis.createClient({
-  url: process.env.REDIS_URL,
-  socket: {
-    host: process.env.REDIS_HOST,
-    port: Number(process.env.REDIS_PORT),
-  },
-});
 
 // Store sessions in PostgreSQL via Prisma
 app.use(
@@ -69,8 +63,20 @@ app.get('/api', (req, res) => {
   res.status(200).json({ message: 'Tryora API is running!' });
 });
 
-app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/user', usersRoutes);
+
+const openapiSpecification = swaggerJsdoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));
+
+// Redis session store setup (commented out for now)
+export const redisClient = redis.createClient({
+  url: process.env.REDIS_URL,
+  socket: {
+    host: process.env.REDIS_HOST,
+    port: Number(process.env.REDIS_PORT),
+  },
+});
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
@@ -78,5 +84,4 @@ app.use((req, res) => {
 
 export default app;
 
-
-// !test run 
+// !test run

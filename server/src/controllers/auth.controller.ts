@@ -97,7 +97,7 @@ export const signup = async (req: Request, res: Response) => {
 
     const user = await findUserByEmail(email);
     if (user) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(409).json({ message: 'User already exists' });
     }
 
     const hashedPassword = await hashing(password);
@@ -115,7 +115,9 @@ export const signup = async (req: Request, res: Response) => {
       userName: newUser.name,
       verificationLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`,
       expiryMinutes: 1440, // 24 hours
-    });
+    }).catch(err =>
+      console.error('Verification email failed (non-fatal):', err)
+    );
 
     res
       .status(201)
@@ -140,7 +142,7 @@ export const signin = async (req: Request, res: Response) => {
     password
   );
   if (!isPasswordValid) {
-    return res.status(400).json({ message: 'Invalid email or password' });
+    return res.status(401).json({ message: 'Invalid email or password' });
   }
 
   const getSessionId = createRandomToken();
@@ -209,7 +211,7 @@ export const googleAuth = passport.authenticate('google', {
 });
 
 // @desc    Handle Google OAuth2 callback
-// @route   GET /auth/google/callback
+// @route   GET /api/auth/google/callback
 export const googleAuthCallback = [
   passport.authenticate('google', {
     session: false, // important if you're using JWT instead of sessions
@@ -251,7 +253,6 @@ export const googleAuthCallback = [
         to: user.email,
         userName: user.name,
         dashboardLink: `${frontend}`, //TODO: add dashboard link
-
       });
 
       return res.redirect(
