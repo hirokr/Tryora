@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#. ./scripts/test.sh
+
 # 1. Exit immediately if a command fails
 set -e
 

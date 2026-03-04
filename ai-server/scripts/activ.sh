@@ -6,3 +6,6 @@ if [ -d ".venv" ]; then
 else
     echo "Error: .venv directory not found."
 fi
+
+
+#. ./scripts/activ.sh

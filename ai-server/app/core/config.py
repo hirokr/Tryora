@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     MASTER_APIKEY: str = Field(..., validation_alias="MASTER_APIKEY")
 
     # Serper.dev configuration
-    SERPER_APIKEY: str = Field(..., validation_alias="SERPER_APIKEY")
+    SERPER_APIKEY: str = Field(..., validation_alias="SERPER_API_KEY")
     SERPER_BASE_URL: str = Field(..., validation_alias="SERPER_BASE_URL")
 
     # OpenRouter configuration
