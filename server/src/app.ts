@@ -30,20 +30,63 @@ const options = {
       title: 'Tyora API',
       version: '1.0.0',
     },
+    servers: [
+      {
+        url: 'http://localhost:8000', // Update to your port
+        description: 'Development server',
+      },
+      {
+        url: 'http://localhost:8000', // Update to your port
+        description: 'Production server',
+      },
+    ],
+    components: {
+      schemas: {
+        ReturnUserDto: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              example: 'clx1abc123def456',
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+              example: 'jane@example.com',
+            },
+            name: {
+              type: 'string',
+              example: 'Jane Doe',
+            },
+            avatar: {
+              type: 'string',
+              nullable: true,
+              example: 'https://example.com/avatar.jpg',
+            },
+            emailVerified: {
+              type: 'boolean',
+              example: false,
+            },
+            isActive: {
+              type: 'boolean',
+              example: true,
+            },
+          },
+          required: ['id', 'email', 'name', 'emailVerified', 'isActive'],
+        },
+      },
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
   },
-  apis: ['./routes/*.route.ts', './routes/*.route.js'],
+  // Ensure this points correctly relative to where you run the node command
+  apis: ['./src/routes/*.route.ts', './routes/*.route.ts'],
 };
-const openapiSpecification = swaggerJsdoc(options);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));
-
-// Redis session store setup (commented out for now)
-export const redisClient = redis.createClient({
-  url: process.env.REDIS_URL,
-  socket: {
-    host: process.env.REDIS_HOST,
-    port: Number(process.env.REDIS_PORT),
-  },
-});
 
 // Store sessions in PostgreSQL via Prisma
 app.use(
@@ -87,6 +130,18 @@ app.get('/api', (req, res) => {
 
 app.use('/auth', authRoutes);
 app.use('/api/user', usersRoutes);
+
+const openapiSpecification = swaggerJsdoc(options);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));
+
+// Redis session store setup (commented out for now)
+export const redisClient = redis.createClient({
+  url: process.env.REDIS_URL,
+  socket: {
+    host: process.env.REDIS_HOST,
+    port: Number(process.env.REDIS_PORT),
+  },
+});
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
