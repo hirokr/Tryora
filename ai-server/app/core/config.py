@@ -22,12 +22,18 @@ class Settings(BaseSettings):
     # Apify configuration
     APIFY_APIKEY: str = Field(..., validation_alias="APIFY_APIKEY")
 
+    # Database configuration
+    DATABASE_URL: str = Field(..., validation_alias="DATABASE_URL")
+
     PROJECT_NAME: str = "TRYORA AI Server"
     DEBUG: bool = False
 
     # Tell Pydantic to read from a .env file
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8",
-    extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
 settings = Settings() #type: ignore
 

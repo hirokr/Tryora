@@ -4,13 +4,16 @@ from fastapi import FastAPI, Depends , HTTPException
 from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 
+# Prisma DB
+from .db.prisma_connect import db, lifespan
+
 # CONFIG
 from .middleware.secure_keys import checkApiKey
 from .api.v1.health import router as health_router
 from .middleware.audit_log import AuditLogMiddleware
 
 # LLM APIs
-from .LLM.openapi import open_api
+# from .LLM.openapi import open_api
 
 # vector DB
 # from .db.base import vector_db
@@ -19,11 +22,10 @@ from .LLM.openapi import open_api
 from .domains.searching.webSearch import WebSearch
 
 #scraping
-from .domains.scrapping.web_scrapper import WebScrapper
-
+# from .domains.scrapping.web_scrapper import WebScrapper
 
 # Init FastAPI app
-app = FastAPI(title="Tryora AI server", description="A server for managing AI operations for the Tryora platform", version="1.0.0")
+app = FastAPI(title="Tryora AI server", description="A server for managing AI operations for the Tryora platform", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(AuditLogMiddleware)
 
@@ -50,13 +52,20 @@ async def search(query: str, limit: int = 5):
     return {"query": query, "results": results}
 
 
-@app.get('/scrap')
-async def scrape():
-    web_scrapper = WebScrapper()
-    url = '"https://www.linkedin.com/in/prohor04"'
-    results = await web_scrapper.scrape(url=url)
+@app.get("/users")
+async def get_users():
+    # Use the client directly
+    users = await db.user.find_many()
     
-    # Professional projects usually log the search for debugging
-    print(f"Scraping URL: {url} | Results found: {len(results)}")
-    
-    return {"url": url, "results": results}
+    return {"users": users}
+
+@app.post("/users")
+async def create_user(email: str, name: str = "Default Name"):
+    user = await db.user.create(
+        data={
+            "email": email,
+            "name": name,
+        }
+    )
+
+    return user
