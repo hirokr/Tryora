@@ -22,7 +22,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_URL=redis://redis:6379
-      - DATABASE_URL_LOCAL=${DATABASE_URL_LOCAL:-postgresql://postgres:postgres@postgres:5432/tryora?schema=public}
+      - DATABASE_URL_LOCAL=postgresql://postgres:postgres@postgres:5432/tryora?schema=public
     command: sh -c "npx prisma migrate deploy && npm run dev"
     volumes:
       - ./server:/app

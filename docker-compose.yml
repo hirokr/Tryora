@@ -67,6 +67,7 @@ services:
 networks:
   default:
     name: Tryora-network
+    external: true
 
 volumes:
   postgres_data:
