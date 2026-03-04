@@ -11,6 +11,7 @@ import passport from 'passport';
 
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
+import { swaggerOptions } from './docs/swagger/index.ts';
 
 import authRoutes from './routes/auth.route.ts';
 import usersRoutes from './routes/user.route.ts';
@@ -21,72 +22,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-
-// Configure Swagger/OpenAPI documentation
-const options = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'Tyora API',
-      version: '1.0.0',
-    },
-    servers: [
-      {
-        url: 'http://localhost:8000', // Update to your port
-        description: 'Development server',
-      },
-      {
-        url: 'http://localhost:8000', // Update to your port
-        description: 'Production server',
-      },
-    ],
-    components: {
-      schemas: {
-        ReturnUserDto: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              example: 'clx1abc123def456',
-            },
-            email: {
-              type: 'string',
-              format: 'email',
-              example: 'jane@example.com',
-            },
-            name: {
-              type: 'string',
-              example: 'Jane Doe',
-            },
-            avatar: {
-              type: 'string',
-              nullable: true,
-              example: 'https://example.com/avatar.jpg',
-            },
-            emailVerified: {
-              type: 'boolean',
-              example: false,
-            },
-            isActive: {
-              type: 'boolean',
-              example: true,
-            },
-          },
-          required: ['id', 'email', 'name', 'emailVerified', 'isActive'],
-        },
-      },
-      securitySchemes: {
-        bearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-        },
-      },
-    },
-  },
-  // Ensure this points correctly relative to where you run the node command
-  apis: ['./src/routes/*.route.ts', './routes/*.route.ts'],
-};
 
 // Store sessions in PostgreSQL via Prisma
 app.use(
@@ -131,7 +66,7 @@ app.get('/api', (req, res) => {
 app.use('/auth', authRoutes);
 app.use('/api/user', usersRoutes);
 
-const openapiSpecification = swaggerJsdoc(options);
+const openapiSpecification = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));
 
 // Redis session store setup (commented out for now)
