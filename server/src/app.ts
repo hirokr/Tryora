@@ -6,9 +6,11 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 
 import redis from 'redis';
-
 import session from 'express-session';
 import passport from 'passport';
+
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
 
 import authRoutes from './routes/auth.route.ts';
 import usersRoutes from './routes/user.route.ts';
@@ -19,6 +21,20 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Configure Swagger/OpenAPI documentation
+const options = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Tyora API',
+      version: '1.0.0',
+    },
+  },
+  apis: ['./routes/*.route.ts', './routes/*.route.js'],
+};
+const openapiSpecification = swaggerJsdoc(options);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));
 
 // Redis session store setup (commented out for now)
 export const redisClient = redis.createClient({
@@ -78,5 +94,4 @@ app.use((req, res) => {
 
 export default app;
 
-
-// !test run 
+// !test run
