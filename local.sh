@@ -1,7 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
-
+# . ./local.sh {start|stop} [all|<service-or-container>]
 ACTION="${1:-}"
 TARGET="${2:-all}"
 
@@ -18,12 +17,12 @@ usage() {
 
 if [[ "$ACTION" != "start" && "$ACTION" != "stop" ]]; then
     usage
-    exit 1
+    return 1 2>/dev/null || exit 1
 fi
 
 if ! command -v docker >/dev/null 2>&1; then
     echo "Error: docker is not installed or not available in PATH."
-    exit 1
+    return 1 2>/dev/null || exit 1
 fi
 
 if [[ "$TARGET" == "all" ]]; then
@@ -34,7 +33,7 @@ if [[ "$TARGET" == "all" ]]; then
         echo "Stopping all Docker Compose services..."
         docker compose stop
     fi
-    exit 0
+    return 0 2>/dev/null || exit 0
 fi
 
 if docker compose config --services 2>/dev/null | grep -Fxq "$TARGET"; then
@@ -45,7 +44,7 @@ if docker compose config --services 2>/dev/null | grep -Fxq "$TARGET"; then
         echo "Stopping compose service: $TARGET"
         docker compose stop "$TARGET"
     fi
-    exit 0
+    return 0 2>/dev/null || exit 0
 fi
 
 if [[ "$ACTION" == "start" ]]; then

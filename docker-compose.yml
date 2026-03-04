@@ -43,6 +43,9 @@ services:
     environment:
       - ENV=production
       - API_KEY=local_dev_key
+      - DATABASE_URL=${DATABASE_URL_LOCAL:-postgresql://postgres:postgres@postgres:5432/tryora?schema=public}
+    depends_on:
+      - postgres
 
   redis:
     image: redis:7-alpine
