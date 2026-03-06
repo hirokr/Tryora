@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     # OpenRouter configuration
     OPEN_ROUTER_APIKEY: str = Field(..., validation_alias="OPEN_ROUTER_APIKEY")
 
+    # XAI configuration
+    XAI_API_KEY: str = Field(..., validation_alias="XAI_API_KEY")
+
     # Chromadb configuration
     CHROMADB_HOST: str = Field(..., validation_alias="CHROMADB_HOST")
     CHROMADB_PORT: int = Field(..., 
@@ -24,6 +27,8 @@ class Settings(BaseSettings):
 
     # Database configuration
     DATABASE_URL: str = Field(..., validation_alias="DATABASE_URL")
+
+    
 
     PROJECT_NAME: str = "TRYORA AI Server"
     DEBUG: bool = False
