@@ -3,7 +3,7 @@ from xai_sdk import Client
 from xai_sdk.chat import user, system
 import os
 
-client = Client(api_key=Settings.XAI_API_KEY)
+client = Client(api_key=settings.XAI_API_KEY)
 
 DEFAULT_MODEL_NAME = os.getenv("XAI_MODEL_NAME", "grok-4-1-fast-reasoning")
 DEFAULT_SYSTEM_PROMPT = os.getenv(
