@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     OPEN_ROUTER_APIKEY: str = Field(..., validation_alias="OPEN_ROUTER_APIKEY")
 
     # XAI configuration
-    XAI_API_KEY: str = Field(..., validation_alias="XAI_API_KEY")
+    XAI_API_KEY: Optional[str] = Field(default=None, validation_alias="XAI_API_KEY")
 
     # Chromadb configuration
     CHROMADB_HOST: str = Field(..., validation_alias="CHROMADB_HOST")
