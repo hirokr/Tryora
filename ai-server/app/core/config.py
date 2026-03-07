@@ -4,6 +4,9 @@ from typing import Optional
 
 class Settings(BaseSettings):
 
+    PROJECT_NAME: str = "TRYORA AI Server"
+    DEBUG: bool = False
+
     # Master API key for internal use, not exposed to clients
     MASTER_APIKEY: str = Field(..., validation_alias="MASTER_APIKEY")
 
@@ -19,8 +22,7 @@ class Settings(BaseSettings):
 
     # Chromadb configuration
     CHROMADB_HOST: str = Field(..., validation_alias="CHROMADB_HOST")
-    CHROMADB_PORT: int = Field(..., 
-    validation_alias="CHROMADB_PORT")
+    CHROMADB_PORT: int = Field(..., validation_alias="CHROMADB_PORT")
 
     # Apify configuration
     APIFY_APIKEY: str = Field(..., validation_alias="APIFY_APIKEY")
@@ -28,10 +30,8 @@ class Settings(BaseSettings):
     # Database configuration
     DATABASE_URL: str = Field(..., validation_alias="DATABASE_URL")
 
-    
-
-    PROJECT_NAME: str = "TRYORA AI Server"
-    DEBUG: bool = False
+    # Firecrawler configuration
+    FIRECRAWLER_API_KEY: Optional[str] = Field(default=None, validation_alias="FIRECRAWLER_API_KEY")
 
     # Tell Pydantic to read from a .env file
     model_config = SettingsConfigDict(
