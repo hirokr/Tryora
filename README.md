@@ -1,428 +1,392 @@
-# Software Requirements Specification (SRS) - Complete Template Package
+# Tryora — AI-Powered 3D Virtual Try-On Platform
 
-**Version:** 1.0  
-**Date:** February 11, 2026  
-**Project:** Fashion Virtual Try-On Platform (Example Domain)
+**Tryora** is a production-grade, distributed web application that lets users generate a photorealistic 3D avatar of themselves, discover clothing through AI-driven search, and virtually try on outfits in AI-generated background scenes — all from the browser, including offline via PWA.
 
 ---
 
-## 📦 Package Contents
+## Table of Contents
 
-This package contains everything you need to create professional, comprehensive Software Requirements Specifications for your software projects.
-
-### Core Documents
-
-1. **SRS_Template.md** (Main Document)
-   - Complete SRS template following IEEE 830 standard
-   - All standard sections with detailed guidance
-   - Example content for a fashion virtual try-on platform
-   - 12 main sections + appendices
-
-2. **Requirements_Traceability_Matrix.md**
-   - RTM showing how requirements map to design, code, and tests
-   - Sample data demonstrating traceability
-   - Coverage metrics and status tracking
-   - Bidirectional traceability examples
-
-3. **User_Stories_Template.md**
-   - User story format with Gherkin-style acceptance criteria
-   - Multiple complete user story examples
-   - Story lifecycle and workflow
-   - Best practices and anti-patterns
-
-4. **NFR_Template.md**
-   - Detailed template for non-functional requirements
-   - 8 NFR categories with examples:
-     - Performance, Scalability, Reliability, Security
-     - Usability, Maintainability, Portability, Compliance
-   - Measurement methods and acceptance criteria
-   - NFR testing strategy
-
-5. **SRS_Review_Checklist.md**
-   - Comprehensive review checklist (99 criteria)
-   - Section-by-section quality gates
-   - Stakeholder sign-off template
-   - Common pitfalls to avoid
-
-6. **SRS_Quick_Reference.md**
-   - Formatting standards and style guide
-   - Requirements numbering scheme
-   - Versioning conventions
-   - Writing best practices
-   - Change management process
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Core Features](#core-features)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Environment Variables](#environment-variables)
+  - [Running with Docker](#running-with-docker)
+  - [Running Locally](#running-locally)
+- [Services](#services)
+  - [Web (Next.js)](#web-nextjs)
+  - [Server (Express.js)](#server-expressjs)
+  - [AI Server (FastAPI)](#ai-server-fastapi)
+- [Database](#database)
+- [Offline & PWA](#offline--pwa)
+- [API Documentation](#api-documentation)
+- [Testing](#testing)
+- [Contributing](#contributing)
 
 ---
 
-## 🚀 Quick Start Guide
+## Overview
 
-### For First-Time Users
+Tryora solves a core problem in online fashion: shoppers cannot tell how a garment will look on their body before buying. The platform tackles this by combining:
 
-**Step 1: Read the Quick Reference (15 minutes)**
-- Start with `SRS_Quick_Reference.md`
-- Understand formatting, numbering, and versioning
-- Review requirement writing best practices
+- **3D avatar generation** from user-submitted photos
+- **LLM-powered dress discovery** that understands natural language event queries
+- **Virtual try-on (VTON) and AI scene generation** that composites the user's avatar with a selected dress in a generated background
+- **Progressive Web App (PWA) support** for offline access to saved dresses and generated scenes
 
-**Step 2: Explore the Main Template (30 minutes)**
-- Open `SRS_Template.md`
-- Read Section 1 (Introduction) to understand document purpose
-- Skim through all sections to see structure
-- Note the example content for fashion try-on platform
-
-**Step 3: Understand Traceability (15 minutes)**
-- Review `Requirements_Traceability_Matrix.md`
-- See how requirements map to tests
-- Understand forward and backward traceability
-
-**Step 4: Start Writing**
-- Copy `SRS_Template.md` for your project
-- Replace example content with your project details
-- Use guidance comments to fill each section
-- Refer to templates for user stories and NFRs as needed
-
-### For Experienced Users
-
-**Quick Start Checklist:**
-- [ ] Copy `SRS_Template.md` and rename for your project
-- [ ] Update cover page (project name, version, date, authors)
-- [ ] Fill Section 1-2 (Introduction, Overall Description)
-- [ ] Define functional requirements (Section 3) using FR-X-YY format
-- [ ] Define non-functional requirements (Section 5) using `NFR_Template.md`
-- [ ] Write use cases (Section 9) using `User_Stories_Template.md` as reference
-- [ ] Create RTM using `Requirements_Traceability_Matrix.md` as template
-- [ ] Review using `SRS_Review_Checklist.md` (aim for ≥90%)
-- [ ] Submit for stakeholder approval
+Because the AI and 3D generation pipeline involves GPU-bound tasks that can take 10–60 seconds, the system is built on an **asynchronous microservices architecture** with a Redis-backed job queue. No long-polling connections are held open; clients poll a lightweight job-status endpoint until their result is ready.
 
 ---
 
-## 📋 Document Usage Guide
+## Architecture
 
-### When to Use Each Document
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  Browser (Next.js PWA)                                           │
+│  Service Worker · Cache API · IndexedDB                          │
+└────────────────────┬─────────────────────────────────────────────┘
+                     │ HTTPS
+┌────────────────────▼─────────────────────────────────────────────┐
+│  Express.js  (API Gateway & Orchestrator)   :8000                │
+│  Auth · Session · Rate-limiting · Swagger · Redis cache check    │
+└──────────┬──────────────────────────┬────────────────────────────┘
+           │ SQL (Prisma)             │ HTTP / Job dispatch
+┌──────────▼──────────┐   ┌──────────▼──────────────────────────┐ │
+│  PostgreSQL 16       │   │  FastAPI  (AI & Scraping Engine)    │ │
+│                      │   │  :8888                              │ │
+└──────────────────────┘   │  LLM · Serper · CrewAI · ChromaDB  │ │
+                           └──────┬──────────────────────────────┘ │
+┌──────────────────────┐          │ Celery tasks                   │
+│  Redis 7              ◄─────────┘                                │
+│  Cache + Job Queue    │                                           │
+└──────────────────────┘                                           │
+                                                                    │
+┌──────────────────────────────────────────────────────────────────┘
+│  AWS S3 / Compatible Object Storage
+│  User photos · .glb / .gltf models · Generated scene images
+└──────────────────────────────────────────────────────────────────
+```
 
-| Document | Use When... | Primary Audience |
-|----------|-------------|------------------|
-| **SRS_Template.md** | Starting a new SRS or updating existing one | Authors, All Stakeholders |
-| **RTM** | Tracking requirements through development lifecycle | QA, Project Managers |
-| **User_Stories_Template** | Writing Agile user stories with acceptance criteria | Product Owners, Developers |
-| **NFR_Template** | Defining performance, security, scalability requirements | Architects, Engineers |
-| **Review_Checklist** | Conducting SRS quality review before approval | Reviewers, QA Leads |
-| **Quick_Reference** | Need quick lookup for formatting, numbering, versioning | Authors (ongoing reference) |
+**Key design decisions:**
 
----
-
-## 🎯 Tailoring the Templates
-
-### Adapting to Your Domain
-
-The templates use a **fashion virtual try-on platform** as an example. To adapt for your project:
-
-1. **Replace Domain-Specific Content:**
-   - Example: "Garment upload" → Your feature (e.g., "Document upload")
-   - Example: "Try-on generation" → Your core feature
-   - Keep the structure, change the details
-
-2. **Add/Remove Sections:**
-   - Add sections for domain-specific needs (e.g., "Payment Processing" for e-commerce)
-   - Remove sections that don't apply (e.g., "3D Models" if not relevant)
-
-3. **Adjust NFRs:**
-   - Customize performance targets for your domain
-   - Add industry-specific compliance (e.g., HIPAA for healthcare)
-
-4. **Scale Complexity:**
-   - Small project: Use simplified version (Sections 1-5, 9)
-   - Medium project: Full template
-   - Large project: Multiple SRS documents (one per subsystem)
-
-### Common Domains and Adaptations
-
-**E-commerce Platform:**
-- Add: Payment processing, inventory management, shipping
-- Emphasize: PCI DSS compliance, transaction throughput
-- NFRs: Order processing time, checkout conversion rate
-
-**Healthcare Application:**
-- Add: Patient records, appointment scheduling, billing
-- Emphasize: HIPAA compliance, data privacy, audit trails
-- NFRs: System uptime, response time for emergencies
-
-**SaaS Web Application:**
-- Add: Multi-tenancy, subscription management, analytics
-- Emphasize: Scalability, API rate limits, data isolation
-- NFRs: Concurrent users, API uptime, data backup
-
-**Mobile App:**
-- Add: Offline mode, push notifications, app store requirements
-- Emphasize: Battery usage, data usage, crash rate
-- NFRs: App size, load time, responsiveness
+| Decision                          | Rationale                                                                         |
+| --------------------------------- | --------------------------------------------------------------------------------- |
+| Express as the single API Gateway | Next.js talks to one surface; Express handles auth, caching, and routing          |
+| Async job queue (Redis + Celery)  | GPU tasks are 10–60s; queuing prevents timeouts and server crashes under load     |
+| Shared Prisma schema              | Both Node and Python clients generated from one `schema.prisma` — no schema drift |
+| Redis dual-purpose                | Acts as both LRU cache for dress searches and FIFO broker for Celery jobs         |
+| PWA offline layer                 | Service Worker + IndexedDB lets users browse their wardrobe without internet      |
 
 ---
 
-## ✅ Quality Checklist for Your SRS
+## Tech Stack
 
-Before finalizing your SRS, verify:
-
-### Content Completeness
-- [ ] All IEEE 830 sections included (or omissions justified)
-- [ ] All functional requirements have unique IDs
-- [ ] All NFRs have quantitative metrics
-- [ ] Use cases cover all major functional requirements
-- [ ] Data model includes all entities
-- [ ] Glossary defines all technical terms
-
-### Quality Attributes
-- [ ] Requirements are SMART (Specific, Measurable, Achievable, Relevant, Testable)
-- [ ] No ambiguous language ("user-friendly", "fast", "many")
-- [ ] Consistent use of SHALL/SHOULD/MAY
-- [ ] No conflicts between requirements
-- [ ] All requirements are necessary (no gold-plating)
-
-### Traceability
-- [ ] RTM created and complete
-- [ ] All requirements traced to design/test
-- [ ] All test cases traced back to requirements
-- [ ] Bidirectional traceability verified
-
-### Review and Approval
-- [ ] Self-review completed using checklist (≥90% score)
-- [ ] Peer review conducted
-- [ ] Stakeholder reviews completed (QA, Engineering, Product, Legal)
-- [ ] All feedback addressed or documented
-- [ ] Approval signatures obtained
-
-### Formatting and Presentation
-- [ ] Document formatted per standards
-- [ ] Consistent numbering (FR-X-YY, UC-XX, TC-XXX)
-- [ ] Version number and date updated
-- [ ] Table of contents auto-generated and hyperlinked
-- [ ] All diagrams labeled with captions
-- [ ] Spell-check and grammar-check passed
+| Layer          | Technology                                      | Version            |
+| -------------- | ----------------------------------------------- | ------------------ |
+| Frontend       | Next.js, React, TypeScript                      | Next 16 · React 19 |
+| 3D Viewer      | Three.js, React Three Fiber / Drei              | three ^0.183       |
+| Styling        | Tailwind CSS, shadcn/ui, Radix UI               | —                  |
+| Animation      | GSAP                                            | ^3.14              |
+| State          | Zustand                                         | ^5                 |
+| File Upload    | UploadThing                                     | ^7                 |
+| API Gateway    | Express.js, TypeScript                          | v5                 |
+| Auth           | Passport.js (Google OAuth2), jose (JWT), Argon2 | —                  |
+| Security       | Arcjet, Helmet                                  | —                  |
+| Logging        | Winston, Morgan                                 | —                  |
+| ORM            | Prisma                                          | ^7                 |
+| AI Engine      | FastAPI, Python                                 | ^0.129 / 3.13+     |
+| Task Queue     | Celery                                          | —                  |
+| LLM            | OpenAI / xAI SDK                                | —                  |
+| AI Agents      | CrewAI                                          | ^0.95              |
+| Vector DB      | ChromaDB                                        | ^1.5               |
+| Cache / Broker | Redis                                           | 7 Alpine           |
+| Database       | PostgreSQL                                      | 16 Alpine          |
+| Containers     | Docker, Docker Compose                          | —                  |
 
 ---
 
-## 🔧 Tools and Technology
+## Core Features
 
-### Recommended Tools
+### Feature A — 3D Avatar Generation
 
-**Document Creation:**
-- Microsoft Word, Google Docs (with styles for headings)
-- Markdown editors (Typora, Obsidian, VS Code) for .md format
-- LaTeX for highly technical documents
+1. User uploads front, side, and back photos via the Next.js UI.
+2. Express saves the images to S3 and enqueues an `AVATAR_GENERATION` job in Redis. A `jobId` is returned immediately (`202 Accepted`).
+3. A Celery worker picks up the job, runs the 3D reconstruction model, saves the resulting `.glb` file to S3, and marks the job `COMPLETED` in PostgreSQL.
+4. Next.js polls Express until the job is done, then streams and renders the model via React Three Fiber.
 
-**Diagramming:**
-- Lucidchart, Draw.io (free), Microsoft Visio
-- PlantUML for text-based diagrams (architecture, sequence)
+### Feature B — AI-Driven Dress Discovery
 
-**Requirements Management:**
-- Jira (with Confluence for documentation)
-- Azure DevOps
-- IBM DOORS (enterprise)
-- Helix RM (enterprise)
+1. User submits a natural-language query (e.g., _"beach wedding dress"_).
+2. FastAPI passes the prompt to an LLM which extracts structured search parameters:
+   ```json
+   {
+   	"style": "floral, light, maxi",
+   	"event": "beach wedding",
+   	"colors": ["yellow", "light blue"]
+   }
+   ```
+3. Express checks Redis for a cached result matching those parameters.
+   - **Cache hit** → return immediately.
+   - **Cache miss** → FastAPI queries PostgreSQL; if empty, scrapes Google via the Serper API, saves results to S3 + PostgreSQL, and caches the response in Redis.
 
-**Collaboration and Review:**
-- Google Docs (real-time collaboration, comments)
-- Microsoft Word (track changes, comments)
-- Confluence (wiki-style, version history)
+### Feature C — Virtual Try-On & Scene Generation
 
-**Version Control:**
-- Git (for Markdown SRS files)
-- SharePoint, OneDrive (for Word documents)
+1. User picks their avatar, a dress, and enters a scene prompt (e.g., _"sunset by the ocean"_).
+2. Express enqueues a `TRY_ON_SCENE` job and returns a `jobId`.
+3. A Celery worker downloads the 3D model and dress image from S3, runs the VTON pipeline and a Stable Diffusion background generator, saves the composite image to S3, and updates the job status.
+4. Next.js retrieves the final image URL and the original store purchase link.
 
-**Traceability:**
-- Jira (link issues to requirements)
-- Excel/Google Sheets (manual RTM)
-- Dedicated tools: Jama Connect, Visure Requirements
+### Feature D — Offline PWA
 
----
-
-## 📚 Best Practices Summary
-
-### Do's ✅
-
-1. **Involve Stakeholders Early**
-   - Collaborate with engineering, QA, UX, business from Day 1
-   - Conduct requirement elicitation workshops
-   - Validate requirements with users
-
-2. **Write Clear, Testable Requirements**
-   - Use SHALL for mandatory requirements
-   - Specify quantitative metrics for NFRs
-   - Ensure each requirement can be verified by a test
-
-3. **Maintain Traceability**
-   - Update RTM whenever requirements change
-   - Link requirements to design docs and test cases
-   - Use tools to automate traceability where possible
-
-4. **Review Frequently**
-   - Peer review before stakeholder review
-   - Use the review checklist systematically
-   - Address all feedback or document decisions
-
-5. **Keep SRS Living Document**
-   - Update as project evolves (not just at start)
-   - Version control all changes
-   - Communicate changes to all stakeholders
-
-6. **Use Templates Consistently**
-   - Follow numbering schemes (FR-X-YY, UC-XX)
-   - Apply formatting standards
-   - Use same terminology across documents
-
-### Don'ts ❌
-
-1. **Don't Mix WHAT with HOW**
-   - SRS defines WHAT system does, not HOW it's implemented
-   - Avoid design decisions like "use PostgreSQL" (unless constraint)
-   - Focus on capabilities, not architecture
-
-2. **Don't Write Vague Requirements**
-   - Avoid "fast", "user-friendly", "many users"
-   - Always quantify: "<200ms", "80% task success", "500 concurrent users"
-
-3. **Don't Skip Non-Functional Requirements**
-   - NFRs are as important as functional requirements
-   - Performance, security, usability define quality
-   - Allocate time to define measurable NFRs
-
-4. **Don't Ignore Traceability**
-   - Orphan requirements lead to missed implementation
-   - Orphan tests waste effort
-   - Maintain bidirectional traceability
-
-5. **Don't Write SRS in Isolation**
-   - Collaborate with cross-functional team
-   - Validate with actual users when possible
-   - Align with business and technical constraints
-
-6. **Don't Forget to Baseline**
-   - Freeze SRS as v1.0 after approval
-   - Use change control for all subsequent changes
-   - Communicate baseline to all teams
+| Mechanism                  | What it caches                                 | How                                              |
+| -------------------------- | ---------------------------------------------- | ------------------------------------------------ |
+| Service Worker + Cache API | `.glb` / `.gltf` 3D model files (5–20 MB)      | Intercepts fetch; serves from cache when offline |
+| IndexedDB                  | Dress catalog JSON, saved favorites            | Written on browse/favorite; read offline         |
+| Background Sync            | Queued mutations (e.g., delete saved dress)    | Replayed silently when device reconnects         |
+| Optimistic UI              | Instant UI feedback before server confirmation | State update precedes API call                   |
 
 ---
 
-## 🆘 Troubleshooting Common Issues
+## Project Structure
 
-### Issue 1: "My SRS is Too Long (200+ pages)"
-
-**Solutions:**
-- Split into multiple documents (one per subsystem)
-- Use summary tables, link to detailed appendices
-- Move use cases to separate document
-- Move detailed data dictionary to appendix
-
-### Issue 2: "Requirements Keep Changing"
-
-**Solutions:**
-- Implement change control board (CCB)
-- Require change requests for all modifications
-- Version control the SRS
-- Clearly mark changes in revision history
-
-### Issue 3: "Stakeholders Can't Agree on Requirements"
-
-**Solutions:**
-- Facilitate requirements workshop
-- Use MoSCoW prioritization (Must, Should, Could, Won't)
-- Document conflicting requirements, escalate to sponsor
-- Focus on MVP scope, defer nice-to-haves
-
-### Issue 4: "Too Many TBDs (To Be Determined)"
-
-**Solutions:**
-- Set deadline to resolve all TBDs
-- Assign owner to each TBD
-- Block SRS approval until critical TBDs resolved
-- Document assumptions if information unavailable
-
-### Issue 5: "Reviewers Provide Conflicting Feedback"
-
-**Solutions:**
-- Consolidate feedback in single document
-- Identify contradictions, escalate to CCB
-- Conduct feedback review meeting
-- Document decisions and rationale
+```
+tryora/
+├── web/                   # Next.js frontend (PWA)
+│   ├── app/               # App Router pages & layouts
+│   ├── components/        # Shared UI components
+│   ├── providers/         # Context providers (auth, theme, GSAP)
+│   ├── store/             # Zustand state slices
+│   ├── hooks/             # Custom React hooks
+│   └── lib/               # Auth helpers, utilities
+│
+├── server/                # Express.js API Gateway
+│   ├── src/
+│   │   ├── controllers/   # Route handlers
+│   │   ├── services/      # Business logic
+│   │   ├── middlewares/   # Auth, rate-limiting, error handling
+│   │   ├── routes/        # Route definitions
+│   │   ├── validations/   # Zod schemas
+│   │   └── utils/         # Shared utilities
+│   ├── prisma/
+│   │   └── schema.prisma  # Single source of truth for all DB models
+│   └── tests/
+│
+├── ai-server/             # FastAPI AI & scraping engine
+│   ├── app/
+│   │   ├── api/           # Route handlers (v1)
+│   │   ├── core/          # Config, logger
+│   │   ├── db/            # Prisma + vector DB connections
+│   │   ├── domains/       # Feature domains (avatar, VTON, discovery)
+│   │   ├── LLM/           # LLM wrappers, structured output
+│   │   ├── schemas/       # Pydantic models
+│   │   └── worker/        # Celery task definitions
+│   └── tests/
+│
+└── docker-compose.yml     # Full-stack orchestration
+```
 
 ---
 
-## 📞 Support and Resources
+## Getting Started
 
-### Getting Help
+### Prerequisites
 
-**For Template Questions:**
-- Review the `SRS_Quick_Reference.md` first
-- Check the example content in `SRS_Template.md`
-- Consult IEEE Std 830-1998 for official guidance
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose v2
+- Node.js 20+ and pnpm/npm (for local development without Docker)
+- Python 3.13+ and [uv](https://github.com/astral-sh/uv) (for local AI server development)
+- An AWS S3 bucket (or compatible, e.g. MinIO for local development)
+- API keys: OpenAI or xAI, Serper
 
-**For Project-Specific Questions:**
-- Engage your Product Owner for scope/priority
-- Consult Engineering Lead for technical feasibility
-- Work with QA Lead for testability review
+### Environment Variables
 
-### Additional Learning Resources
+Copy and populate the environment files for each service before starting:
 
-**Books:**
-- "Software Requirements" by Karl Wiegers
-- "Mastering the Requirements Process" by Suzanne Robertson
-- "User Stories Applied" by Mike Cohn
+```bash
+# API Gateway
+cp server/scripts/env.sh.example server/scripts/env.sh
 
-**Standards:**
-- IEEE 830-1998: Recommended Practice for SRS
-- ISO/IEC 29148: Requirements Engineering
-- IREB CPRE Syllabus: Requirements Engineering
+# Web
+cp web/scripts/env.sh.example web/scripts/env.sh
+```
 
-**Online Courses:**
-- Coursera: "Requirements Engineering" (University of Colorado)
-- Udemy: "Software Requirements for Developers"
-- LinkedIn Learning: "Requirements Engineering Foundations"
+**Core variables required:**
+
+| Variable                                                        | Service           | Description                  |
+| --------------------------------------------------------------- | ----------------- | ---------------------------- |
+| `DATABASE_URL_LOCAL`                                            | server            | PostgreSQL connection string |
+| `REDIS_URL`                                                     | server            | Redis connection string      |
+| `SESSION_SECRET_KEY`                                            | server, web       | Session signing secret       |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`                     | server            | Google OAuth2 credentials    |
+| `OPENAI_API_KEY` or `XAI_API_KEY`                               | ai-server         | LLM provider key             |
+| `SERPER_API_KEY`                                                | ai-server         | Google Search scraping API   |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_S3_BUCKET` | server, ai-server | Object storage               |
+| `BACKEND_URL`                                                   | web               | Express server URL           |
+| `AI_SERVER_URL`                                                 | web, server       | FastAPI server URL           |
+
+### Running with Docker
+
+```bash
+# Create the shared Docker network (first time only)
+docker network create Tryora-network
+
+# Build and start all services
+docker compose up --build
+```
+
+Services will be available at:
+
+| Service               | URL                   |
+| --------------------- | --------------------- |
+| Web (Next.js)         | http://localhost:3000 |
+| API Gateway (Express) | http://localhost:8000 |
+| AI Server (FastAPI)   | http://localhost:8888 |
+| PostgreSQL            | localhost:5433        |
+| Redis                 | localhost:6379        |
+
+### Running Locally
+
+**API Gateway (server/)**
+
+```bash
+cd server
+npm install
+npm run db:gen        # Generate Prisma client
+npm run db:migrate    # Run migrations
+npm run dev           # Start with nodemon
+```
+
+**Web (web/)**
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+**AI Server (ai-server/)**
+
+```bash
+cd ai-server
+uv sync               # Install Python dependencies
+source .venv/bin/activate
+bash scripts/start.sh
+```
 
 ---
 
-## 🔄 Version History
+## Services
 
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | 2026-02-11 | Product Team | Initial template package release |
+### Web (Next.js)
 
----
+- **Port:** 3000
+- App Router with TypeScript and Tailwind CSS
+- 3D model viewer via React Three Fiber and `@react-three/drei`
+- PWA with Service Worker for offline support
+- File uploads via UploadThing
+- Authentication state managed through NextAuth-compatible session providers
 
-## 📄 License and Usage
+### Server (Express.js)
 
-**License:** MIT License (modify freely for your projects)
+- **Port:** 8000
+- Acts as the sole API Gateway — Next.js does not call FastAPI directly
+- JWT and session-based authentication via Passport.js
+- Rate limiting and bot protection via Arcjet
+- Redis-backed job dispatch and dress-search caching
+- Swagger UI available at `/api-docs`
+- Structured logging with Winston
 
-**Attribution:** If you find these templates helpful, attribution is appreciated but not required.
+### AI Server (FastAPI)
 
-**Contributions:** Submit improvements or domain-specific adaptations to: srs-templates@example.com
-
----
-
-## ✨ Final Tips for Success
-
-1. **Start Simple:** Don't try to create the perfect SRS on Day 1. Iterate.
-
-2. **Focus on Value:** Every requirement should add business value. Avoid gold-plating.
-
-3. **Collaborate:** The best SRS is written WITH stakeholders, not FOR them.
-
-4. **Be Testable:** If you can't test it, it's not a good requirement.
-
-5. **Maintain Rigor:** Discipline in requirements leads to quality in product.
-
-6. **Communicate Changes:** When requirements change, tell everyone immediately.
-
-7. **Review Often:** Regular reviews catch issues early.
-
-8. **Use Tools:** Don't manage requirements in email or chat. Use proper tools.
-
-9. **Think User-First:** Requirements should solve user problems, not just list features.
-
-10. **Celebrate Milestones:** Baseline approval is a big achievement. Acknowledge the team's effort.
+- **Port:** 8888
+- Handles all GPU-bound and Python-native tasks
+- LLM integration (OpenAI / xAI) with structured JSON output via Pydantic
+- AI agent orchestration via CrewAI
+- Vector search via ChromaDB
+- Web scraping via Serper API
+- Background task processing via Celery workers consuming from Redis
 
 ---
 
-**Good luck with your Software Requirements Specification!**
+## Database
 
-For questions, feedback, or suggestions for improving these templates, please contact the project team.
+Tryora uses a **single `schema.prisma`** file located in `server/prisma/` to generate both the Node.js Prisma client (for Express) and the Python Prisma client (for FastAPI). This ensures both services operate on an identical, type-safe schema.
+
+**Core models:**
+
+| Model            | Purpose                                                                                           |
+| ---------------- | ------------------------------------------------------------------------------------------------- |
+| `User`           | Authentication, profile                                                                           |
+| `Avatar`         | S3 references for uploaded photos and generated `.glb` model                                      |
+| `Dress`          | Global catalog of scraped dresses (deduplication key)                                             |
+| `UserSavedDress` | Join table for user favorites (synced to IndexedDB)                                               |
+| `AiJob`          | Central job tracker: type, status (`PENDING` → `PROCESSING` → `COMPLETED` / `FAILED`), result URL |
+| `GeneratedScene` | User's gallery of completed VTON composite images                                                 |
+
+```bash
+# Run migrations
+cd server && npm run db:migrate
+
+# Open Prisma Studio
+cd server && npm run db:studio
+```
+
+---
+
+## Offline & PWA
+
+The Service Worker intercepts all fetch calls for `.glb` files and dress thumbnail images and stores them in the browser's **Cache Storage**. The catalog JSON and user favorites are persisted in **IndexedDB**.
+
+When the user is offline:
+
+- Previously loaded 3D avatar models render instantly from local cache.
+- Favorited and recently browsed dresses are fully accessible.
+- Mutations (e.g., deleting a saved dress) are applied optimistically and queued for **Background Sync** — replayed automatically on reconnection.
+
+---
+
+## API Documentation
+
+Interactive Swagger UI is served by the Express server:
+
+```
+http://localhost:8000/api-docs
+```
+
+FastAPI's auto-generated OpenAPI docs:
+
+```
+http://localhost:8888/docs        # Swagger UI
+http://localhost:8888/redoc       # ReDoc
+```
+
+---
+
+## Testing
+
+```bash
+# API Gateway unit & integration tests (Jest)
+cd server && npm test
+
+# AI Server tests (pytest)
+cd ai-server && pytest --cov
+```
+
+Test configuration:
+
+- Server: Jest with `--experimental-vm-modules` for ESM, Supertest for HTTP assertions
+- AI Server: pytest with pytest-cov for coverage reporting
+
+---
+
+## Contributing
+
+1. Fork the repository and create a feature branch from `main`.
+2. Follow the existing code style — ESLint + Prettier are enforced for TypeScript; Ruff for Python.
+3. Write or update tests for any changed behaviour.
+4. Open a pull request with a clear description of the change and its motivation.
 
 ---
 
