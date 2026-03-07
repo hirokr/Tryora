@@ -1,7 +1,3 @@
-Here is the complete API documentation for your system.
-
-Because you are building a distributed system, **Next.js will only ever communicate with Express.js.** Express acts as your API Gateway. Behind the scenes, Express will talk to FastAPI and Redis to do the heavy lifting.
-
 ### The Dual Role of Redis
 
 Before diving into the routes, we must define exactly where Redis sits, because it serves two entirely different purposes in your stack:
@@ -81,6 +77,3 @@ Notice that FastAPI's Try-On and Avatar routes only return a `jobId`. How does E
 1. **Database Polling (Simpler):** When Celery finishes the GPU task, it saves the final `model.glb` or `.jpg` to S3, and updates the MongoDB/Postgres database row for `jobId` to "completed". Express just checks the database when Next.js polls it.
 2. **Webhooks (More Advanced):** When Celery finishes, FastAPI fires an HTTP POST request *back* to Express (e.g., `POST express-server.com/api/webhooks/ai-complete`) to say, "I'm done, here is the data."
 
----
-
-Would you like me to map out the exact database schema (e.g., the exact tables and columns you'll need in PostgreSQL or MongoDB) to support this API architecture and track these AI job states?
