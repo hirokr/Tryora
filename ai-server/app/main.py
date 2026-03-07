@@ -9,6 +9,7 @@ from .db.prisma_connect import lifespan
 from .middleware.secure_keys import checkApiKey
 from .api.v1.health import router as health_router
 from .middleware.audit_log import AuditLogMiddleware
+from .domains.dresses.router import router as dresses_router
 
 # Init FastAPI app
 app = FastAPI(title="Tryora AI server", description="A server for managing AI operations for the Tryora platform", version="1.0.0", lifespan=lifespan)
@@ -38,7 +39,6 @@ protected_router = APIRouter(dependencies=[Depends(checkApiKey)])
 # protected_router.include_router(avatar_router, prefix="/internal/ai")
 # protected_router.include_router(tryon_router,  prefix="/internal/ai")
 # protected_router.include_router(scrape_router, prefix="/internal/ai")
-
-
+protected_router.include_router(dresses_router, prefix="/internal/ai")
 
 app.include_router(protected_router)

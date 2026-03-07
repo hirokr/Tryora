@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     # Firecrawler configuration
     FIRECRAWLER_API_KEY: Optional[str] = Field(default=None, validation_alias="FIRECRAWLER_API_KEY")
 
+    # ScraperAPI configuration (fallback HTML scraper with JS rendering)
+    SCRAPER_API_KEY: str = Field(..., validation_alias="SCRAPERAPI_KEY")
+
+    # Redis configuration (Celery broker + result backend + WebSocket pub/sub)
+    REDIS_URL: str = Field(default="redis://localhost:6379/0", validation_alias="REDIS_URL")
+
     # Tell Pydantic to read from a .env file
     model_config = SettingsConfigDict(
         env_file=".env",

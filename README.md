@@ -54,20 +54,20 @@ Because the AI and 3D generation pipeline involves GPU-bound tasks that can take
 │  Auth · Session · Rate-limiting · Swagger · Redis cache check    │
 └──────────┬──────────────────────────┬────────────────────────────┘
            │ SQL (Prisma)             │ HTTP / Job dispatch
-┌──────────▼──────────┐   ┌──────────▼──────────────────────────┐ │
+┌──────────▼───────────┐   ┌──────────▼──────────────────────────┐ │
 │  PostgreSQL 16       │   │  FastAPI  (AI & Scraping Engine)    │ │
 │                      │   │  :8888                              │ │
-└──────────────────────┘   │  LLM · Serper · CrewAI · ChromaDB  │ │
+└──────────────────────┘   │  LLM · Serper · CrewAI · ChromaDB   │ │
                            └──────┬──────────────────────────────┘ │
 ┌──────────────────────┐          │ Celery tasks                   │
 │  Redis 7              ◄─────────┘                                │
-│  Cache + Job Queue    │                                           │
+│  Cache + Job Queue    │                                          │
 └──────────────────────┘                                           │
-                                                                    │
+                                                                   │
 ┌──────────────────────────────────────────────────────────────────┘
-│  AWS S3 / Compatible Object Storage
-│  User photos · .glb / .gltf models · Generated scene images
-└──────────────────────────────────────────────────────────────────
+│  AWS S3 / Compatible Object Storage                              |      
+│  User photos · .glb / .gltf models · Generated scene images      |   
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 **Key design decisions:**
