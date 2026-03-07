@@ -18,4 +18,5 @@ dependencies = [
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
     "sqlmodel>=0.0.35",
+    "xai-sdk>=1.8.0",
 ]
