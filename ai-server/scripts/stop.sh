@@ -1,0 +1,1 @@
+docker stop tryora-redis tryora-postgres
