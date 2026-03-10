@@ -1,9 +1,9 @@
 [project]
 name = "ai-server"
 version = "0.1.0"
-description = "Add your description here"
+description = "tryora ai server"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11, <3.13" 
 dependencies = [
     "alembic>=1.18.4",
     "apify-client>=2.5.0",
@@ -23,4 +23,12 @@ dependencies = [
     "redis>=5.0.0",
     "sqlmodel>=0.0.35",
     "xai-sdk>=1.8.0",
+    "trimesh>=4.11.3",
+    "numpy>=2.4.3",
+    "scipy>=1.17.1",
+    "pillow>=12.1.1",
+    "pygltflib>=1.16.5",
+    "pyrender>=0.1.45",
+    "smplx>=0.1.28",
+    "xatlas>=0.0.11",
 ]
