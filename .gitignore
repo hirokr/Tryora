@@ -14,6 +14,7 @@ node_modules
 
 # Local Ignore Files
 .ignore
+/generators
 
 # Testing
 coverage

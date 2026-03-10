@@ -2,7 +2,7 @@ datasource db {
   provider = "postgresql"
   // eslint-disable-next-line no-template-curly-in-string
   // eslint-disable-next-line no-undef
-  url      = env("DATABASE_URL") 
+  url      = env("DATABASE_URL")
 }
 
 generator client_py {
@@ -38,6 +38,7 @@ model User {
   processingJobs    ProcessingJob[]
   recommendationLog RecommendationLog[]
   refreshTokens     RefreshToken[]
+  dressSearches     DressSearch[]
 
   @@index([email])
   @@index([oauthProvider, oauthId])
@@ -394,68 +395,135 @@ model ContentModeration {
 
   status ModerationStatus @default(PENDING)
 
-  // ============================================================================
-  // FUTURE FEATURES (Commented Out - Uncomment when implementing)
-  // ============================================================================
-
-  // Social Features (Phase 3)
-  // model UserFollow {
-  //   followerId  String   @map("follower_id") @db.Uuid
-  //   followingId String   @map("following_id") @db.Uuid
-  //   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp
-  //
-  //   follower  User @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
-  //   following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
-  //
-  //   @@id([followerId, followingId])
-  //   @@map("user_follows")
-  // }
-
-  // model OutfitShare {
-  //   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  //   outfitId   String   @map("outfit_id") @db.Uuid
-  //   userId     String   @map("user_id") @db.Uuid
-  //   shareUrl   String   @unique @map("share_url") @db.VarChar(255)
-  //   viewCount  Int      @default(0) @map("view_count") @db.Integer
-  //   likeCount  Int      @default(0) @map("like_count") @db.Integer
-  //   expiresAt  DateTime? @map("expires_at") @db.Timestamp
-  //   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp
-  //
-  //   outfit Outfit @relation(fields: [outfitId], references: [id], onDelete: Cascade)
-  //   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  //
-  //   @@map("outfit_shares")
-  // }
-
-  // E-Commerce Integration (Phase 3)
-  // model Product {
-  //   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  //   garmentId    String?  @map("garment_id") @db.Uuid
-  //   merchantId   String   @map("merchant_id") @db.VarChar(255)
-  //   productUrl   String   @map("product_url") @db.Text
-  //   price        Decimal  @db.Decimal(10, 2)
-  //   currency     String   @db.VarChar(3)
-  //   inStock      Boolean  @default(true) @map("in_stock")
-  //   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp
-  //   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp
-
-  //   garment Garment? @relation(fields: [garmentId], references: [id])
-
-  //   @@map("products")
-  // }
-
-  // AI moderation results
-  aiScore  Float? @map("ai_score") @db.Real // Confidence score
-  aiLabels Json?  @map("ai_labels") // Detected labels/categories
-
-  // Manual review
-  reviewerId  String?   @map("reviewer_id") @db.Uuid
-  reviewNotes String?   @map("review_notes") @db.Text
-  reviewedAt  DateTime? @map("reviewed_at") @db.Timestamp
-
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp
-
-  @@index([status, createdAt])
-  @@index([entityType, entityId])
   @@map("content_moderation")
 }
+
+// ============================================================================
+// DRESS SEARCH & PRODUCT CATALOG
+// ============================================================================
+
+enum SearchStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+
+  @@map("search_status")
+}
+
+/// Represents a single user-initiated dress search session.
+/// Created immediately when the endpoint is hit (status = PENDING),
+/// updated by the Celery worker as it progresses.
+model DressSearch {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// Optional: link to a Tryora user account
+  userId       String?      @map("user_id") @db.Uuid
+  /// Raw user-provided natural-language prompt
+  prompt       String       @db.Text
+  /// Geo-location string supplied by the client (e.g. "Miami, FL")
+  geo          String       @db.VarChar(255)
+  /// LLM-parsed structured parameters stored as JSON (DressSearchParams)
+  parsedParams Json?        @map("parsed_params")
+  /// Celery task ID returned to the frontend immediately
+  taskId       String       @unique @map("task_id") @db.VarChar(255)
+  status       SearchStatus @default(PENDING)
+  /// Human-readable error message if status = FAILED
+  errorMessage String?      @map("error_message") @db.Text
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamp
+  updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamp
+
+  products DressProduct[]
+  user     User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status])
+  @@index([taskId])
+  @@map("dress_searches")
+}
+
+/// A single dress/product result linked to a DressSearch.
+/// Populated by the Celery pipeline from Serper Shopping, ScraperAPI,
+/// and the LLM formatting step.
+model DressProduct {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  searchId     String   @map("search_id") @db.Uuid
+  productName  String   @map("product_name") @db.VarChar(500)
+  price        String?  @db.VarChar(100) // keep as string — may include currency symbol
+  imageUrl     String?  @map("image_url") @db.Text
+  productUrl   String   @map("product_url") @db.Text
+  description  String?  @db.Text
+  brand        String?  @db.VarChar(255)
+  availability String?  @db.VarChar(100)
+  /// Full JSON-LD / Serper product object for audit & reprocessing
+  rawMetadata  Json?    @map("raw_metadata")
+  /// "serper", "scraper", or "cache"
+  source       String?  @db.VarChar(50)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp
+
+  search DressSearch @relation(fields: [searchId], references: [id], onDelete: Cascade)
+
+  @@index([searchId])
+  @@map("dress_products")
+}
+
+// Social Features (Phase 3)
+// model UserFollow {
+//   followerId  String   @map("follower_id") @db.Uuid
+//   followingId String   @map("following_id") @db.Uuid
+//   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp
+//
+//   follower  User @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
+//   following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+//
+//   @@id([followerId, followingId])
+//   @@map("user_follows")
+// }
+
+// model OutfitShare {
+//   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   outfitId   String   @map("outfit_id") @db.Uuid
+//   userId     String   @map("user_id") @db.Uuid
+//   shareUrl   String   @unique @map("share_url") @db.VarChar(255)
+//   viewCount  Int      @default(0) @map("view_count") @db.Integer
+//   likeCount  Int      @default(0) @map("like_count") @db.Integer
+//   expiresAt  DateTime? @map("expires_at") @db.Timestamp
+//   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp
+//
+//   outfit Outfit @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+//   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+//
+//   @@map("outfit_shares")
+// }
+
+// E-Commerce Integration (Phase 3)
+// model Product {
+//   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+//   garmentId    String?  @map("garment_id") @db.Uuid
+//   merchantId   String   @map("merchant_id") @db.VarChar(255)
+//   productUrl   String   @map("product_url") @db.Text
+//   price        Decimal  @db.Decimal(10, 2)
+//   currency     String   @db.VarChar(3)
+//   inStock      Boolean  @default(true) @map("in_stock")
+//   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp
+//   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp
+
+//   garment Garment? @relation(fields: [garmentId], references: [id])
+
+//   @@map("products")
+// }
+
+// AI moderation results
+// aiScore  Float? @map("ai_score") @db.Real // Confidence score
+// aiLabels Json?  @map("ai_labels") // Detected labels/categories
+
+// // Manual review
+// reviewerId  String?   @map("reviewer_id") @db.Uuid
+// reviewNotes String?   @map("review_notes") @db.Text
+// reviewedAt  DateTime? @map("reviewed_at") @db.Timestamp
+
+// createdAt DateTime @default(now()) @map("created_at") @db.Timestamp
+
+// @@index([status, createdAt])
+// @@index([entityType, entityId])
+// @@map("content_moderation")
+// }
