@@ -15,6 +15,7 @@ node_modules
 # Local Ignore Files
 .ignore
 /generators
+2Dto3D-20days.pdf
 
 # Testing
 coverage
