@@ -24,6 +24,7 @@ class Settings(BaseSettings):
 
     serper_api_key: str = ""
     llm_api_key: str = ""
+    hf_space_url: str = ""
 
     prisma_database_url: str = ""
 

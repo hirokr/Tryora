@@ -11,9 +11,12 @@ CC BY-NC-SA 4.0 (non-commercial only).
 
 from __future__ import annotations
 
+import base64
+import json
 import logging
 import os
 import tempfile
+from io import BytesIO
 
 import httpx
 from PIL import Image
@@ -153,6 +156,15 @@ def run_ootdiffusion(
 
     Model: levihsu/OOTDiffusion -- Apache 2.0 licence.
     """
+    hf_space_url = os.getenv("HF_SPACE_URL", "").strip()
+    if hf_space_url:
+        logger.info("Using HF Space for OOTDiffusion inference: %s", hf_space_url)
+        return run_ootdiffusion_via_hf_space(
+            person_image_path=person_image_path,
+            garment_image_path=garment_image_path,
+            hf_space_url=hf_space_url,
+        )
+
     global _ootd_pipeline
 
     if OotdPipeline is None or torch is None:
@@ -180,7 +192,7 @@ def run_ootdiffusion(
             num_inference_steps=steps,
             guidance_scale=2.0,
             num_images_per_prompt=1,
-        )
+        ) 
         return result.images[0]
 
     try:
@@ -190,6 +202,134 @@ def run_ootdiffusion(
             logger.warning("GPU OOM during OOTD inference -- retrying with steps=10")
             return _infer(10)
         raise
+
+
+def _encode_image_as_data_url(image_path: str) -> str:
+    """Encode a local image as a data URL for Gradio HTTP payloads."""
+    ext = os.path.splitext(image_path)[1].lower()
+    mime = "image/png" if ext == ".png" else "image/jpeg"
+    with open(image_path, "rb") as image_file:
+        encoded = base64.b64encode(image_file.read()).decode("utf-8")
+    return f"data:{mime};base64,{encoded}"
+
+
+def _image_from_data_url(data_url: str) -> Image.Image:
+    """Decode a data URL into a PIL image."""
+    if "," not in data_url:
+        raise RuntimeError("Invalid data URL returned by HF Space")
+
+    encoded = data_url.split(",", 1)[1]
+    image_bytes = base64.b64decode(encoded)
+    return Image.open(BytesIO(image_bytes)).convert("RGB")
+
+
+def _download_image(image_url: str) -> Image.Image:
+    """Download an image URL and decode to PIL."""
+    response = httpx.get(image_url, follow_redirects=True, timeout=120)
+    response.raise_for_status()
+    return Image.open(BytesIO(response.content)).convert("RGB")
+
+
+def _extract_hf_image(output_value: object, hf_space_url: str) -> Image.Image:
+    """Extract a PIL image from Gradio output payload formats."""
+    if isinstance(output_value, str):
+        if output_value.startswith("data:image"):
+            return _image_from_data_url(output_value)
+        if output_value.startswith("http://") or output_value.startswith("https://"):
+            return _download_image(output_value)
+
+    if isinstance(output_value, dict):
+        url = output_value.get("url")
+        if isinstance(url, str) and url:
+            return _download_image(url)
+
+        path = output_value.get("path")
+        if isinstance(path, str) and path:
+            if path.startswith("http://") or path.startswith("https://"):
+                return _download_image(path)
+            if path.startswith("/"):
+                base = hf_space_url.rstrip("/")
+                return _download_image(f"{base}{path}")
+
+    raise RuntimeError("Unable to parse image output from HF Space response")
+
+
+def _run_predict_endpoint(hf_space_url: str, person_data: str, garment_data: str) -> Image.Image:
+    """Call the legacy synchronous Gradio endpoint (`/run/predict`)."""
+    endpoint = f"{hf_space_url.rstrip('/')}/run/predict"
+    response = httpx.post(
+        endpoint,
+        json={"data": [person_data, garment_data]},
+        timeout=240,
+    )
+    response.raise_for_status()
+
+    payload = response.json()
+    data = payload.get("data")
+    if not isinstance(data, list) or len(data) == 0:
+        raise RuntimeError("HF Space returned an unexpected /run/predict payload")
+
+    return _extract_hf_image(data[0], hf_space_url)
+
+
+def _run_gradio_queue_endpoint(
+    hf_space_url: str, person_data: str, garment_data: str
+) -> Image.Image:
+    """Call Gradio queue API (`/gradio_api/call/predict`) and fetch result."""
+    base = hf_space_url.rstrip("/")
+    create_call_url = f"{base}/gradio_api/call/predict"
+    create_call_resp = httpx.post(
+        create_call_url,
+        json={"data": [person_data, garment_data]},
+        timeout=120,
+    )
+    create_call_resp.raise_for_status()
+
+    call_payload = create_call_resp.json()
+    event_id = call_payload.get("event_id")
+    if not isinstance(event_id, str) or not event_id:
+        raise RuntimeError("HF Space did not return an event_id for queued call")
+
+    poll_url = f"{base}/gradio_api/call/predict/{event_id}"
+    poll_resp = httpx.get(poll_url, timeout=240)
+    poll_resp.raise_for_status()
+
+    for line in reversed(poll_resp.text.splitlines()):
+        if not line.startswith("data:"):
+            continue
+
+        raw_data = line.replace("data:", "", 1).strip()
+        if not raw_data or raw_data == "[DONE]":
+            continue
+
+        try:
+            decoded = json.loads(raw_data)
+        except json.JSONDecodeError:
+            continue
+
+        if isinstance(decoded, list) and len(decoded) > 0:
+            return _extract_hf_image(decoded[0], hf_space_url)
+
+    raise RuntimeError("No inference result found in HF Space queued response")
+
+
+def run_ootdiffusion_via_hf_space(
+    person_image_path: str,
+    garment_image_path: str,
+    hf_space_url: str,
+) -> Image.Image:
+    """Run OOTDiffusion remotely on a Hugging Face Space using Gradio APIs."""
+    person_data = _encode_image_as_data_url(person_image_path)
+    garment_data = _encode_image_as_data_url(garment_image_path)
+
+    try:
+        return _run_predict_endpoint(hf_space_url, person_data, garment_data)
+    except httpx.HTTPStatusError as exc:
+        # Newer Spaces often use queue endpoints and may return 404 for /run/predict.
+        if exc.response.status_code != 404:
+            raise
+        logger.info("/run/predict unavailable; retrying via queued Gradio API")
+        return _run_gradio_queue_endpoint(hf_space_url, person_data, garment_data)
 
 
 # ── Step 3 ────────────────────────────────────────────────────────────────────

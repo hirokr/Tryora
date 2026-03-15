@@ -154,3 +154,24 @@ def test_run_vton_pipeline_cleans_temp() -> None:
     assert len(tracked_paths) > 0, "No temp files were created during the pipeline"
     for path in tracked_paths:
         assert not os.path.exists(path), f"Temp file was not cleaned up: {path!r}"
+
+
+def test_run_ootdiffusion_uses_hf_space_when_env_set(monkeypatch) -> None:
+    """run_ootdiffusion must offload to HF when HF_SPACE_URL is configured."""
+    from app.services.vton_service import run_ootdiffusion
+
+    monkeypatch.setenv("HF_SPACE_URL", "https://example-space.hf.space")
+    expected = _solid(32, 32, (12, 34, 56))
+
+    with patch(
+        "app.services.vton_service.run_ootdiffusion_via_hf_space",
+        return_value=expected,
+    ) as mock_remote:
+        result = run_ootdiffusion("person.png", "garment.png")
+
+    assert result is expected
+    mock_remote.assert_called_once_with(
+        person_image_path="person.png",
+        garment_image_path="garment.png",
+        hf_space_url="https://example-space.hf.space",
+    )
