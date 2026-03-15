@@ -7,7 +7,10 @@ import tempfile
 import httpx
 import trimesh
 
-from app.services.storage_service import StorageService
+try:
+    from app.services.storage_service import StorageService
+except Exception:  # boto3 / botocore not installed in this environment
+    StorageService = None  # type: ignore[assignment,misc]
 
 try:
     import smplx
@@ -148,7 +151,7 @@ def run_avatar_pipeline(
         temp_files.append(glb_path)
         export_glb(mesh, glb_path)
 
-        storage = StorageService()
+        storage = StorageService() # type: ignore
         object_key = f"avatars/{user_id}/{job_id}/avatar.glb"
         result_url = storage.upload_file(glb_path, object_key)
 
