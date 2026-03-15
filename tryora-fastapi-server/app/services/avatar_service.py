@@ -23,6 +23,8 @@ except ImportError:  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
+_PHOTO_DOWNLOAD_TIMEOUT_SECONDS = 60
+
 # A-pose: left upper arm index 16, right upper arm index 17 in body_pose joints
 # Shoulder abduction ~30 degrees (π/6 radians) rotated about the local z-axis
 _LEFT_SHOULDER_IDX = 16
@@ -105,7 +107,7 @@ def export_glb(mesh: trimesh.Trimesh, output_path: str) -> str:
 
 def _download_photo(client: httpx.Client, url: str, temp_files: list) -> str:
     """Download a photo URL to a temporary file, tracking it in temp_files."""
-    response = client.get(url)
+    response = client.get(url, timeout=_PHOTO_DOWNLOAD_TIMEOUT_SECONDS)
     response.raise_for_status()
 
     suffix = os.path.splitext(url.split("?")[0])[-1] or ".jpg"
@@ -138,7 +140,7 @@ def run_avatar_pipeline(
     """
     temp_files: list[str] = []
     try:
-        with httpx.Client() as client:
+        with httpx.Client(timeout=_PHOTO_DOWNLOAD_TIMEOUT_SECONDS) as client:
             front_path = _download_photo(client, front_url, temp_files)
             side_path = _download_photo(client, side_url, temp_files)
             back_path = _download_photo(client, back_url, temp_files)

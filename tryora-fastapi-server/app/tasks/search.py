@@ -74,12 +74,26 @@ def dress_search_task(job_id: str, payload: dict) -> dict:
 @celery_app.task(name="app.tasks.search.dress_search")
 def dress_search(payload: dict) -> dict:
     parsed = DressSearchPayload(**payload)
-    job_id = payload.get("job_id", "n/a")
+    raw_job_id = payload.get("job_id")
+    job_id = raw_job_id if isinstance(raw_job_id, str) and raw_job_id else "n/a"
     logger.info("Running dress search", extra={"job_id": job_id})
-    service = SearchService()
-    dresses = service.search(parsed.query, parsed.max_results)
-    return {
-        "query": parsed.query,
-        "count": len(dresses),
-        "items": [item.model_dump() for item in dresses],
-    }
+
+    try:
+        service = SearchService()
+        dresses = service.search(parsed.query, parsed.max_results)
+        return {
+            "query": parsed.query,
+            "count": len(dresses),
+            "items": [item.model_dump() for item in dresses],
+        }
+    except Exception as exc:
+        mapped_exc = _map_search_exception(exc)
+        if job_id != "n/a":
+            try:
+                asyncio.run(_set_job_status(job_id, "FAILED", str(mapped_exc)))
+            except JobNotFoundError:
+                logger.exception(
+                    "Failed to update standalone dress_search job status because job was not found",
+                    extra={"job_id": job_id},
+                )
+        raise mapped_exc from exc

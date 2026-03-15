@@ -130,32 +130,47 @@ def vton_task(job_id: str, payload: dict) -> dict:
 
 @celery_app.task(name="app.tasks.vton.try_on_scene")
 def try_on_scene(payload: dict) -> dict:
-    """Legacy task name — delegates to vton_task without DB tracking.
+    """Legacy task name — delegates to vton pipeline.
 
     The /jobs router sends tasks to this name.  It runs the VTON pipeline
-    directly without updating ai_jobs (no job_id is available at this call
-    site).  Use vton_task for full ai_jobs lifecycle management.
+    directly. If ``job_id`` is present in payload, this task also updates
+    ai_jobs status to keep backward compatibility while still tracking
+    failures. Use vton_task for full ai_jobs lifecycle management.
     """
     from app.models.job_schemas import TryOnScenePayload
 
     parsed = TryOnScenePayload(**payload)
-    job_id = payload.get("job_id", "legacy")
+    raw_job_id = payload.get("job_id")
+    tracked_job_id = raw_job_id if isinstance(raw_job_id, str) and raw_job_id else None
+    log_job_id = tracked_job_id or "legacy"
     try:
-        logger.info("Legacy try_on_scene task started", extra={"job_id": job_id})
+        logger.info("Legacy try_on_scene task started", extra={"job_id": log_job_id})
+        if tracked_job_id:
+            asyncio.run(_set_job_status(tracked_job_id, "PROCESSING"))
         result_url = run_vton_pipeline(
-            job_id=job_id,
+            job_id=log_job_id,
             user_id=parsed.user_id,
             avatar_glb_url=parsed.avatar_glb_url,
             dress_image_url=parsed.dress_image_url,
             scene_prompt=payload.get("scene_prompt", ""),
         )
-        logger.info("Legacy try_on_scene task completed", extra={"job_id": job_id})
+        if tracked_job_id:
+            asyncio.run(_set_job_status(tracked_job_id, "COMPLETED", result_url))
+        logger.info("Legacy try_on_scene task completed", extra={"job_id": log_job_id})
         return {"status": "COMPLETED", "result_url": result_url}
     except Exception as exc:
         mapped_exc = _map_vton_exception(exc)
         logger.exception(
             "try_on_scene legacy task failed",
-            extra={"job_id": job_id},
+            extra={"job_id": log_job_id},
             exc_info=exc,
         )
+        if tracked_job_id:
+            try:
+                asyncio.run(_set_job_status(tracked_job_id, "FAILED"))
+            except JobNotFoundError:
+                logger.exception(
+                    "Failed to update legacy VTON job status because job was not found",
+                    extra={"job_id": log_job_id},
+                )
         raise mapped_exc from exc
