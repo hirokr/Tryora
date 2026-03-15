@@ -1,0 +1,18 @@
+# Tryora FastAPI Server Notes
+
+## Purpose
+
+- FastAPI entrypoint with job enqueue endpoint and health checks.
+- Celery worker for avatar, VTON, and search tasks.
+
+## Local Dev
+
+- API: `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`
+- Worker: `celery -A app.core.celery_app.celery_app worker -l info`
+- Tests: `pytest -q`
+
+## Conventions
+
+- Keep business logic in `app/services/`.
+- Keep task wrappers in `app/tasks/` and keep them thin.
+- Load all runtime config from `app/core/config.py`.
