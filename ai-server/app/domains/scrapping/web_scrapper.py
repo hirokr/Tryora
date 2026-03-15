@@ -9,10 +9,10 @@ from typing import Optional
 
 from crewai_tools import SerperScrapeWebsiteTool
 
-from ...core.config import settings
-from ...core.logger import logger
-from ...db.vectordb import VectorStore
-from ..embeddings.openapi import open_api
+from app.core.config import settings
+from app.core.logger import logger
+from app.db.vectordb import VectorStore
+from app.domains.embeddings.openapi import open_api
 from apify_client import ApifyClient
 
 # ---------------------------------------------------------------------------

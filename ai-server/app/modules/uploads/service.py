@@ -1,0 +1,1 @@
+"""Uploads service placeholder for the normalized backend layout."""

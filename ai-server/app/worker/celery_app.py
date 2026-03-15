@@ -22,7 +22,7 @@ celery_app = Celery(
     broker=settings.REDIS_URL,
     backend=settings.REDIS_URL,
     # Explicitly list task modules so auto-discovery is not needed
-    include=["app.worker.dress_tasks"],
+    include=["app.worker.dress_tasks", "app.tasks.search"],
 )
 
 celery_app.conf.update(

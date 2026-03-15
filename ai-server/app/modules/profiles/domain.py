@@ -1,0 +1,1 @@
+"""Profiles domain models placeholder for the normalized backend layout."""

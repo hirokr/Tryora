@@ -1,7 +1,7 @@
 import httpx
 import json
 from typing import List, Dict, Any
-from ...core.config import settings 
+from app.core.config import settings 
 
 class WebSearch:
     def __init__(self):

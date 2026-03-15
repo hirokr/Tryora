@@ -39,6 +39,20 @@ class Settings(BaseSettings):
     # Redis configuration (Celery broker + result backend + WebSocket pub/sub)
     REDIS_URL: str = Field(default="redis://localhost:6379/0", validation_alias="REDIS_URL")
 
+    # Tripo configuration
+    TRIPO_API_KEY: Optional[str] = Field(default=None, validation_alias="TRIPO_API_KEY")
+    OFFLINE_MODE: bool = Field(default=False, validation_alias="OFFLINE_MODE")
+
+    # JWT configuration
+    JWT_SECRET: str = Field(default="changeme", validation_alias="JWT_SECRET")
+    JWT_ALGORITHM: str = Field(default="HS256", validation_alias="JWT_ALGORITHM")
+
+    # AWS configuration
+    AWS_ACCESS_KEY_ID: Optional[str] = Field(default=None, validation_alias="AWS_ACCESS_KEY_ID")
+    AWS_SECRET_ACCESS_KEY: Optional[str] = Field(default=None, validation_alias="AWS_SECRET_ACCESS_KEY")
+    AWS_REGION: str = Field(default="us-east-1", validation_alias="AWS_REGION")
+    S3_BUCKET: str = Field(default="tryora-assets", validation_alias="S3_BUCKET")
+
     # Tell Pydantic to read from a .env file
     model_config = SettingsConfigDict(
         env_file=".env",

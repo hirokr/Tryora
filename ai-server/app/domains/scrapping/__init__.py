@@ -1,0 +1,1 @@
+"""Web scrapping domain module."""

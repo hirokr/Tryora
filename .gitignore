@@ -15,6 +15,8 @@ node_modules
 # Local Ignore Files
 .ignore
 /generators
+second-ai-server
+2Dto3D-20days.pdf
 
 # Testing
 coverage
