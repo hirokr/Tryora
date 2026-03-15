@@ -1,0 +1,1 @@
+"""xAI client placeholder for the normalized backend layout."""

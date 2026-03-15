@@ -1,0 +1,1 @@
+SENSITIVE_FIELDS = {"ethnicity", "gender", "location", "preferences"}

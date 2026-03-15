@@ -1,4 +1,4 @@
-from ...core.config import settings
+from app.core.config import settings
 from xai_sdk import Client
 from xai_sdk.chat import user, system
 import os
