@@ -1,7 +1,6 @@
-from celery.result import AsyncResult
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 
-from app.core.celery_app import celery_app
+from app.core.celery_app import celery_health_check
 
 
 router = APIRouter(tags=["health"])
@@ -13,9 +12,10 @@ def health_check() -> dict[str, str]:
 
 
 @router.get("/health/celery")
-def celery_health_check() -> dict[str, str]:
-    inspector = celery_app.control.inspect(timeout=1.0)
-    ping_result = inspector.ping() if inspector else None
-    if ping_result:
-        return {"status": "ok"}
-    return {"status": "degraded"}
+def celery_broker_health(response: Response) -> dict[str, str]:
+    ok, detail = celery_health_check()
+    if ok:
+        return {"broker": "ok"}
+
+    response.status_code = 503
+    return {"broker": "error", "detail": detail or "Unknown error"}

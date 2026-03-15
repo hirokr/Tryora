@@ -27,3 +27,20 @@ class JobEnqueueRequest(BaseModel):
 class JobEnqueueResponse(BaseModel):
     job_id: str
     status: str
+
+
+class JobRequest(BaseModel):
+    jobType: str
+    payload: dict[str, Any]
+
+
+class JobResponse(BaseModel):
+    jobId: str
+    status: str
+
+
+class JobStatusResponse(BaseModel):
+    jobId: str
+    status: str
+    resultUrl: str | None = None
+    error: str | None = None
