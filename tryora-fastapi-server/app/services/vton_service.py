@@ -18,6 +18,12 @@ import tempfile
 import httpx
 from PIL import Image
 
+from app.services.garment_classifier import classify_garment
+from app.services.south_asian_preprocessing import (
+    get_south_asian_scene_prefix,
+    south_asian_preprocessing,
+)
+
 try:
     import pyrender
     import trimesh
@@ -321,12 +327,40 @@ def run_vton_pipeline(
             fh.write(garment_resp.content)
         logger.info("[%s] Garment downloaded -> %s", job_id, garment_path)
 
+        # ── 2.1 Classify garment and apply South Asian preprocessing ───────
+        classification = classify_garment(garment_path)
+        logger.info("[%s] Garment classification: %s", job_id, classification)
+
+        garment_type = str(classification.get("type", "unknown"))
+        confidence = float(classification.get("confidence", 0.0))
+        is_south_asian = bool(classification.get("is_south_asian", False))
+
+        processed_scene_prompt = scene_prompt
+        if is_south_asian:
+            garment_image = Image.open(garment_path).convert("RGB")
+            preprocessed = south_asian_preprocessing(
+                garment_image=garment_image,
+                garment_type=garment_type,
+                confidence=confidence,
+            )
+            preprocessed.save(garment_path)
+            logger.info(
+                "[%s] South Asian preprocessing applied (type=%s, confidence=%.4f)",
+                job_id,
+                garment_type,
+                confidence,
+            )
+
+            scene_prefix = get_south_asian_scene_prefix(garment_type)
+            if scene_prefix:
+                processed_scene_prompt = f"{scene_prefix}, {scene_prompt}"
+
         # ── 3. OOTDiffusion try-on ───────────────────────────────────────────
         vton_image = run_ootdiffusion(avatar_render_path, garment_path)
         logger.info("[%s] OOTDiffusion inference complete", job_id)
 
         # ── 4. Generate background ───────────────────────────────────────────
-        bg_image = generate_background(scene_prompt)
+        bg_image = generate_background(processed_scene_prompt)
         logger.info("[%s] Background generated", job_id)
 
         # ── 5. Composite ─────────────────────────────────────────────────────

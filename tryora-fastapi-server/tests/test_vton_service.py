@@ -124,6 +124,10 @@ def test_run_vton_pipeline_cleans_temp() -> None:
 
     with (
         patch("app.services.vton_service.render_avatar_to_image"),
+        patch(
+            "app.services.vton_service.classify_garment",
+            return_value={"type": "unknown", "is_south_asian": False, "confidence": 0.0},
+        ),
         patch("app.services.vton_service.run_ootdiffusion", return_value=dummy_img),
         patch("app.services.vton_service.generate_background", return_value=dummy_img),
         patch(
