@@ -1,14 +1,17 @@
 # app/infrastructure/db
 
-## Purpose
-Implementation details for external systems (DB, cache, queue, storage, vector stores, external APIs).
+## Responsibility
 
-## What This Folder Should Hold
-- Code and resources directly related to this folder's responsibility.
-- Files with clear module boundaries and minimal hidden side effects.
-- Tests or fixtures close to behavior where practical.
+Manages the database layer for the application, including Prisma ORM connection setup and the repository pattern for data access. Repositories encapsulate all queries against Postgres tables (DressSearch, GenerationJob, DressTemplate, UserProfile, ConsentRecord).
 
-## Support Expectations
-- Hide vendor-specific details behind clear interfaces used by services/modules.
-- Keep imports stable and explicit (e.g., app.<area>...) to reduce coupling.
-- Add documentation when introducing new subfolders or conventions.
+## Files
+
+| File | Description |
+|---|---|
+| `__init__.py` | Package marker. |
+
+## Subdirectories
+
+| Directory | Description |
+|---|---|
+| `repositories/` | Repository modules with typed async query functions for each domain entity. |

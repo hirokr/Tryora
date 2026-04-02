@@ -1,14 +1,18 @@
 # app/modules/uploads
 
-## Purpose
-Feature modules that package API, schemas, policies, domain logic, and workers by capability.
+## Responsibility
 
-## What This Folder Should Hold
-- Code and resources directly related to this folder's responsibility.
-- Files with clear module boundaries and minimal hidden side effects.
-- Tests or fixtures close to behavior where practical.
+Handles file uploads for dress images — validates uploaded images, stores them in S3 with content-addressed keys (SHA-256), and provides presigned URLs for client-side uploads. Supports the pipeline where user-uploaded dress images are converted to 3D models.
 
-## Support Expectations
-- Treat each feature as a vertical slice with clear boundaries and minimal coupling.
-- Keep imports stable and explicit (e.g., app.<area>...) to reduce coupling.
-- Add documentation when introducing new subfolders or conventions.
+## Files
+
+| File | Description |
+|---|---|
+| `__init__.py` | Package marker. |
+| `api.py` | FastAPI router — endpoints for initiating uploads, receiving presigned URLs, and confirming upload completion. |
+| `schemas.py` | Pydantic models for upload request/response payloads. |
+| `service.py` | Business logic for upload validation, S3 key generation, and upload lifecycle management. |
+
+## Subdirectories
+
+None.

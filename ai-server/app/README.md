@@ -1,14 +1,27 @@
-# app
+# app/
 
-## Purpose
-Primary application package for API, business logic, and infrastructure bindings.
+Application root. Contains the FastAPI entrypoint and top-level package structure.
 
-## What This Folder Should Hold
-- Code and resources directly related to this folder's responsibility.
-- Files with clear module boundaries and minimal hidden side effects.
-- Tests or fixtures close to behavior where practical.
+## Responsibility
 
-## Support Expectations
-- Expose stable modules and keep wiring in entrypoints while domain logic lives in focused packages.
-- Keep imports stable and explicit (e.g., app.<area>...) to reduce coupling.
-- Add documentation when introducing new subfolders or conventions.
+Bootstraps the FastAPI application, wires all routers, and defines the package namespace.
+
+## Files
+
+| File | Description |
+|---|---|
+| `main.py` | FastAPI app factory (`create_app()`). Wires middleware, routers, and root endpoints. |
+| `__init__.py` | Package marker. |
+
+## Subdirectories
+
+| Directory | Responsibility |
+|---|---|
+| `api/` | Router composition — aggregates all feature routers into a single tree. |
+| `config/` | Settings and logging — single source of truth for env vars and log config. |
+| `db/` | Database layer — Prisma client connection, lifespan, and vector DB helpers. |
+| `infrastructure/` | Platform services — cache, storage, external APIs, queue, vector store, DB repositories. |
+| `middleware/` | HTTP middleware — audit logging, request ID, rate limiting. |
+| `modules/` | Feature modules — dress search, try-on, profiles, templates, uploads, consent, prebake. |
+| `schemas/` | Shared Pydantic models used across multiple modules. |
+| `shared/` | Cross-cutting utilities — security (API key, JWT), exceptions, response helpers. |

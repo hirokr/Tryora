@@ -1,14 +1,20 @@
 # app/modules/profiles
 
-## Purpose
-Feature modules that package API, schemas, policies, domain logic, and workers by capability.
+## Responsibility
 
-## What This Folder Should Hold
-- Code and resources directly related to this folder's responsibility.
-- Files with clear module boundaries and minimal hidden side effects.
-- Tests or fixtures close to behavior where practical.
+Manages user profiles including body measurements, preferences, gender, ethnicity, and location. Enforces consent gating — profile fields are only accessible when the user has granted the corresponding consent type. Provides CRUD operations with ownership checks.
 
-## Support Expectations
-- Treat each feature as a vertical slice with clear boundaries and minimal coupling.
-- Keep imports stable and explicit (e.g., app.<area>...) to reduce coupling.
-- Add documentation when introducing new subfolders or conventions.
+## Files
+
+| File | Description |
+|---|---|
+| `__init__.py` | Package marker. |
+| `api.py` | FastAPI router — endpoints for profile CRUD, measurement updates, and preference management with consent verification. |
+| `domain.py` | Domain models and business rules for UserProfile entities. |
+| `policies.py` | Authorization policies that gate profile access based on consent records. |
+| `schemas.py` | Pydantic models for profile request/response payloads. |
+| `service.py` | Business logic layer for profile operations, delegating to repositories and consent checks. |
+
+## Subdirectories
+
+None.

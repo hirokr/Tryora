@@ -1,14 +1,23 @@
 # app/modules
 
-## Purpose
-Feature modules that package API, schemas, policies, domain logic, and workers by capability.
+## Responsibility
 
-## What This Folder Should Hold
-- Code and resources directly related to this folder's responsibility.
-- Files with clear module boundaries and minimal hidden side effects.
-- Tests or fixtures close to behavior where practical.
+Contains all feature modules, each packaging its own API routes, schemas, domain logic, service layer, and Celery workers as a vertical slice. Modules are self-contained and communicate through shared infrastructure rather than direct cross-module imports.
 
-## Support Expectations
-- Treat each feature as a vertical slice with clear boundaries and minimal coupling.
-- Keep imports stable and explicit (e.g., app.<area>...) to reduce coupling.
-- Add documentation when introducing new subfolders or conventions.
+## Files
+
+| File | Description |
+|---|---|
+| `__init__.py` | Package marker. |
+
+## Subdirectories
+
+| Directory | Description |
+|---|---|
+| `consent/` | User consent management — tracks consent records for data collection (body measurements, location, preferences). |
+| `dress_search/` | Dress search pipeline — LLM parsing of natural language prompts, Google Shopping search, product enrichment, and semantic caching. |
+| `prebake/` | Pre-bake pipeline — pre-generates GLB dress variants for templates across body types to enable instant try-on. |
+| `profiles/` | User profile management — CRUD for user profiles, body measurements, and preferences with consent gating. |
+| `templates/` | Dress template management — browsing, selection, and caching of pre-built 3D dress templates. |
+| `try_on/` | Virtual try-on orchestration — coordinates 3D model generation, GLB dressing, and job status tracking. |
+| `uploads/` | File upload handling — dress image uploads, validation, and S3 storage. |

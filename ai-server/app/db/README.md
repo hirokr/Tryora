@@ -1,14 +1,35 @@
-# app/db
+# app/db/
 
-## Purpose
-Database integration layer and query helpers.
+Database connection and Prisma client lifecycle management.
 
-## What This Folder Should Hold
-- Code and resources directly related to this folder's responsibility.
-- Files with clear module boundaries and minimal hidden side effects.
-- Tests or fixtures close to behavior where practical.
+## Responsibility
 
-## Support Expectations
-- Encapsulate persistence concerns, connections, and reusable query logic.
-- Keep imports stable and explicit (e.g., app.<area>...) to reduce coupling.
-- Add documentation when introducing new subfolders or conventions.
+Manages the Prisma client instance and provides the FastAPI lifespan for database connection/disconnection. Also holds the legacy ChromaDB vector store connection helper.
+
+## Files
+
+| File | Description |
+|---|---|
+| `prisma_connect.py` | Prisma client singleton + FastAPI lifespan. Initializes Redis cache on `app.state` during startup. |
+| `session.py` | Database session helpers (if any). |
+| `base.py` | Base model definitions and placeholder query helpers. |
+| `vectordb.py` | ChromaDB vector store connection wrapper. |
+| `__init__.py` | Package marker — re-exports `db` and `lifespan` from `prisma_connect`. |
+
+## Subdirectories
+
+| Directory | Description |
+|---|---|
+| `repositories/` *(in `infrastructure/db/`)* | Typed repository pattern for Prisma queries. |
+
+## Usage
+
+```python
+from app.db.prisma_connect import db, lifespan
+
+# In FastAPI app
+app = FastAPI(lifespan=lifespan)
+
+# In route handlers (via dependency injection)
+from app.api.deps import get_db
+```

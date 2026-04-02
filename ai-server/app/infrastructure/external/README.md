@@ -1,14 +1,20 @@
 # app/infrastructure/external
 
-## Purpose
-Implementation details for external systems (DB, cache, queue, storage, vector stores, external APIs).
+## Responsibility
 
-## What This Folder Should Hold
-- Code and resources directly related to this folder's responsibility.
-- Files with clear module boundaries and minimal hidden side effects.
-- Tests or fixtures close to behavior where practical.
+Provides async HTTP client wrappers for all third-party APIs the application integrates with: LLM providers (OpenRouter, xAI), product data services (Serper Shopping, ScraperAPI), and 3D model generation (Tripo AI). Each client handles its own error handling, retries, and offline mode support.
 
-## Support Expectations
-- Hide vendor-specific details behind clear interfaces used by services/modules.
-- Keep imports stable and explicit (e.g., app.<area>...) to reduce coupling.
-- Add documentation when introducing new subfolders or conventions.
+## Files
+
+| File | Description |
+|---|---|
+| `__init__.py` | Package marker. |
+| `openrouter_client.py` | `OpenAPI` class — OpenAI-compatible client for OpenRouter embeddings API (used for ChromaDB cache embeddings). |
+| `scraper_api_client.py` | `ScraperAPIService` — fetches product pages via ScraperAPI and extracts Schema.org/Product JSON-LD structured data (fallback enrichment when Serper lacks descriptions). |
+| `serper_client.py` | `SerperShoppingService` — async client for Serper Google Shopping API, returns normalized product dicts. |
+| `tripo_client.py` | `TripoClient` — async Tripo AI API client for image-to-3D model generation, with task polling, GLB download, exponential backoff on 429s, and offline mode support. |
+| `xai_client.py` | Placeholder for xAI client integration. |
+
+## Subdirectories
+
+None.

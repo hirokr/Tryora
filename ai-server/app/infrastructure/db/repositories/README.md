@@ -1,14 +1,19 @@
 # app/infrastructure/db/repositories
 
-## Purpose
-Implementation details for external systems (DB, cache, queue, storage, vector stores, external APIs).
+## Responsibility
 
-## What This Folder Should Hold
-- Code and resources directly related to this folder's responsibility.
-- Files with clear module boundaries and minimal hidden side effects.
-- Tests or fixtures close to behavior where practical.
+Contains repository modules that encapsulate all Prisma ORM queries for the application's domain entities. Each repository provides async functions for CRUD operations with ownership checks to prevent enumeration attacks.
 
-## Support Expectations
-- Hide vendor-specific details behind clear interfaces used by services/modules.
-- Keep imports stable and explicit (e.g., app.<area>...) to reduce coupling.
-- Add documentation when introducing new subfolders or conventions.
+## Files
+
+| File | Description |
+|---|---|
+| `__init__.py` | Package marker. |
+| `dress_search_repo.py` | Placeholder for DressSearch queries (normalized backend layout). |
+| `generation_job_repo.py` | Queries for `GenerationJob` — `get_job_by_id()` with ownership check, `list_user_jobs()` for recent history. |
+| `template_repo.py` | Queries for `DressTemplate` — paginated `list_templates()` with category/body_label/ethnicity filters, `get_template_by_id()`. |
+| `user_profile_repo.py` | Queries for `UserProfile` — `get_profile()`, `upsert_profile()`, and `check_consent()` for consent record verification. |
+
+## Subdirectories
+
+None.

@@ -1,14 +1,16 @@
 # app/infrastructure/vectorstore
 
-## Purpose
-Implementation details for external systems (DB, cache, queue, storage, vector stores, external APIs).
+## Responsibility
 
-## What This Folder Should Hold
-- Code and resources directly related to this folder's responsibility.
-- Files with clear module boundaries and minimal hidden side effects.
-- Tests or fixtures close to behavior where practical.
+Provides a ChromaDB vector store wrapper for embedding-based semantic caching of dress search queries. Stores serialized `DressSearchParams` JSON alongside product metadata, enabling cache hits when similar search queries are repeated.
 
-## Support Expectations
-- Hide vendor-specific details behind clear interfaces used by services/modules.
-- Keep imports stable and explicit (e.g., app.<area>...) to reduce coupling.
-- Add documentation when introducing new subfolders or conventions.
+## Files
+
+| File | Description |
+|---|---|
+| `__init__.py` | Package marker. |
+| `chroma.py` | `VectorStore` class — ChromaDB HTTP client wrapper with `add_document()`, `search()` (nearest-neighbor by embedding), and `delete_document()` methods. |
+
+## Subdirectories
+
+None.
