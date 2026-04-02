@@ -19,11 +19,11 @@ from typing import TYPE_CHECKING
 import httpx
 from fastapi import HTTPException, status
 
-from app.core.config import settings
+from app.config.settings import settings
 
 if TYPE_CHECKING:
-    from app.services.cache import CacheService
-    from app.services.s3_service import S3Service
+    from app.infrastructure.cache.cache_service import CacheService
+    from app.infrastructure.storage.s3 import S3Service
 
 logger = logging.getLogger("api_security")
 
@@ -67,7 +67,7 @@ async def load_glb(
 
     if source == GlbSource.S3:
         if s3 is None:
-            from app.services.s3_service import s3_service as _s3
+            from app.infrastructure.storage.s3 import s3_service as _s3
             s3 = _s3
         # path format: bucket/key
         bucket, key = path.split("/", 1)

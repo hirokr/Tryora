@@ -31,15 +31,15 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.api.deps import get_db
-from app.middleware.secure_keys import checkApiKey
+from app.shared.security.api_key import checkApiKey
 from app.schemas.dress_search import (
     BudgetRange,
     DressProductSchema,
     DressSearchParams,
     SearchDressesRequest,
 )
-from app.utils.query_builder import build_shopping_query
-from app.utils.scraper_api import ScraperAPIService
+from app.modules.dress_search.query_builder import build_shopping_query
+from app.modules.dress_search.scraper_api import ScraperAPIService
 
 # ── Auth header used in all protected-route calls ────────────────────────────
 AUTH = {"X-API-Key": "server_a_key"}

@@ -13,9 +13,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
-from app.middleware.auth import TokenPayload, get_current_user
-from app.models.template import UploadDressImageResponse
-from app.services.s3_service import s3_service
+from app.shared.security.jwt import TokenPayload, get_current_user
+from app.modules.templates.schemas import UploadDressImageResponse
+from app.infrastructure.storage.s3 import s3_service
 
 logger = logging.getLogger("api.uploads")
 

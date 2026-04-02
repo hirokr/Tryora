@@ -1,6 +1,6 @@
 import time
 from starlette.middleware.base import BaseHTTPMiddleware
-from app.core.logger import logger
+from app.config.logging import logger
 
 class AuditLogMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):

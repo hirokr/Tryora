@@ -17,15 +17,15 @@ from fastapi.responses import RedirectResponse
 
 from app.api.deps import get_db
 from app.config.settings import settings
-from app.db.queries.jobs import get_job_by_id, list_user_jobs
-from app.middleware.auth import TokenPayload, get_current_user
+from app.infrastructure.db.repositories.generation_job_repo import get_job_by_id, list_user_jobs
+from app.shared.security.jwt import TokenPayload, get_current_user
 from app.modules.try_on.schemas import (
     JobStatusResponse,
     TryOnJobResponse,
     TryOnRequest,
 )
 from app.modules.try_on.service import create_job, get_job
-from app.services.s3_service import s3_service
+from app.infrastructure.storage.s3 import s3_service
 
 logger = logging.getLogger("api.try_on")
 

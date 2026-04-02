@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from prisma import Prisma
-    from app.services.cache import CacheService
+    from app.infrastructure.cache.cache_service import CacheService
 
 logger = logging.getLogger("api.try_on")
 

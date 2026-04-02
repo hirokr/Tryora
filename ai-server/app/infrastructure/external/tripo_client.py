@@ -18,7 +18,7 @@ import logging
 
 import httpx
 
-from app.core.config import settings
+from app.config.settings import settings
 
 logger = logging.getLogger("api_security")
 

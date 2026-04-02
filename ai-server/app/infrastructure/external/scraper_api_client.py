@@ -29,7 +29,7 @@ from typing import Any, Optional
 import httpx
 from bs4 import BeautifulSoup
 
-from app.core.config import settings
+from app.config.settings import settings
 
 logger = logging.getLogger("api_security")
 

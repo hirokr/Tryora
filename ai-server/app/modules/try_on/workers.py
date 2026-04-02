@@ -23,7 +23,7 @@ from typing import Any
 
 from celery import Task
 
-from app.worker.celery_app import celery_app
+from app.infrastructure.queue.celery_app import celery_app
 
 logger = logging.getLogger("worker.try_on")
 
@@ -33,17 +33,17 @@ logger = logging.getLogger("worker.try_on")
 
 
 async def _run_pipeline(job_id: str, user_id: str) -> None:  # noqa: C901
-    from app.core.config import settings
+    from app.config.settings import settings
     from app.db.prisma_connect import db
-    from app.db.queries.jobs import get_job_by_id
-    from app.db.queries.profile import get_profile
-    from app.services.body_classifier import classify_body_label
-    from app.services.cache import CacheService
-    from app.services.consent_service import check_all_consents
-    from app.services.job_service import update_job_status
-    from app.services.s3_service import s3_service
-    from app.services.template_selector import select_best_template
-    from app.services.tripo_client import OfflineModeError, TripoAPIError, TripoTaskFailed, tripo_client
+    from app.infrastructure.db.repositories.generation_job_repo import get_job_by_id
+    from app.infrastructure.db.repositories.profile import get_profile
+    from app.modules.try_on.body_classifier import classify_body_label
+    from app.infrastructure.cache.cache_service import CacheService
+    from app.modules.consent.service import check_all_consents
+    from app.modules.try_on.service import update_job_status
+    from app.infrastructure.storage.s3 import s3_service
+    from app.modules.templates.selector import select_best_template
+    from app.infrastructure.external.tripo_client import OfflineModeError, TripoAPIError, TripoTaskFailed, tripo_client
 
     redis_client = None
     cache = None
@@ -100,7 +100,7 @@ async def _run_pipeline(job_id: str, user_id: str) -> None:  # noqa: C901
     dress_source_uri: str | None = None
 
     if job.templateDressId:
-        from app.db.queries.templates import get_template_by_id
+        from app.infrastructure.db.repositories.template_repo import get_template_by_id
         template = await get_template_by_id(job.templateDressId, db)
         if template:
             dress_source_uri = template.glbSource or None
@@ -180,7 +180,7 @@ async def _run_pipeline(job_id: str, user_id: str) -> None:  # noqa: C901
 
     except OfflineModeError:
         logger.info("Offline mode: loading placeholder GLB for job %s", job_id)
-        from app.services.glb_loader import load_glb
+        from app.infrastructure.storage.glb_loader import load_glb
         placeholder_uri = f"local:{settings.LOCAL_GLB_DIR}/placeholder.glb"
         try:
             glb_bytes = await load_glb(placeholder_uri, cache=cache, s3=s3_service)
@@ -220,8 +220,8 @@ async def _run_pipeline(job_id: str, user_id: str) -> None:  # noqa: C901
 
 
 async def _finish_from_bytes(job_id, user_id, glb_bytes, db, cache, s3_service, settings) -> None:
-    from app.services.job_service import update_job_status
-    from app.services.s3_service import S3Service
+    from app.modules.try_on.service import update_job_status
+    from app.infrastructure.storage.s3 import S3Service
 
     # ── Step 9: upload result to S3 ──────────────────────────────────────────
     s3_key = s3_service.key_try_on_result(user_id, job_id)

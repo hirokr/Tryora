@@ -7,7 +7,7 @@ from prisma import Prisma
 from app.config.settings import settings
 from app.infrastructure.cache.cache_service import CacheService
 from app.infrastructure.cache.redis import get_redis_client
-from app.core.logger import logger
+from app.config.logging import logger
 
 # Ensure DATABASE_URL is visible to the Prisma client at import time
 os.environ.setdefault("DATABASE_URL", settings.DATABASE_URL)

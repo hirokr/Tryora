@@ -10,7 +10,7 @@ WebSocket broadcasting.
 
 Import this module everywhere you need to dispatch or query tasks:
 ::
-    from app.worker.celery_app import celery_app
+    from app.infrastructure.queue.celery_app import celery_app
 """
 
 from celery import Celery

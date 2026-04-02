@@ -14,12 +14,12 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request,
 from fastapi.responses import Response, StreamingResponse
 
 from app.api.deps import get_db
-from app.db.queries.templates import get_template_by_id, list_templates
-from app.middleware.auth import TokenPayload, get_current_user
-from app.models.template import DressTemplateListResponse, DressTemplateResponse
-from app.services.cache import CacheService
-from app.services.glb_loader import load_glb
-from app.services.s3_service import s3_service
+from app.infrastructure.db.repositories.template_repo import get_template_by_id, list_templates
+from app.shared.security.jwt import TokenPayload, get_current_user
+from app.modules.templates.schemas import DressTemplateListResponse, DressTemplateResponse
+from app.infrastructure.cache.cache_service import CacheService
+from app.infrastructure.storage.glb_loader import load_glb
+from app.infrastructure.storage.s3 import s3_service
 
 logger = logging.getLogger("api.templates")
 

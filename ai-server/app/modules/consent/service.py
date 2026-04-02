@@ -18,8 +18,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from prisma import Prisma
-    from app.services.cache import CacheService
-    from app.services.s3_service import S3Service
+    from app.infrastructure.cache.cache_service import CacheService
+    from app.infrastructure.storage.s3 import S3Service
 
 logger = logging.getLogger("api_security")
 
