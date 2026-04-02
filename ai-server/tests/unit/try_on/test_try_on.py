@@ -30,15 +30,15 @@ class TestSubmitTryOn:
         mock_cache.check_and_increment_global_rate = AsyncMock(return_value=(True, 1))
 
         with (
-            patch("app.api.try_on.create_job", AsyncMock(return_value=mock_job)),
-            patch("app.api.try_on.s3_service"),
-            patch("app.workers.try_on_task.run_try_on") as mock_task,
+            patch("app.modules.try_on.api.create_job", AsyncMock(return_value=mock_job)),
+            patch("app.modules.try_on.api.s3_service"),
+            patch("app.modules.try_on.workers.run_try_on") as mock_task,
             patch("app.db.prisma_connect.db"),
         ):
             mock_task.delay = MagicMock()
             resp = await async_client.post(
                 "/api/3d/try-on",
-                json={"templateDressId": "tmpl-1"},
+                json={"avatarId": "avatar-1", "templateDressId": "tmpl-1"},
                 headers={"Authorization": f"Bearer {valid_token}"},
             )
 
@@ -56,7 +56,7 @@ class TestSubmitTryOn:
         with patch("app.db.prisma_connect.db"):
             resp = await async_client.post(
                 "/api/3d/try-on",
-                json={"templateDressId": "tmpl-1"},
+                json={"avatarId": "avatar-1", "templateDressId": "tmpl-1"},
                 headers={"Authorization": f"Bearer {valid_token}"},
             )
 
@@ -81,7 +81,7 @@ class TestGetJobStatus:
         }
 
         with (
-            patch("app.api.try_on.get_job", AsyncMock(return_value=job_data)),
+            patch("app.modules.try_on.api.get_job", AsyncMock(return_value=job_data)),
             patch("app.db.prisma_connect.db"),
         ):
             resp = await async_client.get(
@@ -99,7 +99,7 @@ class TestGetJobStatus:
         self, async_client: AsyncClient, valid_token: str
     ):
         with (
-            patch("app.api.try_on.get_job", AsyncMock(return_value=None)),
+            patch("app.modules.try_on.api.get_job", AsyncMock(return_value=None)),
             patch("app.db.prisma_connect.db"),
         ):
             resp = await async_client.get(
@@ -123,8 +123,8 @@ class TestGetJobResult:
         }
 
         with (
-            patch("app.api.try_on.get_job", AsyncMock(return_value=job_data)),
-            patch("app.api.try_on.s3_service", mock_s3),
+            patch("app.modules.try_on.api.get_job", AsyncMock(return_value=job_data)),
+            patch("app.modules.try_on.api.s3_service", mock_s3),
             patch("app.db.prisma_connect.db"),
         ):
             resp = await async_client.get(
@@ -147,7 +147,7 @@ class TestGetJobResult:
         }
 
         with (
-            patch("app.api.try_on.get_job", AsyncMock(return_value=job_data)),
+            patch("app.modules.try_on.api.get_job", AsyncMock(return_value=job_data)),
             patch("app.db.prisma_connect.db"),
         ):
             resp = await async_client.get(

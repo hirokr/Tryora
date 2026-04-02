@@ -33,10 +33,10 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisco
 from fastapi.responses import StreamingResponse
 
 from app.api.deps import get_db
-from app.core.config import settings
+from app.config.settings import settings
 from app.schemas.dress_search import SearchDressesRequest, SearchDressesResponse
-from app.worker.celery_app import celery_app
-from app.worker.dress_tasks import process_dress_search
+from app.infrastructure.queue.celery_app import celery_app
+from app.modules.dress_search.workers import process_dress_search
 
 logger = logging.getLogger("api_security")
 
@@ -53,6 +53,7 @@ _STREAM_TIMEOUT_S: float = 180.0
 # ---------------------------------------------------------------------------
 # POST /search-dresses
 # ---------------------------------------------------------------------------
+
 
 @router.post(
     "/search-dresses",
@@ -147,6 +148,7 @@ async def search_dresses(
 # WebSocket /ws/status/{task_id}
 # ---------------------------------------------------------------------------
 
+
 @router.websocket("/ws/status/{task_id}")
 async def websocket_search_status(
     websocket: WebSocket,
@@ -175,7 +177,9 @@ async def websocket_search_status(
                 await websocket.send_text(json.dumps(result))
             else:
                 await websocket.send_text(
-                    json.dumps({"task_id": task_id, "status": "COMPLETED", "products": []})
+                    json.dumps(
+                        {"task_id": task_id, "status": "COMPLETED", "products": []}
+                    )
                 )
             await websocket.close()
             return
@@ -224,11 +228,13 @@ async def websocket_search_status(
 
         # Stream timeout reached
         await websocket.send_text(
-            json.dumps({
-                "task_id": task_id,
-                "status": "TIMEOUT",
-                "error": "No result received within the time limit. Check back via the status endpoint.",
-            })
+            json.dumps(
+                {
+                    "task_id": task_id,
+                    "status": "TIMEOUT",
+                    "error": "No result received within the time limit. Check back via the status endpoint.",
+                }
+            )
         )
         await websocket.close()
 
@@ -251,6 +257,7 @@ async def websocket_search_status(
 # ---------------------------------------------------------------------------
 # SSE /sse/status/{task_id}  (optional alternative to WebSocket)
 # ---------------------------------------------------------------------------
+
 
 @router.get(
     "/sse/status/{task_id}",
@@ -298,11 +305,13 @@ async def sse_search_status(task_id: str) -> StreamingResponse:
                 yield ": heartbeat\n\n"
                 await asyncio.sleep(0.5)
 
-            timeout_payload = json.dumps({
-                "task_id": task_id,
-                "status": "TIMEOUT",
-                "error": "Result not ready within the time limit.",
-            })
+            timeout_payload = json.dumps(
+                {
+                    "task_id": task_id,
+                    "status": "TIMEOUT",
+                    "error": "Result not ready within the time limit.",
+                }
+            )
             yield f"data: {timeout_payload}\n\n"
 
         finally:

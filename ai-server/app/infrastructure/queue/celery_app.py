@@ -15,7 +15,7 @@ Import this module everywhere you need to dispatch or query tasks:
 
 from celery import Celery
 
-from app.core.config import settings
+from app.config.settings import settings
 
 celery_app = Celery(
     "tryora_ai",
@@ -23,9 +23,9 @@ celery_app = Celery(
     backend=settings.REDIS_URL,
     # Explicitly list task modules so auto-discovery is not needed
     include=[
-        "app.worker.dress_tasks",
-        "app.workers.try_on_task",
-        "app.workers.prebake_task",
+        "app.modules.dress_search.workers",
+        "app.modules.try_on.workers",
+        "app.modules.prebake.workers",
     ],
 )
 
@@ -34,19 +34,15 @@ celery_app.conf.update(
     task_serializer="json",
     accept_content=["json"],
     result_serializer="json",
-
     # ---- Timezone ----
     timezone="UTC",
     enable_utc=True,
-
     # ---- Reliability ----
     task_track_started=True,
-    task_acks_late=True,         # ack only after the task body runs
+    task_acks_late=True,  # ack only after the task body runs
     worker_prefetch_multiplier=1,  # one task at a time per worker process
-
     # ---- Result TTL — keep results 24 h for WebSocket late-joiners ----
     result_expires=86_400,
-
     # ---- Rate limits (per worker) ----
     # Protects against hammering Serper / ScraperAPI / xAI
     task_annotations={

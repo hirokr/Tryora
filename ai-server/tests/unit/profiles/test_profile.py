@@ -1,6 +1,7 @@
 """
 test_profile.py — integration-style tests for /api/profile/* endpoints
 """
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -42,8 +43,11 @@ class TestGetProfile:
         empty_profile.consentAt = None
 
         with (
-            patch("app.api.profile.get_profile", AsyncMock(return_value=None)),
-            patch("app.api.profile.upsert_profile", AsyncMock(return_value=empty_profile)),
+            patch("app.modules.profiles.api.get_profile", AsyncMock(return_value=None)),
+            patch(
+                "app.modules.profiles.api.upsert_profile",
+                AsyncMock(return_value=empty_profile),
+            ),
             patch("app.db.prisma_connect.db"),
         ):
             resp = await async_client.get(
@@ -80,8 +84,13 @@ class TestUpdateProfile:
         updated.consentAt = None
 
         with (
-            patch("app.api.profile.get_profile", AsyncMock(return_value=updated)),
-            patch("app.api.profile.upsert_profile", AsyncMock(return_value=updated)),
+            patch(
+                "app.modules.profiles.api.get_profile", AsyncMock(return_value=updated)
+            ),
+            patch(
+                "app.modules.profiles.api.upsert_profile",
+                AsyncMock(return_value=updated),
+            ),
             patch("app.db.prisma_connect.db"),
         ):
             resp = await async_client.put(
@@ -97,8 +106,13 @@ class TestUpdateProfile:
         self, async_client: AsyncClient, valid_token: str
     ):
         with (
-            patch("app.api.profile.get_profile", AsyncMock(return_value=MagicMock())),
-            patch("app.api.profile.check_consent", AsyncMock(return_value=False)),
+            patch(
+                "app.modules.profiles.api.get_profile",
+                AsyncMock(return_value=MagicMock()),
+            ),
+            patch(
+                "app.modules.profiles.api.check_consent", AsyncMock(return_value=False)
+            ),
             patch("app.db.prisma_connect.db"),
         ):
             resp = await async_client.put(
@@ -120,7 +134,10 @@ class TestConsent:
             "recordedAt": "2025-01-01T00:00:00Z",
         }
         with (
-            patch("app.api.profile.record_consent", AsyncMock(return_value=consent_result)),
+            patch(
+                "app.modules.profiles.api.record_consent",
+                AsyncMock(return_value=consent_result),
+            ),
             patch("app.db.prisma_connect.db"),
         ):
             resp = await async_client.post(

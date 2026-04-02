@@ -350,11 +350,11 @@ class TestSearchDressesEndpoint:
 
         patches = [
             patch(
-                "app.domains.dresses.router.process_dress_search.apply_async",
+                "app.modules.dress_search.api.process_dress_search.apply_async",
                 return_value=MagicMock(id=task_id_override),
             ),
             patch(
-                "app.domains.dresses.router.uuid4",
+                "app.modules.dress_search.api.uuid4",
                 return_value=MagicMock(__str__=lambda s: task_id_override),
             ),
         ]
@@ -399,10 +399,10 @@ class TestSearchDressesEndpoint:
     def test_success_dispatches_celery_task(self):
         mock_db = _build_mock_db()
         with patch(
-                 "app.domains.dresses.router.process_dress_search.apply_async",
+                 "app.modules.dress_search.api.process_dress_search.apply_async",
              ) as mock_apply, \
              patch(
-                 "app.domains.dresses.router.uuid4",
+                 "app.modules.dress_search.api.uuid4",
                  return_value=MagicMock(__str__=lambda s: MOCK_TASK_ID),
              ):
             async def _override_get_db():
@@ -460,7 +460,7 @@ class TestSearchDressesEndpoint:
         mock_db = _build_mock_db()
         mock_db.dresssearch.create = AsyncMock(side_effect=Exception("DB connection lost"))
 
-        with patch("app.domains.dresses.router.process_dress_search.apply_async"):
+        with patch("app.modules.dress_search.api.process_dress_search.apply_async"):
             async def _override_get_db():
                 yield mock_db
             app.dependency_overrides[get_db] = _override_get_db
@@ -477,11 +477,11 @@ class TestSearchDressesEndpoint:
         mock_db = _build_mock_db()
 
         with patch(
-                 "app.domains.dresses.router.process_dress_search.apply_async",
+                 "app.modules.dress_search.api.process_dress_search.apply_async",
                  side_effect=Exception("Redis unavailable"),
              ), \
              patch(
-                 "app.domains.dresses.router.uuid4",
+                 "app.modules.dress_search.api.uuid4",
                  return_value=MagicMock(__str__=lambda s: MOCK_TASK_ID),
              ):
             async def _override_get_db():
@@ -524,7 +524,7 @@ class TestSseEndpoint:
         mock_async_result.result = expected_payload
 
         with patch(
-                 "app.domains.dresses.router.celery_app.AsyncResult",
+                 "app.modules.dress_search.api.celery_app.AsyncResult",
                  return_value=mock_async_result,
              ):
             client = TestClient(app)
@@ -588,7 +588,7 @@ class TestWebSocketEndpoint:
         mock_async_result.result = expected_payload
 
         with patch(
-                 "app.domains.dresses.router.celery_app.AsyncResult",
+                 "app.modules.dress_search.api.celery_app.AsyncResult",
                  return_value=mock_async_result,
              ):
             client = TestClient(app)
@@ -634,11 +634,11 @@ class TestWebSocketEndpoint:
         mock_redis_client.aclose = AsyncMock()
 
         with patch(
-                 "app.domains.dresses.router.celery_app.AsyncResult",
+                 "app.modules.dress_search.api.celery_app.AsyncResult",
                  return_value=mock_async_result,
              ), \
              patch(
-                 "app.domains.dresses.router.aioredis.from_url",
+                 "app.modules.dress_search.api.aioredis.from_url",
                  return_value=mock_redis_client,
              ):
             client = TestClient(app)
@@ -687,7 +687,7 @@ class TestPipeline:
 
     def setup_method(self):
         """Build common mock objects shared across pipeline tests."""
-        # Prisma db mock — used via app.worker.dress_tasks.db
+        # Prisma db mock — used via app.modules.dress_search.workers.db
         self.mock_db = _build_mock_db()
 
         # LLM parser — synchronous
@@ -731,25 +731,25 @@ class TestPipeline:
     def _pipeline_patches(self):
         """Return a list of active context managers for all external deps."""
         return [
-            patch("app.worker.dress_tasks.db", self.mock_db),
+            patch("app.modules.dress_search.workers.db", self.mock_db),
             patch(
-                "app.worker.dress_tasks.llm_parser.parse_prompt",
+                "app.modules.dress_search.workers.llm_parser.parse_prompt",
                 self.mock_parser,
             ),
             patch(
-                "app.worker.dress_tasks.open_api.get_embeddings",
+                "app.modules.dress_search.workers.open_api.get_embeddings",
                 new_callable=lambda: (lambda *a, **kw: AsyncMock(return_value=self.mock_embedding)()),
             ),
             patch(
-                "app.worker.dress_tasks.serper_shopping.search",
+                "app.modules.dress_search.workers.serper_shopping.search",
                 new_callable=lambda: (lambda *a, **kw: AsyncMock(return_value=self.mock_serper_items)()),
             ),
             patch(
-                "app.worker.dress_tasks.scraper_api.extract_json_ld",
+                "app.modules.dress_search.workers.scraper_api.extract_json_ld",
                 new_callable=lambda: (lambda *a, **kw: AsyncMock(return_value=None)()),
             ),
             patch(
-                "app.worker.dress_tasks.llm_formatter.format_product",
+                "app.modules.dress_search.workers.llm_formatter.format_product",
                 self.mock_formatter,
             ),
         ]
@@ -767,7 +767,7 @@ class TestPipeline:
         Apply all standard patches plus any extras, then run _run_pipeline.
         Returns the result dict.
         """
-        from app.worker.dress_tasks import _run_pipeline
+        from app.modules.dress_search.workers import _run_pipeline
 
         vs = vs_override or self.mock_vs
 
@@ -777,12 +777,12 @@ class TestPipeline:
         mock_scraper = AsyncMock(return_value=None)
 
         patches = [
-            patch("app.worker.dress_tasks.db", self.mock_db),
-            patch("app.worker.dress_tasks.llm_parser.parse_prompt", self.mock_parser),
-            patch("app.worker.dress_tasks.open_api.get_embeddings", mock_get_emb),
-            patch("app.worker.dress_tasks.serper_shopping.search", mock_serper),
-            patch("app.worker.dress_tasks.scraper_api.extract_json_ld", mock_scraper),
-            patch("app.worker.dress_tasks.llm_formatter.format_product", self.mock_formatter),
+            patch("app.modules.dress_search.workers.db", self.mock_db),
+            patch("app.modules.dress_search.workers.llm_parser.parse_prompt", self.mock_parser),
+            patch("app.modules.dress_search.workers.open_api.get_embeddings", mock_get_emb),
+            patch("app.modules.dress_search.workers.serper_shopping.search", mock_serper),
+            patch("app.modules.dress_search.workers.scraper_api.extract_json_ld", mock_scraper),
+            patch("app.modules.dress_search.workers.llm_formatter.format_product", self.mock_formatter),
         ]
         if extra_patches:
             patches.extend(extra_patches)
@@ -864,8 +864,8 @@ class TestPipeline:
 
         result = self._run_pipeline_with_mocks(
             extra_patches=[
-                patch("app.worker.dress_tasks.serper_shopping.search", mock_serper),
-                patch("app.worker.dress_tasks.scraper_api.extract_json_ld", mock_scraper),
+                patch("app.modules.dress_search.workers.serper_shopping.search", mock_serper),
+                patch("app.modules.dress_search.workers.scraper_api.extract_json_ld", mock_scraper),
             ]
         )
 
@@ -905,15 +905,15 @@ class TestPipeline:
         mock_serper = AsyncMock(return_value=serper_no_desc)
         mock_scraper = AsyncMock(return_value=json_ld_result)
 
-        from app.worker.dress_tasks import _run_pipeline
+        from app.modules.dress_search.workers import _run_pipeline
         mock_get_emb = AsyncMock(return_value=self.mock_embedding)
 
-        with patch("app.worker.dress_tasks.db", self.mock_db), \
-             patch("app.worker.dress_tasks.llm_parser.parse_prompt", self.mock_parser), \
-             patch("app.worker.dress_tasks.open_api.get_embeddings", mock_get_emb), \
-             patch("app.worker.dress_tasks.serper_shopping.search", mock_serper), \
-             patch("app.worker.dress_tasks.scraper_api.extract_json_ld", mock_scraper), \
-             patch("app.worker.dress_tasks.llm_formatter.format_product", self.mock_formatter):
+        with patch("app.modules.dress_search.workers.db", self.mock_db), \
+             patch("app.modules.dress_search.workers.llm_parser.parse_prompt", self.mock_parser), \
+             patch("app.modules.dress_search.workers.open_api.get_embeddings", mock_get_emb), \
+             patch("app.modules.dress_search.workers.serper_shopping.search", mock_serper), \
+             patch("app.modules.dress_search.workers.scraper_api.extract_json_ld", mock_scraper), \
+             patch("app.modules.dress_search.workers.llm_formatter.format_product", self.mock_formatter):
             result = self._run(
                 _run_pipeline(MOCK_SEARCH_ID, MOCK_TASK_ID, "beach wedding maxi", "Miami, FL", self.mock_vs)
             )
@@ -933,12 +933,12 @@ class TestPipeline:
         """
         failing_parser = MagicMock(side_effect=RuntimeError("xAI API unavailable"))
 
-        from app.worker.dress_tasks import _run_pipeline
+        from app.modules.dress_search.workers import _run_pipeline
         mock_get_emb = AsyncMock(return_value=self.mock_embedding)
 
-        with patch("app.worker.dress_tasks.db", self.mock_db), \
-             patch("app.worker.dress_tasks.llm_parser.parse_prompt", failing_parser), \
-             patch("app.worker.dress_tasks.open_api.get_embeddings", mock_get_emb), \
+        with patch("app.modules.dress_search.workers.db", self.mock_db), \
+             patch("app.modules.dress_search.workers.llm_parser.parse_prompt", failing_parser), \
+             patch("app.modules.dress_search.workers.open_api.get_embeddings", mock_get_emb), \
              pytest.raises(RuntimeError, match="xAI API unavailable"):
             self._run(
                 _run_pipeline(MOCK_SEARCH_ID, MOCK_TASK_ID, "beach wedding maxi", "Miami, FL", self.mock_vs)
@@ -956,15 +956,15 @@ class TestPipeline:
         mock_serper = AsyncMock(return_value=[])
         mock_scraper = AsyncMock(return_value=None)
 
-        from app.worker.dress_tasks import _run_pipeline
+        from app.modules.dress_search.workers import _run_pipeline
         mock_get_emb = AsyncMock(return_value=self.mock_embedding)
 
-        with patch("app.worker.dress_tasks.db", self.mock_db), \
-             patch("app.worker.dress_tasks.llm_parser.parse_prompt", self.mock_parser), \
-             patch("app.worker.dress_tasks.open_api.get_embeddings", mock_get_emb), \
-             patch("app.worker.dress_tasks.serper_shopping.search", mock_serper), \
-             patch("app.worker.dress_tasks.scraper_api.extract_json_ld", mock_scraper), \
-             patch("app.worker.dress_tasks.llm_formatter.format_product", self.mock_formatter):
+        with patch("app.modules.dress_search.workers.db", self.mock_db), \
+             patch("app.modules.dress_search.workers.llm_parser.parse_prompt", self.mock_parser), \
+             patch("app.modules.dress_search.workers.open_api.get_embeddings", mock_get_emb), \
+             patch("app.modules.dress_search.workers.serper_shopping.search", mock_serper), \
+             patch("app.modules.dress_search.workers.scraper_api.extract_json_ld", mock_scraper), \
+             patch("app.modules.dress_search.workers.llm_formatter.format_product", self.mock_formatter):
             result = self._run(
                 _run_pipeline(MOCK_SEARCH_ID, MOCK_TASK_ID, "beach wedding maxi", "Miami, FL", self.mock_vs)
             )
@@ -1001,7 +1001,7 @@ class TestPipeline:
         enrichments (when json_ld is truthy), so we mock the scraper to
         return a valid JSON-LD result for each call.
         """
-        from app.worker.dress_tasks import _MAX_SCRAPER_FALLBACKS
+        from app.modules.dress_search.workers import _MAX_SCRAPER_FALLBACKS
 
         # Build N+2 items without descriptions
         many_items = [
@@ -1024,15 +1024,15 @@ class TestPipeline:
             "description": "Beautiful dress",
         })
 
-        from app.worker.dress_tasks import _run_pipeline
+        from app.modules.dress_search.workers import _run_pipeline
         mock_get_emb = AsyncMock(return_value=self.mock_embedding)
 
-        with patch("app.worker.dress_tasks.db", self.mock_db), \
-             patch("app.worker.dress_tasks.llm_parser.parse_prompt", self.mock_parser), \
-             patch("app.worker.dress_tasks.open_api.get_embeddings", mock_get_emb), \
-             patch("app.worker.dress_tasks.serper_shopping.search", mock_serper), \
-             patch("app.worker.dress_tasks.scraper_api.extract_json_ld", mock_scraper), \
-             patch("app.worker.dress_tasks.llm_formatter.format_product", self.mock_formatter):
+        with patch("app.modules.dress_search.workers.db", self.mock_db), \
+             patch("app.modules.dress_search.workers.llm_parser.parse_prompt", self.mock_parser), \
+             patch("app.modules.dress_search.workers.open_api.get_embeddings", mock_get_emb), \
+             patch("app.modules.dress_search.workers.serper_shopping.search", mock_serper), \
+             patch("app.modules.dress_search.workers.scraper_api.extract_json_ld", mock_scraper), \
+             patch("app.modules.dress_search.workers.llm_formatter.format_product", self.mock_formatter):
             self._run(
                 _run_pipeline(MOCK_SEARCH_ID, MOCK_TASK_ID, "beach maxi", "Miami, FL", self.mock_vs)
             )
