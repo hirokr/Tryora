@@ -6,6 +6,7 @@ GET    /api/3d/jobs               — list user's jobs
 GET    /api/3d/jobs/{jobId}       — poll job status
 GET    /api/3d/jobs/{jobId}/result — 302 → presigned S3 URL for finished GLB
 """
+
 from __future__ import annotations
 
 import logging
@@ -15,13 +16,16 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 
 from app.api.deps import get_db
-from app.core.config import settings
-from app.db.queries.jobs import get_job_by_id, list_user_jobs
-from app.middleware.auth import TokenPayload, get_current_user
-from app.models.try_on import JobStatusResponse, TryOnJobResponse, TryOnRequest
-from app.services.cache import CacheService
-from app.services.job_service import create_job, get_job
-from app.services.s3_service import s3_service
+from app.config.settings import settings
+from app.infrastructure.db.repositories.generation_job_repo import get_job_by_id, list_user_jobs
+from app.shared.security.jwt import TokenPayload, get_current_user
+from app.modules.try_on.schemas import (
+    JobStatusResponse,
+    TryOnJobResponse,
+    TryOnRequest,
+)
+from app.modules.try_on.service import create_job, get_job
+from app.infrastructure.storage.s3 import s3_service
 
 logger = logging.getLogger("api.try_on")
 
@@ -30,14 +34,15 @@ router = APIRouter(tags=["3D Try-On"])
 _PRESIGNED_TTL = 900  # 15 minutes
 
 
-def _get_cache(request: Request) -> CacheService:
-    cache: CacheService | None = getattr(request.app.state, "cache", None)
+def _get_cache(request: Request):
+    cache = getattr(request.app.state, "cache", None)
     if cache is None:
         raise HTTPException(status_code=503, detail="Cache service unavailable")
     return cache
 
 
 # ── POST /api/3d/try-on -------------------------------------------------------
+
 
 @router.post(
     "/3d/try-on",
@@ -78,9 +83,9 @@ async def submit_try_on(
     try:
         job = await create_job(
             user_id=current_user.user_id,
+            db=db,
             template_dress_id=body.templateDressId,
             user_image_s3_key=body.userImageS3Key,
-            db=db,
             cache=cache,
         )
     except Exception as exc:
@@ -89,46 +94,56 @@ async def submit_try_on(
 
     # Enqueue Celery task
     try:
-        from app.workers.try_on_task import run_try_on  # deferred to avoid circular import
+        from app.modules.try_on.workers import run_try_on
+
         run_try_on.delay(job.id, current_user.user_id)
     except Exception as exc:
         logger.exception("Failed to enqueue task for job %s", job.id)
-        # Job remains PENDING — client can poll; we still return 202
-        logger.warning("Task queue unavailable; job %s will not progress until queue recovers", job.id)
+        logger.warning(
+            "Task queue unavailable; job %s will not progress until queue recovers",
+            job.id,
+        )
 
+    created_at = (
+        job.createdAt.isoformat()
+        if hasattr(job.createdAt, "isoformat")
+        else str(job.createdAt)
+    )
     return TryOnJobResponse(
         jobId=job.id,
         status=job.status,
-        createdAt=job.createdAt,
+        createdAt=created_at,
     )
 
 
 # ── GET /api/3d/jobs ----------------------------------------------------------
+
 
 @router.get(
     "/3d/jobs",
     summary="List all jobs for the authenticated user",
 )
 async def get_user_jobs(
+    request: Request,
+    current_user: Annotated[TokenPayload, Depends(get_current_user)],
+    db=Depends(get_db),
     page: int = 1,
     page_size: int = 20,
-    current_user: Annotated[TokenPayload, Depends(get_current_user)] = None,
-    db=Depends(get_db),
 ):
     if page < 1:
         page = 1
     if not (1 <= page_size <= 100):
         page_size = 20
 
-    jobs = await list_user_jobs(current_user.user_id, db, page=page, page_size=page_size)
+    jobs = await list_user_jobs(current_user.user_id, db, limit=page_size)
     return {
         "jobs": [
             {
                 "jobId": j.id,
                 "status": j.status,
                 "createdAt": j.createdAt,
-                "completedAt": j.completedAt,
-                "error": j.error,
+                "completedAt": getattr(j, "completedAt", None),
+                "error": getattr(j, "errorMessage", None),
             }
             for j in jobs
         ],
@@ -138,6 +153,7 @@ async def get_user_jobs(
 
 
 # ── GET /api/3d/jobs/{jobId} --------------------------------------------------
+
 
 @router.get(
     "/3d/jobs/{job_id}",
@@ -152,22 +168,25 @@ async def get_job_status(
 ) -> JobStatusResponse:
     cache = _get_cache(request)
 
-    job_data = await get_job(job_id=job_id, user_id=current_user.user_id, db=db, cache=cache)
+    job_data = await get_job(
+        job_id=job_id, user_id=current_user.user_id, db=db, cache=cache
+    )
     if not job_data:
         raise HTTPException(status_code=404, detail="Job not found")
 
     return JobStatusResponse(
         jobId=job_data["id"],
         status=job_data["status"],
-        progress=job_data.get("progress"),
-        resultS3Key=job_data.get("resultS3Key"),
-        error=job_data.get("error"),
+        progress=job_data.get("progress", 0),
+        currentStage=job_data.get("currentStage"),
+        errorMessage=job_data.get("errorMessage"),
         createdAt=job_data["createdAt"],
         completedAt=job_data.get("completedAt"),
     )
 
 
 # ── GET /api/3d/jobs/{jobId}/result -------------------------------------------
+
 
 @router.get(
     "/3d/jobs/{job_id}/result",
@@ -182,7 +201,9 @@ async def get_job_result(
 ) -> RedirectResponse:
     cache = _get_cache(request)
 
-    job_data = await get_job(job_id=job_id, user_id=current_user.user_id, db=db, cache=cache)
+    job_data = await get_job(
+        job_id=job_id, user_id=current_user.user_id, db=db, cache=cache
+    )
     if not job_data:
         raise HTTPException(status_code=404, detail="Job not found")
 
@@ -194,14 +215,18 @@ async def get_job_result(
 
     result_key = job_data.get("resultS3Key")
     if not result_key:
-        raise HTTPException(status_code=500, detail="Result key missing from completed job")
+        raise HTTPException(
+            status_code=500, detail="Result key missing from completed job"
+        )
 
     try:
         presigned = await s3_service.generate_presigned_url(
-            object_key=result_key, ttl=_PRESIGNED_TTL
+            result_key, ttl=_PRESIGNED_TTL
         )
     except Exception as exc:
         logger.exception("Presign failed for job %s key %s", job_id, result_key)
-        raise HTTPException(status_code=500, detail="Could not generate result URL") from exc
+        raise HTTPException(
+            status_code=500, detail="Could not generate result URL"
+        ) from exc
 
     return RedirectResponse(url=presigned, status_code=status.HTTP_302_FOUND)

@@ -1,1 +1,0 @@
-"""Embeddings domain module."""

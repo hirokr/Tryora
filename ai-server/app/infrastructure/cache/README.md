@@ -1,14 +1,18 @@
 # app/infrastructure/cache
 
-## Purpose
-Implementation details for external systems (DB, cache, queue, storage, vector stores, external APIs).
+## Responsibility
 
-## What This Folder Should Hold
-- Code and resources directly related to this folder's responsibility.
-- Files with clear module boundaries and minimal hidden side effects.
-- Tests or fixtures close to behavior where practical.
+Provides an async Redis-backed cache service used as the L1 cache tier for GLB 3D model bytes, job status JSON, rate-limit counters, and template selection results. All methods gracefully degrade on Redis errors since cache misses are non-fatal.
 
-## Support Expectations
-- Hide vendor-specific details behind clear interfaces used by services/modules.
-- Keep imports stable and explicit (e.g., app.<area>...) to reduce coupling.
-- Add documentation when introducing new subfolders or conventions.
+## Files
+
+| File | Description |
+|---|---|
+| `__init__.py` | Package marker. |
+| `cache_service.py` | `CacheService` class — async Redis operations for GLB bytes, job status, rate limiting, generic JSON, pattern-based deletion, and cache stats. |
+| `keys.py` | Standalone key-builder helpers that delegate to `CacheService` static methods for avatar and template dress cache keys. |
+| `redis.py` | Factory function `get_redis_client()` that creates an async Redis client from `settings.REDIS_URL`. |
+
+## Subdirectories
+
+None.

@@ -106,7 +106,7 @@ def mock_tripo():
 async def async_client(mock_cache, mock_s3) -> AsyncGenerator[AsyncClient, None]:
     """AsyncClient with DB and Redis dependencies mocked at app.state level."""
     from app.main import app as _app
-    from app.core.config import settings
+    from app.config.settings import settings
 
     # Patch JWT secret so test tokens are valid
     with (

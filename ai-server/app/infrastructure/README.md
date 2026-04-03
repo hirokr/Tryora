@@ -1,14 +1,22 @@
 # app/infrastructure
 
-## Purpose
-Implementation details for external systems (DB, cache, queue, storage, vector stores, external APIs).
+## Responsibility
 
-## What This Folder Should Hold
-- Code and resources directly related to this folder's responsibility.
-- Files with clear module boundaries and minimal hidden side effects.
-- Tests or fixtures close to behavior where practical.
+Provides concrete implementations for all external systems the application depends on — databases, caches, message queues, object storage, vector stores, and third-party APIs. Each subdirectory hides vendor-specific details behind clean interfaces consumed by services and modules.
 
-## Support Expectations
-- Hide vendor-specific details behind clear interfaces used by services/modules.
-- Keep imports stable and explicit (e.g., app.<area>...) to reduce coupling.
-- Add documentation when introducing new subfolders or conventions.
+## Files
+
+| File | Description |
+|---|---|
+| `__init__.py` | Package marker. |
+
+## Subdirectories
+
+| Directory | Description |
+|---|---|
+| `cache/` | Redis-backed async cache service for GLB bytes, job statuses, and rate-limit counters. |
+| `db/` | Database connection setup and repository layer for Prisma ORM queries. |
+| `external/` | Async HTTP clients for third-party APIs (OpenRouter, ScraperAPI, Serper, Tripo AI, xAI). |
+| `queue/` | Celery application configuration and event constants for async task processing. |
+| `storage/` | S3 object storage service, local disk storage, and a GLB source URI dispatcher. |
+| `vectorstore/` | ChromaDB vector store wrapper for embedding-based caching of dress searches. |

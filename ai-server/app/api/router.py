@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.api.admin import router as admin_router
+from app.api.health import router as health_router
 from app.modules.dress_search.api import router as dress_search_router
 from app.modules.profiles.api import router as profile_router
 from app.modules.templates.api import router as templates_router
@@ -10,6 +11,7 @@ from app.shared.security.api_key import checkApiKey
 
 router = APIRouter()
 
+router.include_router(health_router, prefix="/api/v1")
 router.include_router(profile_router, prefix="/api")
 router.include_router(templates_router, prefix="/api")
 router.include_router(try_on_router, prefix="/api")

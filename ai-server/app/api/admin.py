@@ -13,7 +13,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.api.deps import get_db
-from app.db.queries.templates import get_template_by_id
+from app.infrastructure.db.repositories.template_repo import get_template_by_id
 from app.infrastructure.cache.cache_service import CacheService
 from app.shared.security.jwt import TokenPayload, get_current_admin
 

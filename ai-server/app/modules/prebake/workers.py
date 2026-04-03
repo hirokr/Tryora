@@ -23,19 +23,19 @@ from typing import Any
 
 from celery import Task
 
-from app.worker.celery_app import celery_app
+from app.infrastructure.queue.celery_app import celery_app
 
 logger = logging.getLogger("worker.prebake")
 
 
 async def _run_prebake(template_id: str) -> None:
-    from app.core.config import settings
+    from app.config.settings import settings
     from app.db.prisma_connect import db
-    from app.db.queries.templates import get_template_by_id
-    from app.services.cache import CacheService
-    from app.services.glb_loader import load_glb
-    from app.services.s3_service import s3_service
-    from app.services.tripo_client import OfflineModeError, TripoAPIError, TripoTaskFailed, tripo_client
+    from app.infrastructure.db.repositories.template_repo import get_template_by_id
+    from app.infrastructure.cache.cache_service import CacheService
+    from app.infrastructure.storage.glb_loader import load_glb
+    from app.infrastructure.storage.s3 import s3_service
+    from app.infrastructure.external.tripo_client import OfflineModeError, TripoAPIError, TripoTaskFailed, tripo_client
 
     redis_client = None
     cache = None

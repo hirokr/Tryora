@@ -15,18 +15,18 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.api.deps import get_db
-from app.db.queries.profile import check_consent, get_profile, upsert_profile
-from app.middleware.auth import TokenPayload, get_current_user
-from app.models.profile import (
+from app.infrastructure.db.repositories.user_profile_repo import check_consent, get_profile, upsert_profile
+from app.shared.security.jwt import TokenPayload, get_current_user
+from app.modules.profiles.schemas import (
     ConsentRequest,
     ConsentResponse,
     GdprEraseResponse,
     ProfileResponse,
     ProfileUpdateRequest,
 )
-from app.services.cache import CacheService
-from app.services.consent_service import record_consent, gdpr_erase
-from app.services.s3_service import s3_service
+from app.infrastructure.cache.cache_service import CacheService
+from app.modules.consent.service import record_consent, gdpr_erase
+from app.infrastructure.storage.s3 import s3_service
 
 logger = logging.getLogger("api_security")
 

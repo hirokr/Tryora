@@ -1,14 +1,18 @@
 # app/shared/security
 
-## Purpose
-Shared primitives: exceptions, responses, middleware utilities, security helpers, and generic utils.
+## Responsibility
 
-## What This Folder Should Hold
-- Code and resources directly related to this folder's responsibility.
-- Files with clear module boundaries and minimal hidden side effects.
-- Tests or fixtures close to behavior where practical.
+Provides authentication and authorization primitives used across all feature modules: JWT token validation compatible with the Tryora Express backend, API key verification for server-to-server communication, and role-based permission checks.
 
-## Support Expectations
-- Store truly cross-module code that should not depend on feature-specific packages.
-- Keep imports stable and explicit (e.g., app.<area>...) to reduce coupling.
-- Add documentation when introducing new subfolders or conventions.
+## Files
+
+| File | Description |
+|---|---|
+| `__init__.py` | Package marker. |
+| `api_key.py` | `checkApiKey()` FastAPI dependency — validates `X-API-Key` header against known server keys and a configurable master key; returns the server name on success. |
+| `jwt.py` | JWT authentication — `get_current_user()` validates Bearer tokens issued by the Express backend and returns a `TokenPayload`; `get_current_admin()` requires admin role; handles expired signatures and malformed tokens with appropriate HTTP errors. |
+| `permissions.py` | Re-exports `require_admin` (alias for `get_current_admin`) for convenient import in route handlers. |
+
+## Subdirectories
+
+None.

@@ -19,8 +19,8 @@ import sys
 # Allow running as a top-level script
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from app.core.logger import logger
-from app.services.body_classifier import ALL_BODY_LABELS
+from app.config.logging import logger
+from app.modules.try_on.body_classifier import ALL_BODY_LABELS
 
 logging.basicConfig(level=logging.INFO)
 
@@ -81,7 +81,7 @@ async def seed() -> None:
     # ── Enqueue pre-bake tasks ───────────────────────────────────────────────
     if prebake_ids:
         try:
-            from app.workers.prebake_task import prebake_template_glb
+            from app.modules.prebake.workers import prebake_template_glb
 
             for tmpl_id in prebake_ids:
                 prebake_template_glb.delay(tmpl_id)

@@ -1,14 +1,16 @@
 # app/middleware
 
-## Purpose
-Request/response middleware for security, auditing, request identity, and throttling.
+## Responsibility
 
-## What This Folder Should Hold
-- Code and resources directly related to this folder's responsibility.
-- Files with clear module boundaries and minimal hidden side effects.
-- Tests or fixtures close to behavior where practical.
+Provides Starlette/FastAPI middleware components for cross-cutting concerns such as request logging, audit trails, security headers, and performance monitoring. Middleware runs on every request/response cycle.
 
-## Support Expectations
-- Implement cross-cutting behavior once and apply it consistently at app/router boundaries.
-- Keep imports stable and explicit (e.g., app.<area>...) to reduce coupling.
-- Add documentation when introducing new subfolders or conventions.
+## Files
+
+| File | Description |
+|---|---|
+| `__init__.py` | Package marker. |
+| `audit_log.py` | `AuditLogMiddleware` — logs HTTP method, path, status code, and request processing time for every request. |
+
+## Subdirectories
+
+None.

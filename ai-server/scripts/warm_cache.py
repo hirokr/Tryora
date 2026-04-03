@@ -19,7 +19,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from app.core.logger import logger
+from app.config.logging import logger
 
 logging.basicConfig(level=logging.INFO)
 
@@ -29,9 +29,9 @@ TOP_N = int(os.getenv("WARM_N", "27"))
 async def warm() -> None:
     from prisma import Prisma
     import redis.asyncio as aioredis
-    from app.core.config import settings
-    from app.services.cache import CacheService
-    from app.services.s3_service import s3_service
+    from app.config.settings import settings
+    from app.infrastructure.cache.cache_service import CacheService
+    from app.infrastructure.storage.s3 import s3_service
 
     db = Prisma(auto_register=True)
     await db.connect()

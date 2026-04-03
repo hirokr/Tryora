@@ -15,11 +15,11 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Optional
 
-from app.core.config import settings
+from app.config.settings import settings
 
 if TYPE_CHECKING:
     from prisma import Prisma
-    from app.services.cache import CacheService
+    from app.infrastructure.cache.cache_service import CacheService
 
 logger = logging.getLogger("api_security")
 

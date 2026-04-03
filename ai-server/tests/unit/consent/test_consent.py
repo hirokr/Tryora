@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.services.consent_service import record_consent
+from app.modules.consent.service import record_consent
 
 
 class TestRecordConsent:
@@ -73,7 +73,7 @@ class TestRecordConsent:
 class TestGdprErase:
     @pytest.mark.asyncio
     async def test_returns_ticket_id(self):
-        from app.services.consent_service import gdpr_erase
+        from app.modules.consent.service import gdpr_erase
 
         mock_db = MagicMock()
         mock_db.userprofile.update_many = AsyncMock()

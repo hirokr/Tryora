@@ -7,6 +7,7 @@ issued by the Tryora Express backend and returns the decoded user payload.
 The same JWT_SECRET and JWT_ALGORITHM used by the Express backend must be set
 in the environment (see .env.example).
 """
+
 from __future__ import annotations
 
 from typing import Annotated, Optional
@@ -52,7 +53,9 @@ def _decode_token(token: str) -> TokenPayload:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user_id: Optional[str] = payload.get("sub") or payload.get("userId") or payload.get("id")
+    user_id: Optional[str] = (
+        payload.get("sub") or payload.get("userId") or payload.get("id")
+    )
     email: str = payload.get("email", "")
     role: str = payload.get("role", "user")
 
@@ -72,9 +75,8 @@ async def get_current_user(
     """FastAPI dependency — validates JWT and returns current user payload."""
     if not credentials:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header missing",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authenticated",
         )
     return _decode_token(credentials.credentials)
 
@@ -83,7 +85,7 @@ async def get_current_admin(
     current_user: Annotated[TokenPayload, Depends(get_current_user)],
 ) -> TokenPayload:
     """FastAPI dependency — requires admin role."""
-    if current_user.role != "admin":
+    if current_user.role.lower() != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",

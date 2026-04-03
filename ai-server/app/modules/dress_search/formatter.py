@@ -25,7 +25,7 @@ from typing import Any, Optional
 from openai import OpenAI
 from pydantic import ValidationError
 
-from app.core.config import settings
+from app.config.settings import settings
 from app.schemas.dress_search import DressProductSchema
 
 logger = logging.getLogger("api_security")

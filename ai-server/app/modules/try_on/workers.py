@@ -1,22 +1,22 @@
 """
-try_on_task.py — Celery task: 3-D try-on pipeline
----------------------------------------------------
-Pipeline (10 steps):
+workers.py — Try-On Celery Task (router version)
+-------------------------------------------------
+Replaces the original single-provider pipeline with the GenerationRouter
+cascade. The 10-step structure is preserved; Steps 5-7 are now handled
+by the router internally.
+
+Steps:
   1. Validate job & load profile
-  2. Classify body label from profile measurements
-  3. Select best dress template (3-tier lookup)
-  4. Check GLB cache (Redis → S3)
-  5. If cache miss → call Tripo AI: base avatar generation
-  6. Poll until base avatar ready, download GLB
-  7. Cache base avatar GLB (Redis + S3)
-  8. Compose (merge) base avatar + dress template GLB
-  9. Upload result to S3
- 10. Mark job COMPLETED, publish job_done event
+  2. Classify body type from measurements
+  3. Build router kwargs from job + profile
+  4. Check result cache (router Tier 0)
+  5. Run GenerationRouter cascade (Tiers 1-4)
+  6. Store result in S3
+  7. Update job COMPLETED
 """
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from datetime import datetime, timezone
 from typing import Any
@@ -27,47 +27,36 @@ from app.worker.celery_app import celery_app
 
 logger = logging.getLogger("worker.try_on")
 
-# ---------------------------------------------------------------------------
-# Helpers — async wrappers run via asyncio.run() inside the sync Celery task
-# ---------------------------------------------------------------------------
 
-
-async def _run_pipeline(job_id: str, user_id: str) -> None:  # noqa: C901
+async def _run_pipeline(job_id: str, user_id: str) -> None:
     from app.core.config import settings
     from app.db.prisma_connect import db
     from app.db.queries.jobs import get_job_by_id
     from app.db.queries.profile import get_profile
-    from app.services.body_classifier import classify_body_label
-    from app.services.cache import CacheService
-    from app.services.consent_service import check_all_consents
+    from app.infrastructure.cache.cache_service import CacheService
+    from app.infrastructure.storage.s3 import s3_service
+    from app.modules.try_on.generation_router import GenerationRouter
     from app.services.job_service import update_job_status
-    from app.services.s3_service import s3_service
-    from app.services.template_selector import select_best_template
-    from app.services.tripo_client import OfflineModeError, TripoAPIError, TripoTaskFailed, tripo_client
 
     redis_client = None
     cache = None
 
     try:
         import redis.asyncio as aioredis
-
         redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=False)
         cache = CacheService(redis_client)
     except Exception as exc:
         logger.warning("Redis unavailable in worker: %s", exc)
 
-    async def _progress(step: int, total: int = 10, message: str = "") -> None:
+    async def _progress(step: int, message: str = "") -> None:
         if cache:
             await update_job_status(
-                job_id=job_id,
-                status="PROCESSING",
-                db=db,
-                cache=cache,
-                extra={"progress": round(step / total * 100), "step": message},
+                job_id=job_id, status="PROCESSING", db=db, cache=cache,
+                extra={"progress": round(step / 10 * 100), "step": message},
             )
 
-    # ── Step 1: load job & validate ─────────────────────────────────────────
-    await _progress(1, message="Loading job")
+    # Step 1 — load & validate job
+    await _progress(1, "Loading job")
     if not db.is_connected():
         await db.connect()
 
@@ -76,187 +65,84 @@ async def _run_pipeline(job_id: str, user_id: str) -> None:  # noqa: C901
         logger.error("Job %s not found for user %s", job_id, user_id)
         return
 
-    # ── Step 2: load profile & classify body ────────────────────────────────
-    await _progress(2, message="Loading profile")
+    # Step 2 — load profile
+    await _progress(2, "Loading profile")
     profile = await get_profile(user_id, db)
-    if not profile or profile.tHeight is None or profile.tFullness is None:
-        await update_job_status(
-            job_id=job_id,
-            status="FAILED",
-            db=db,
-            cache=cache,
-            extra={"error": "Body measurements (tHeight/tFullness) required. Update your profile."},
-        )
-        return
 
-    body_label = classify_body_label(profile.tHeight, profile.tFullness)
+    t_height   = getattr(profile, "tHeight",   None) if profile else None
+    t_fullness = getattr(profile, "tFullness", None) if profile else None
+    ethnicity  = getattr(profile, "ethnicity", None) if profile else None
+    consent    = getattr(profile, "consentGiven", False) if profile else False
+    gender     = getattr(profile, "gender", "neutral") if profile else "neutral"
+    if gender not in ("male", "female", "neutral"):
+        gender = "neutral"
 
-    # ── Step 3: select dress template ───────────────────────────────────────
-    await _progress(3, message="Selecting template")
-    consent_given = profile.consentGiven or False
-    ethnicity = profile.ethnicity if consent_given else None
+    image_s3_key = getattr(job, "userImageS3Key", None) or getattr(job, "inputS3Key", None)
+    category     = getattr(job, "category", "CASUAL") or "CASUAL"
 
-    template = None
-    dress_source_uri: str | None = None
+    # Step 3 — build router
+    await _progress(3, "Selecting generation strategy")
+    router = GenerationRouter(db=db, cache=cache, s3=s3_service)
 
-    if job.templateDressId:
-        from app.db.queries.templates import get_template_by_id
-        template = await get_template_by_id(job.templateDressId, db)
-        if template:
-            dress_source_uri = template.glbSource or None
-    elif job.userImageS3Key:
-        # Will generate a custom GLB from the user-uploaded image
-        dress_source_uri = f"s3:{settings.S3_BUCKET}/{job.userImageS3Key}"
-    else:
-        # Auto-select from catalog
-        template = await select_best_template(
-            user_id=user_id,
-            body_label=body_label,
-            category="CASUAL",
-            ethnicity=ethnicity,
-            consent_given=consent_given,
-            db=db,
-            cache=cache,
-        )
-        if template:
-            dress_source_uri = template.glbSource or None
-
-    if not dress_source_uri and not job.userImageS3Key:
-        await update_job_status(
-            job_id=job_id,
-            status="FAILED",
-            db=db,
-            cache=cache,
-            extra={"error": "No dress source available and no template found for body type"},
-        )
-        return
-
-    # ── Step 4: cache check ─────────────────────────────────────────────────
-    await _progress(4, message="Checking cache")
-    result_cache_key = None
-    if cache:
-        result_cache_key = cache.key_result(user_id, job_id)
-        cached_glb = await cache.get_glb(result_cache_key)
-        if cached_glb:
-            logger.info("Cache hit for job %s — skipping generation", job_id)
-            await _finish_from_bytes(job_id, user_id, cached_glb, db, cache, s3_service, settings)
-            return
-
-    # ── Step 5-6: Tripo AI — base avatar or dress generation ────────────────
-    await _progress(5, message="Calling Tripo AI")
-    glb_bytes: bytes | None = None
+    # Steps 4-7 — run cascade
+    await _progress(4, "Checking cache")
 
     try:
-        if job.userImageS3Key:
-            # Download user's dress image from S3, get a public temp URL, pass to Tripo
-            image_bytes = await s3_service.download_bytes(job.userImageS3Key)
-            if not image_bytes:
-                raise ValueError("User image not found in S3")
-
-            # Upload to a short-lived public S3 key for Tripo
-            temp_key = f"temp-tripo/{job_id}.jpg"
-            await s3_service.upload_bytes(image_bytes, temp_key, "image/jpeg")
-            image_url = await s3_service.generate_presigned_url(temp_key, ttl=600)
-
-            task_id = await tripo_client.image_to_3d(image_url)
-        else:
-            # Build Tripo request from template thumbnail
-            if template and template.thumbnailUrl:
-                task_id = await tripo_client.image_to_3d(template.thumbnailUrl)
-            else:
-                raise ValueError("No image source for Tripo generation")
-
-        # ── Step 6: poll Tripo ───────────────────────────────────────────────
-        await _progress(6, message="Waiting for generation")
-        result = await tripo_client.poll_until_done(task_id, max_wait=300, interval=5)
-
-        glb_url = result.get("output", {}).get("pbr_model") or result.get("output", {}).get("model")
-        if not glb_url:
-            raise TripoTaskFailed(task_id, "No model URL in Tripo result")
-
-        # ── Step 6b: download GLB ────────────────────────────────────────────
-        await _progress(7, message="Downloading GLB")
-        glb_bytes = await tripo_client.download_glb(glb_url)
-
-    except OfflineModeError:
-        logger.info("Offline mode: loading placeholder GLB for job %s", job_id)
-        from app.services.glb_loader import load_glb
-        placeholder_uri = f"local:{settings.LOCAL_GLB_DIR}/placeholder.glb"
-        try:
-            glb_bytes = await load_glb(placeholder_uri, cache=cache, s3=s3_service)
-        except Exception:
-            glb_bytes = b""  # Empty stub in offline mode
-
-    except (TripoAPIError, TripoTaskFailed, ValueError) as exc:
-        logger.exception("Generation failed for job %s", job_id)
-        await update_job_status(
+        result = await router.generate(
             job_id=job_id,
-            status="FAILED",
-            db=db,
-            cache=cache,
+            user_id=user_id,
+            t_height=t_height,
+            t_fullness=t_fullness,
+            image_s3_key=image_s3_key,
+            category=category,
+            ethnicity=ethnicity,
+            consent_given=consent,
+            gender=gender,
+        )
+    except RuntimeError as exc:
+        logger.exception("All generation tiers failed for job %s", job_id)
+        await update_job_status(
+            job_id=job_id, status="FAILED", db=db, cache=cache,
             extra={"error": str(exc)},
         )
         return
 
-    if not glb_bytes:
-        await update_job_status(
-            job_id=job_id,
-            status="FAILED",
-            db=db,
-            cache=cache,
-            extra={"error": "Empty GLB received"},
-        )
-        return
+    logger.info(
+        "Generation complete job=%s provider=%s used_fallback=%s bytes=%d",
+        job_id, result.provider, result.used_fallback, len(result.glb_bytes),
+    )
 
-    # ── Step 7-8: cache + upload ─────────────────────────────────────────────
-    await _progress(8, message="Caching result")
-    if cache and result_cache_key:
-        await cache.set_glb(result_cache_key, glb_bytes)
-
-    await _finish_from_bytes(job_id, user_id, glb_bytes, db, cache, s3_service, settings)
-
-    if redis_client:
-        await redis_client.aclose()
-
-
-async def _finish_from_bytes(job_id, user_id, glb_bytes, db, cache, s3_service, settings) -> None:
-    from app.services.job_service import update_job_status
-    from app.services.s3_service import S3Service
-
-    # ── Step 9: upload result to S3 ──────────────────────────────────────────
+    # Step 8 — upload result to S3
+    await _progress(8, "Uploading result")
     s3_key = s3_service.key_try_on_result(user_id, job_id)
     try:
-        await s3_service.upload_bytes(glb_bytes, s3_key, "model/gltf-binary")
+        await s3_service.upload_bytes(result.glb_bytes, s3_key, "model/gltf-binary")
     except Exception as exc:
         logger.exception("S3 upload failed for job %s", job_id)
         await update_job_status(
-            job_id=job_id,
-            status="FAILED",
-            db=db,
-            cache=cache,
-            extra={"error": f"Failed to upload result: {exc}"},
+            job_id=job_id, status="FAILED", db=db, cache=cache,
+            extra={"error": f"S3 upload failed: {exc}"},
         )
         return
 
-    # ── Step 10: mark COMPLETED ───────────────────────────────────────────────
+    # Step 9-10 — mark COMPLETED
+    await _progress(9, "Finalising")
     now = datetime.now(timezone.utc).isoformat()
     await update_job_status(
-        job_id=job_id,
-        status="COMPLETED",
-        db=db,
-        cache=cache,
+        job_id=job_id, status="COMPLETED", db=db, cache=cache,
         extra={
             "resultS3Key": s3_key,
             "completedAt": now,
             "progress": 100,
+            "provider": result.provider,        # expose which tier won
+            "usedFallback": result.used_fallback,
         },
     )
-    logger.info("Job %s completed successfully → %s", job_id, s3_key)
+    logger.info("Job %s COMPLETED → %s (via %s)", job_id, s3_key, result.provider)
 
+    if redis_client:
+        await redis_client.aclose()
 
-# ---------------------------------------------------------------------------
-# Celery task definition
-# ---------------------------------------------------------------------------
 
 @celery_app.task(
     bind=True,
@@ -267,7 +153,6 @@ async def _finish_from_bytes(job_id, user_id, glb_bytes, db, cache, s3_service, 
     acks_late=True,
 )
 def run_try_on(self: Task, job_id: str, user_id: str) -> dict[str, Any]:
-    """Celery entry-point — runs the async pipeline in a fresh event loop."""
     logger.info("Starting try-on task job_id=%s user_id=%s", job_id, user_id)
     try:
         asyncio.run(_run_pipeline(job_id, user_id))

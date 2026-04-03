@@ -1,14 +1,19 @@
 # app/modules/templates
 
-## Purpose
-Feature modules that package API, schemas, policies, domain logic, and workers by capability.
+## Responsibility
 
-## What This Folder Should Hold
-- Code and resources directly related to this folder's responsibility.
-- Files with clear module boundaries and minimal hidden side effects.
-- Tests or fixtures close to behavior where practical.
+Manages 3D dress templates — pre-built GLB models for common dress styles across body types and ethnicities. Provides browsing, filtering, selection, and caching of template dresses. Templates enable instant try-on without waiting for on-demand 3D generation.
 
-## Support Expectations
-- Treat each feature as a vertical slice with clear boundaries and minimal coupling.
-- Keep imports stable and explicit (e.g., app.<area>...) to reduce coupling.
-- Add documentation when introducing new subfolders or conventions.
+## Files
+
+| File | Description |
+|---|---|
+| `__init__.py` | Package marker. |
+| `api.py` | FastAPI router — endpoints for listing templates, fetching template details, and selecting templates for try-on. |
+| `schemas.py` | Pydantic models for template request/response payloads. |
+| `selector.py` | Template selection logic — matches user body type, preferences, and category to the best template variant. |
+| `service.py` | Business logic layer for template operations, including cache-aware template retrieval. |
+
+## Subdirectories
+
+None.

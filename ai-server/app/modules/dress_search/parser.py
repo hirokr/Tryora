@@ -23,7 +23,7 @@ from typing import Optional
 from openai import OpenAI  # xAI exposes an OpenAI-compatible endpoint
 from pydantic import ValidationError
 
-from app.core.config import settings
+from app.config.settings import settings
 from app.schemas.dress_search import DressSearchParams
 
 logger = logging.getLogger("api_security")

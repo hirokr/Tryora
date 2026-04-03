@@ -1,14 +1,27 @@
-# app/config
+# app/config/
 
-## Purpose
-Application configuration, constants, and environment settings.
+Settings and logging — single source of truth for environment variables and log configuration.
 
-## What This Folder Should Hold
-- Code and resources directly related to this folder's responsibility.
-- Files with clear module boundaries and minimal hidden side effects.
-- Tests or fixtures close to behavior where practical.
+## Responsibility
 
-## Support Expectations
-- Centralize settings loading and defaults so runtime behavior is predictable across environments.
-- Keep imports stable and explicit (e.g., app.<area>...) to reduce coupling.
-- Add documentation when introducing new subfolders or conventions.
+Centralizes all runtime configuration. No other module should read environment variables directly; they should import `settings` from here.
+
+## Files
+
+| File | Description |
+|---|---|
+| `settings.py` | Pydantic `Settings` class. Reads env vars via `pydantic-settings`. All fields have defaults for degraded-mode startup. Feature flags (`ENABLE_LEGACY_ROUTES`, etc.) live here. |
+| `logging.py` | Logging configuration. Sets log level from `settings.LOG_LEVEL`. Exports the shared `logger` and `configure_logging()`. |
+| `constants.py` | Hardcoded constants that don't vary by environment (e.g., enum values, fixed thresholds). |
+| `__init__.py` | Package marker. |
+
+## Usage
+
+```python
+from app.config.settings import settings
+from app.config.logging import logger
+
+# Access any env var
+api_key = settings.MASTER_APIKEY
+db_url = settings.DATABASE_URL
+```

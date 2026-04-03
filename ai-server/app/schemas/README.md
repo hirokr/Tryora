@@ -1,14 +1,16 @@
 # app/schemas
 
-## Purpose
-Pydantic/API schema definitions.
+## Responsibility
 
-## What This Folder Should Hold
-- Code and resources directly related to this folder's responsibility.
-- Files with clear module boundaries and minimal hidden side effects.
-- Tests or fixtures close to behavior where practical.
+Shared Pydantic schema definitions that serve as request/response contracts across feature modules. Currently houses the dress search domain models, which are imported by both the `dress_search` module and the API router layer.
 
-## Support Expectations
-- Define request/response contracts and shared validation objects.
-- Keep imports stable and explicit (e.g., app.<area>...) to reduce coupling.
-- Add documentation when introducing new subfolders or conventions.
+## Files
+
+| File | Description |
+|---|---|
+| `__init__.py` | Package marker. |
+| `dress_search.py` | Pydantic models for the dress search feature: `BudgetRange`, `DressSearchParams` (LLM-structured output), `SearchDressesRequest`, `SearchDressesResponse`, `SearchStatusResponse`, and `DressProductSchema`. See `app/modules/dress_search/schemas.py` for the canonical copy. |
+
+## Subdirectories (if any)
+
+None.

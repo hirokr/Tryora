@@ -31,15 +31,15 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.api.deps import get_db
-from app.middleware.secure_keys import checkApiKey
+from app.shared.security.api_key import checkApiKey
 from app.schemas.dress_search import (
     BudgetRange,
     DressProductSchema,
     DressSearchParams,
     SearchDressesRequest,
 )
-from app.utils.query_builder import build_shopping_query
-from app.utils.scraper_api import ScraperAPIService
+from app.modules.dress_search.query_builder import build_shopping_query
+from app.modules.dress_search.scraper_api import ScraperAPIService
 
 # ── Auth header used in all protected-route calls ────────────────────────────
 AUTH = {"X-API-Key": "server_a_key"}
@@ -76,6 +76,7 @@ SAMPLE_PRODUCT = DressProductSchema(
 # Section 1 — build_shopping_query() unit tests
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestBuildShoppingQuery:
     """Pure-function tests; no mocks required."""
 
@@ -110,7 +111,9 @@ class TestBuildShoppingQuery:
         assert "under $200" in query
 
     def test_budget_min_and_max_uses_range(self):
-        params = DressSearchParams(budget_range=BudgetRange(min=50, max=150, currency="USD"))
+        params = DressSearchParams(
+            budget_range=BudgetRange(min=50, max=150, currency="USD")
+        )
         query = build_shopping_query(params)
         assert "$50-$150" in query
 
@@ -135,8 +138,8 @@ class TestBuildShoppingQuery:
 # Section 2 — DressSearchParams schema validation
 # ─────────────────────────────────────────────────────────────────────────────
 
-class TestDressSearchParams:
 
+class TestDressSearchParams:
     def test_all_fields_valid(self):
         p = DressSearchParams(
             event="prom",
@@ -182,10 +185,12 @@ class TestDressSearchParams:
 # Section 3 — SearchDressesRequest HTTP validation
 # ─────────────────────────────────────────────────────────────────────────────
 
-class TestSearchDressesRequest:
 
+class TestSearchDressesRequest:
     def test_valid_request(self):
-        r = SearchDressesRequest(prompt="boho maxi dress for beach wedding", geo="Miami, FL")
+        r = SearchDressesRequest(
+            prompt="boho maxi dress for beach wedding", geo="Miami, FL"
+        )
         assert r.prompt.startswith("boho")
 
     def test_prompt_too_short_raises(self):
@@ -209,6 +214,7 @@ class TestSearchDressesRequest:
 # Section 4 — ScraperAPI JSON-LD parser (BeautifulSoup, no network)
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 class TestScraperAPIJsonLd:
     """Tests the HTML-parsing logic in ScraperAPIService._parse_json_ld."""
 
@@ -228,13 +234,15 @@ class TestScraperAPIJsonLd:
         """)
 
     def test_extracts_product_type(self):
-        html = self._make_html({
-            "@context": "https://schema.org",
-            "@type": "Product",
-            "name": "Ivory Maxi Dress",
-            "description": "Perfect for beach weddings",
-            "offers": {"price": "179.99"},
-        })
+        html = self._make_html(
+            {
+                "@context": "https://schema.org",
+                "@type": "Product",
+                "name": "Ivory Maxi Dress",
+                "description": "Perfect for beach weddings",
+                "offers": {"price": "179.99"},
+            }
+        )
         result = self._svc._parse_json_ld(html, "https://example.com")
         assert result is not None
         assert result["name"] == "Ivory Maxi Dress"
@@ -246,24 +254,32 @@ class TestScraperAPIJsonLd:
 
     def test_extracts_product_from_graph(self):
         """Schema.org @graph arrays should also be searched."""
-        html = self._make_html({
-            "@context": "https://schema.org",
-            "@graph": [
-                {"@type": "WebSite", "name": "Example"},
-                {"@type": "BreadcrumbList"},
-                {"@type": "Product", "name": "Satin Midi Dress", "description": "Elegant"},
-            ],
-        })
+        html = self._make_html(
+            {
+                "@context": "https://schema.org",
+                "@graph": [
+                    {"@type": "WebSite", "name": "Example"},
+                    {"@type": "BreadcrumbList"},
+                    {
+                        "@type": "Product",
+                        "name": "Satin Midi Dress",
+                        "description": "Elegant",
+                    },
+                ],
+            }
+        )
         result = self._svc._parse_json_ld(html, "https://example.com")
         assert result is not None
         assert result["name"] == "Satin Midi Dress"
 
     def test_skips_non_product_types(self):
-        html = self._make_html({
-            "@context": "https://schema.org",
-            "@type": "WebSite",
-            "name": "Example Shop",
-        })
+        html = self._make_html(
+            {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                "name": "Example Shop",
+            }
+        )
         result = self._svc._parse_json_ld(html, "https://example.com")
         assert result is None
 
@@ -285,10 +301,12 @@ class TestScraperAPIJsonLd:
 
     def test_handles_list_type_field(self):
         """@type may be a JSON array instead of a string."""
-        html = self._make_html({
-            "@type": ["Product", "Thing"],
-            "name": "Multi-type Dress",
-        })
+        html = self._make_html(
+            {
+                "@type": ["Product", "Thing"],
+                "name": "Multi-type Dress",
+            }
+        )
         result = self._svc._parse_json_ld(html, "https://example.com")
         assert result is not None
         assert result["name"] == "Multi-type Dress"
@@ -306,6 +324,7 @@ class TestScraperAPIJsonLd:
 # ─────────────────────────────────────────────────────────────────────────────
 # Shared helpers for HTTP / WebSocket test sections
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 def _build_mock_db(search_id: str = MOCK_SEARCH_ID) -> MagicMock:
     """Return a fully wired mock Prisma client suitable for route tests."""
@@ -328,8 +347,8 @@ def _build_mock_db(search_id: str = MOCK_SEARCH_ID) -> MagicMock:
 # Section 5 — POST /internal/ai/search-dresses
 # ─────────────────────────────────────────────────────────────────────────────
 
-class TestSearchDressesEndpoint:
 
+class TestSearchDressesEndpoint:
     def _client(self, mock_db=None, task_id_override: str = MOCK_TASK_ID):
         """
         Return a (patches, TestClient) tuple with:
@@ -350,11 +369,11 @@ class TestSearchDressesEndpoint:
 
         patches = [
             patch(
-                "app.domains.dresses.router.process_dress_search.apply_async",
+                "app.modules.dress_search.api.process_dress_search.apply_async",
                 return_value=MagicMock(id=task_id_override),
             ),
             patch(
-                "app.domains.dresses.router.uuid4",
+                "app.modules.dress_search.api.uuid4",
                 return_value=MagicMock(__str__=lambda s: task_id_override),
             ),
         ]
@@ -369,7 +388,10 @@ class TestSearchDressesEndpoint:
         with patches[0], patches[1]:
             resp = client.post(
                 "/internal/ai/search-dresses",
-                json={"prompt": "flowy maxi dress for a beach wedding", "geo": "Miami, FL"},
+                json={
+                    "prompt": "flowy maxi dress for a beach wedding",
+                    "geo": "Miami, FL",
+                },
                 headers=AUTH,
             )
 
@@ -386,7 +408,10 @@ class TestSearchDressesEndpoint:
         with patches[0], patches[1]:
             client.post(
                 "/internal/ai/search-dresses",
-                json={"prompt": "flowy maxi dress for a beach wedding", "geo": "Miami, FL"},
+                json={
+                    "prompt": "flowy maxi dress for a beach wedding",
+                    "geo": "Miami, FL",
+                },
                 headers=AUTH,
             )
 
@@ -398,20 +423,27 @@ class TestSearchDressesEndpoint:
 
     def test_success_dispatches_celery_task(self):
         mock_db = _build_mock_db()
-        with patch(
-                 "app.domains.dresses.router.process_dress_search.apply_async",
-             ) as mock_apply, \
-             patch(
-                 "app.domains.dresses.router.uuid4",
-                 return_value=MagicMock(__str__=lambda s: MOCK_TASK_ID),
-             ):
+        with (
+            patch(
+                "app.modules.dress_search.api.process_dress_search.apply_async",
+            ) as mock_apply,
+            patch(
+                "app.modules.dress_search.api.uuid4",
+                return_value=MagicMock(__str__=lambda s: MOCK_TASK_ID),
+            ),
+        ):
+
             async def _override_get_db():
                 yield mock_db
+
             app.dependency_overrides[get_db] = _override_get_db
             client = TestClient(app)
             client.post(
                 "/internal/ai/search-dresses",
-                json={"prompt": "flowy maxi dress for a beach wedding", "geo": "Miami, FL"},
+                json={
+                    "prompt": "flowy maxi dress for a beach wedding",
+                    "geo": "Miami, FL",
+                },
                 headers=AUTH,
             )
 
@@ -427,7 +459,10 @@ class TestSearchDressesEndpoint:
         with patches[0], patches[1]:
             resp = client.post(
                 "/internal/ai/search-dresses",
-                json={"prompt": "flowy maxi dress for a beach wedding", "geo": "Miami, FL"},
+                json={
+                    "prompt": "flowy maxi dress for a beach wedding",
+                    "geo": "Miami, FL",
+                },
             )
 
         assert resp.status_code == 401
@@ -458,11 +493,15 @@ class TestSearchDressesEndpoint:
 
     def test_db_failure_returns_500(self):
         mock_db = _build_mock_db()
-        mock_db.dresssearch.create = AsyncMock(side_effect=Exception("DB connection lost"))
+        mock_db.dresssearch.create = AsyncMock(
+            side_effect=Exception("DB connection lost")
+        )
 
-        with patch("app.domains.dresses.router.process_dress_search.apply_async"):
+        with patch("app.modules.dress_search.api.process_dress_search.apply_async"):
+
             async def _override_get_db():
                 yield mock_db
+
             app.dependency_overrides[get_db] = _override_get_db
             client = TestClient(app)
             resp = client.post(
@@ -476,16 +515,20 @@ class TestSearchDressesEndpoint:
     def test_celery_dispatch_failure_returns_503(self):
         mock_db = _build_mock_db()
 
-        with patch(
-                 "app.domains.dresses.router.process_dress_search.apply_async",
-                 side_effect=Exception("Redis unavailable"),
-             ), \
-             patch(
-                 "app.domains.dresses.router.uuid4",
-                 return_value=MagicMock(__str__=lambda s: MOCK_TASK_ID),
-             ):
+        with (
+            patch(
+                "app.modules.dress_search.api.process_dress_search.apply_async",
+                side_effect=Exception("Redis unavailable"),
+            ),
+            patch(
+                "app.modules.dress_search.api.uuid4",
+                return_value=MagicMock(__str__=lambda s: MOCK_TASK_ID),
+            ),
+        ):
+
             async def _override_get_db():
                 yield mock_db
+
             app.dependency_overrides[get_db] = _override_get_db
             client = TestClient(app)
             resp = client.post(
@@ -505,8 +548,8 @@ class TestSearchDressesEndpoint:
 # Section 6 — GET /internal/ai/sse/status/{task_id}
 # ─────────────────────────────────────────────────────────────────────────────
 
-class TestSseEndpoint:
 
+class TestSseEndpoint:
     def teardown_method(self):
         app.dependency_overrides.clear()
 
@@ -524,9 +567,9 @@ class TestSseEndpoint:
         mock_async_result.result = expected_payload
 
         with patch(
-                 "app.domains.dresses.router.celery_app.AsyncResult",
-                 return_value=mock_async_result,
-             ):
+            "app.modules.dress_search.api.celery_app.AsyncResult",
+            return_value=mock_async_result,
+        ):
             client = TestClient(app)
             resp = client.get(
                 f"/internal/ai/sse/status/{MOCK_TASK_ID}",
@@ -541,7 +584,7 @@ class TestSseEndpoint:
         # Parse the data payload from the SSE body
         for line in body.splitlines():
             if line.startswith("data:"):
-                parsed = json.loads(line[len("data:"):].strip())
+                parsed = json.loads(line[len("data:") :].strip())
                 assert parsed["status"] == "COMPLETED"
                 assert parsed["task_id"] == MOCK_TASK_ID
                 break
@@ -556,6 +599,7 @@ class TestSseEndpoint:
 # ─────────────────────────────────────────────────────────────────────────────
 # Section 7 — WebSocket /internal/ai/ws/status/{task_id}
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestWebSocketEndpoint:
     """
@@ -588,9 +632,9 @@ class TestWebSocketEndpoint:
         mock_async_result.result = expected_payload
 
         with patch(
-                 "app.domains.dresses.router.celery_app.AsyncResult",
-                 return_value=mock_async_result,
-             ):
+            "app.modules.dress_search.api.celery_app.AsyncResult",
+            return_value=mock_async_result,
+        ):
             client = TestClient(app)
             with client.websocket_connect(
                 f"/internal/ai/ws/status/{MOCK_TASK_ID}",
@@ -633,14 +677,16 @@ class TestWebSocketEndpoint:
         mock_redis_client.pubsub = MagicMock(return_value=mock_pubsub)
         mock_redis_client.aclose = AsyncMock()
 
-        with patch(
-                 "app.domains.dresses.router.celery_app.AsyncResult",
-                 return_value=mock_async_result,
-             ), \
-             patch(
-                 "app.domains.dresses.router.aioredis.from_url",
-                 return_value=mock_redis_client,
-             ):
+        with (
+            patch(
+                "app.modules.dress_search.api.celery_app.AsyncResult",
+                return_value=mock_async_result,
+            ),
+            patch(
+                "app.modules.dress_search.api.aioredis.from_url",
+                return_value=mock_redis_client,
+            ),
+        ):
             client = TestClient(app)
             with client.websocket_connect(
                 f"/internal/ai/ws/status/{MOCK_TASK_ID}",
@@ -667,15 +713,14 @@ class TestWebSocketEndpoint:
         app.dependency_overrides.clear()
         client = TestClient(app)
         with pytest.raises(Exception):
-            with client.websocket_connect(
-                f"/internal/ai/ws/status/{MOCK_TASK_ID}"
-            ):
+            with client.websocket_connect(f"/internal/ai/ws/status/{MOCK_TASK_ID}"):
                 pass
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section 8 — Pipeline _run_pipeline() unit tests
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 class TestPipeline:
     """
@@ -687,7 +732,7 @@ class TestPipeline:
 
     def setup_method(self):
         """Build common mock objects shared across pipeline tests."""
-        # Prisma db mock — used via app.worker.dress_tasks.db
+        # Prisma db mock — used via app.modules.dress_search.workers.db
         self.mock_db = _build_mock_db()
 
         # LLM parser — synchronous
@@ -700,7 +745,9 @@ class TestPipeline:
         self.mock_vs = MagicMock()
         # Default: cache miss (empty results)
         self.mock_vs.search.return_value = {
-            "ids": [[]], "distances": [[]], "metadatas": [[]]
+            "ids": [[]],
+            "distances": [[]],
+            "metadatas": [[]],
         }
         self.mock_vs.add_document = MagicMock()
 
@@ -731,25 +778,29 @@ class TestPipeline:
     def _pipeline_patches(self):
         """Return a list of active context managers for all external deps."""
         return [
-            patch("app.worker.dress_tasks.db", self.mock_db),
+            patch("app.modules.dress_search.workers.db", self.mock_db),
             patch(
-                "app.worker.dress_tasks.llm_parser.parse_prompt",
+                "app.modules.dress_search.workers.llm_parser.parse_prompt",
                 self.mock_parser,
             ),
             patch(
-                "app.worker.dress_tasks.open_api.get_embeddings",
-                new_callable=lambda: (lambda *a, **kw: AsyncMock(return_value=self.mock_embedding)()),
+                "app.modules.dress_search.workers.open_api.get_embeddings",
+                new_callable=lambda: (
+                    lambda *a, **kw: AsyncMock(return_value=self.mock_embedding)()
+                ),
             ),
             patch(
-                "app.worker.dress_tasks.serper_shopping.search",
-                new_callable=lambda: (lambda *a, **kw: AsyncMock(return_value=self.mock_serper_items)()),
+                "app.modules.dress_search.workers.serper_shopping.search",
+                new_callable=lambda: (
+                    lambda *a, **kw: AsyncMock(return_value=self.mock_serper_items)()
+                ),
             ),
             patch(
-                "app.worker.dress_tasks.scraper_api.extract_json_ld",
-                new_callable=lambda: (lambda *a, **kw: AsyncMock(return_value=None)()),
+                "app.modules.dress_search.workers.scraper_api.extract_json_ld",
+                new_callable=lambda: lambda *a, **kw: AsyncMock(return_value=None)(),
             ),
             patch(
-                "app.worker.dress_tasks.llm_formatter.format_product",
+                "app.modules.dress_search.workers.llm_formatter.format_product",
                 self.mock_formatter,
             ),
         ]
@@ -767,7 +818,7 @@ class TestPipeline:
         Apply all standard patches plus any extras, then run _run_pipeline.
         Returns the result dict.
         """
-        from app.worker.dress_tasks import _run_pipeline
+        from app.modules.dress_search.workers import _run_pipeline
 
         vs = vs_override or self.mock_vs
 
@@ -777,12 +828,15 @@ class TestPipeline:
         mock_scraper = AsyncMock(return_value=None)
 
         patches = [
-            patch("app.worker.dress_tasks.db", self.mock_db),
-            patch("app.worker.dress_tasks.llm_parser.parse_prompt", self.mock_parser),
-            patch("app.worker.dress_tasks.open_api.get_embeddings", mock_get_emb),
-            patch("app.worker.dress_tasks.serper_shopping.search", mock_serper),
-            patch("app.worker.dress_tasks.scraper_api.extract_json_ld", mock_scraper),
-            patch("app.worker.dress_tasks.llm_formatter.format_product", self.mock_formatter),
+            patch("app.modules.dress_search.workers.db", self.mock_db),
+            patch("app.modules.dress_search.workers.llm_parser.parse_prompt", self.mock_parser),
+            patch("app.modules.dress_search.workers.open_api.get_embeddings", mock_get_emb),
+            patch("app.modules.dress_search.workers.serper_shopping.search", mock_serper),
+            patch("app.modules.dress_search.workers.scraper_api.extract_json_ld", mock_scraper),
+            patch(
+                "app.modules.dress_search.workers.llm_formatter.format_product",
+                self.mock_formatter,
+            ),
         ]
         if extra_patches:
             patches.extend(extra_patches)
@@ -790,7 +844,9 @@ class TestPipeline:
         started = [p.start() for p in patches]
         try:
             result = self._run(
-                _run_pipeline(MOCK_SEARCH_ID, MOCK_TASK_ID, "beach wedding maxi", "Miami, FL", vs)
+                _run_pipeline(
+                    MOCK_SEARCH_ID, MOCK_TASK_ID, "beach wedding maxi", "Miami, FL", vs
+                )
             )
         finally:
             for p in patches:
@@ -855,7 +911,7 @@ class TestPipeline:
         }
         self.mock_vs.search.return_value = {
             "ids": [["cached-doc-id"]],
-            "distances": [[0.05]],   # below threshold → hit
+            "distances": [[0.05]],  # below threshold → hit
             "metadatas": [[cached_meta]],
         }
 
@@ -864,8 +920,10 @@ class TestPipeline:
 
         result = self._run_pipeline_with_mocks(
             extra_patches=[
-                patch("app.worker.dress_tasks.serper_shopping.search", mock_serper),
-                patch("app.worker.dress_tasks.scraper_api.extract_json_ld", mock_scraper),
+                patch("app.modules.dress_search.workers.serper_shopping.search", mock_serper),
+                patch(
+                    "app.modules.dress_search.workers.scraper_api.extract_json_ld", mock_scraper
+                ),
             ]
         )
 
@@ -905,17 +963,29 @@ class TestPipeline:
         mock_serper = AsyncMock(return_value=serper_no_desc)
         mock_scraper = AsyncMock(return_value=json_ld_result)
 
-        from app.worker.dress_tasks import _run_pipeline
+        from app.modules.dress_search.workers import _run_pipeline
+
         mock_get_emb = AsyncMock(return_value=self.mock_embedding)
 
-        with patch("app.worker.dress_tasks.db", self.mock_db), \
-             patch("app.worker.dress_tasks.llm_parser.parse_prompt", self.mock_parser), \
-             patch("app.worker.dress_tasks.open_api.get_embeddings", mock_get_emb), \
-             patch("app.worker.dress_tasks.serper_shopping.search", mock_serper), \
-             patch("app.worker.dress_tasks.scraper_api.extract_json_ld", mock_scraper), \
-             patch("app.worker.dress_tasks.llm_formatter.format_product", self.mock_formatter):
+        with (
+            patch("app.modules.dress_search.workers.db", self.mock_db),
+            patch("app.modules.dress_search.workers.llm_parser.parse_prompt", self.mock_parser),
+            patch("app.modules.dress_search.workers.open_api.get_embeddings", mock_get_emb),
+            patch("app.modules.dress_search.workers.serper_shopping.search", mock_serper),
+            patch("app.modules.dress_search.workers.scraper_api.extract_json_ld", mock_scraper),
+            patch(
+                "app.modules.dress_search.workers.llm_formatter.format_product",
+                self.mock_formatter,
+            ),
+        ):
             result = self._run(
-                _run_pipeline(MOCK_SEARCH_ID, MOCK_TASK_ID, "beach wedding maxi", "Miami, FL", self.mock_vs)
+                _run_pipeline(
+                    MOCK_SEARCH_ID,
+                    MOCK_TASK_ID,
+                    "beach wedding maxi",
+                    "Miami, FL",
+                    self.mock_vs,
+                )
             )
 
         assert result["status"] == "COMPLETED"
@@ -933,15 +1003,24 @@ class TestPipeline:
         """
         failing_parser = MagicMock(side_effect=RuntimeError("xAI API unavailable"))
 
-        from app.worker.dress_tasks import _run_pipeline
+        from app.modules.dress_search.workers import _run_pipeline
+
         mock_get_emb = AsyncMock(return_value=self.mock_embedding)
 
-        with patch("app.worker.dress_tasks.db", self.mock_db), \
-             patch("app.worker.dress_tasks.llm_parser.parse_prompt", failing_parser), \
-             patch("app.worker.dress_tasks.open_api.get_embeddings", mock_get_emb), \
-             pytest.raises(RuntimeError, match="xAI API unavailable"):
+        with (
+            patch("app.modules.dress_search.workers.db", self.mock_db),
+            patch("app.modules.dress_search.workers.llm_parser.parse_prompt", failing_parser),
+            patch("app.modules.dress_search.workers.open_api.get_embeddings", mock_get_emb),
+            pytest.raises(RuntimeError, match="xAI API unavailable"),
+        ):
             self._run(
-                _run_pipeline(MOCK_SEARCH_ID, MOCK_TASK_ID, "beach wedding maxi", "Miami, FL", self.mock_vs)
+                _run_pipeline(
+                    MOCK_SEARCH_ID,
+                    MOCK_TASK_ID,
+                    "beach wedding maxi",
+                    "Miami, FL",
+                    self.mock_vs,
+                )
             )
 
     # ------------------------------------------------------------------
@@ -956,17 +1035,29 @@ class TestPipeline:
         mock_serper = AsyncMock(return_value=[])
         mock_scraper = AsyncMock(return_value=None)
 
-        from app.worker.dress_tasks import _run_pipeline
+        from app.modules.dress_search.workers import _run_pipeline
+
         mock_get_emb = AsyncMock(return_value=self.mock_embedding)
 
-        with patch("app.worker.dress_tasks.db", self.mock_db), \
-             patch("app.worker.dress_tasks.llm_parser.parse_prompt", self.mock_parser), \
-             patch("app.worker.dress_tasks.open_api.get_embeddings", mock_get_emb), \
-             patch("app.worker.dress_tasks.serper_shopping.search", mock_serper), \
-             patch("app.worker.dress_tasks.scraper_api.extract_json_ld", mock_scraper), \
-             patch("app.worker.dress_tasks.llm_formatter.format_product", self.mock_formatter):
+        with (
+            patch("app.modules.dress_search.workers.db", self.mock_db),
+            patch("app.modules.dress_search.workers.llm_parser.parse_prompt", self.mock_parser),
+            patch("app.modules.dress_search.workers.open_api.get_embeddings", mock_get_emb),
+            patch("app.modules.dress_search.workers.serper_shopping.search", mock_serper),
+            patch("app.modules.dress_search.workers.scraper_api.extract_json_ld", mock_scraper),
+            patch(
+                "app.modules.dress_search.workers.llm_formatter.format_product",
+                self.mock_formatter,
+            ),
+        ):
             result = self._run(
-                _run_pipeline(MOCK_SEARCH_ID, MOCK_TASK_ID, "beach wedding maxi", "Miami, FL", self.mock_vs)
+                _run_pipeline(
+                    MOCK_SEARCH_ID,
+                    MOCK_TASK_ID,
+                    "beach wedding maxi",
+                    "Miami, FL",
+                    self.mock_vs,
+                )
             )
 
         assert result["status"] == "COMPLETED"
@@ -1001,7 +1092,7 @@ class TestPipeline:
         enrichments (when json_ld is truthy), so we mock the scraper to
         return a valid JSON-LD result for each call.
         """
-        from app.worker.dress_tasks import _MAX_SCRAPER_FALLBACKS
+        from app.modules.dress_search.workers import _MAX_SCRAPER_FALLBACKS
 
         # Build N+2 items without descriptions
         many_items = [
@@ -1018,23 +1109,37 @@ class TestPipeline:
 
         mock_serper = AsyncMock(return_value=many_items)
         # Scraper returns a valid JSON-LD so scrape_count increments each call
-        mock_scraper = AsyncMock(return_value={
-            "@type": "Product",
-            "name": "Dress",
-            "description": "Beautiful dress",
-        })
+        mock_scraper = AsyncMock(
+            return_value={
+                "@type": "Product",
+                "name": "Dress",
+                "description": "Beautiful dress",
+            }
+        )
 
-        from app.worker.dress_tasks import _run_pipeline
+        from app.modules.dress_search.workers import _run_pipeline
+
         mock_get_emb = AsyncMock(return_value=self.mock_embedding)
 
-        with patch("app.worker.dress_tasks.db", self.mock_db), \
-             patch("app.worker.dress_tasks.llm_parser.parse_prompt", self.mock_parser), \
-             patch("app.worker.dress_tasks.open_api.get_embeddings", mock_get_emb), \
-             patch("app.worker.dress_tasks.serper_shopping.search", mock_serper), \
-             patch("app.worker.dress_tasks.scraper_api.extract_json_ld", mock_scraper), \
-             patch("app.worker.dress_tasks.llm_formatter.format_product", self.mock_formatter):
+        with (
+            patch("app.modules.dress_search.workers.db", self.mock_db),
+            patch("app.modules.dress_search.workers.llm_parser.parse_prompt", self.mock_parser),
+            patch("app.modules.dress_search.workers.open_api.get_embeddings", mock_get_emb),
+            patch("app.modules.dress_search.workers.serper_shopping.search", mock_serper),
+            patch("app.modules.dress_search.workers.scraper_api.extract_json_ld", mock_scraper),
+            patch(
+                "app.modules.dress_search.workers.llm_formatter.format_product",
+                self.mock_formatter,
+            ),
+        ):
             self._run(
-                _run_pipeline(MOCK_SEARCH_ID, MOCK_TASK_ID, "beach maxi", "Miami, FL", self.mock_vs)
+                _run_pipeline(
+                    MOCK_SEARCH_ID,
+                    MOCK_TASK_ID,
+                    "beach maxi",
+                    "Miami, FL",
+                    self.mock_vs,
+                )
             )
 
         # ScraperAPI must be called exactly _MAX_SCRAPER_FALLBACKS times
