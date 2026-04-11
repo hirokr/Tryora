@@ -2,19 +2,18 @@
 tripo_client.py — Async Tripo AI REST Client
 ---------------------------------------------
 Wraps the Tripo AI v2 OpenAPI endpoints:
-  POST /task    — submit image_to_model job
+  POST /task    — submit image_to_model or multiview job
   GET  /task/{id} — poll job status
 
 Rate-limit handling: exponential backoff (1s, 2s, 4s) on HTTP 429.
 Timeout: raises TimeoutError after max_wait seconds.
 Offline mode: raises OfflineModeError when OFFLINE_MODE=True.
-
-All exceptions include task_id where applicable for debuggability.
 """
 from __future__ import annotations
 
 import asyncio
 import logging
+from typing import Optional
 
 import httpx
 
@@ -23,7 +22,7 @@ from app.config.settings import settings
 logger = logging.getLogger("api_security")
 
 TRIPO_BASE = "https://api.tripo3d.ai/v2/openapi"
-_BACKOFF_DELAYS = (1, 2, 4)  # seconds between 429 retries
+_BACKOFF_DELAYS = (1, 2, 4)
 
 
 class OfflineModeError(Exception):
@@ -42,7 +41,6 @@ class TripoClient:
     """Async Tripo AI API client."""
 
     def __init__(self) -> None:
-        # Support both TRIPO_API_KEY and TRIPO_APIKEY naming variants.
         self._api_key: str | None = (
             getattr(settings, "TRIPO_API_KEY", None)
             or getattr(settings, "TRIPO_APIKEY", None)
@@ -63,14 +61,10 @@ class TripoClient:
                 "Tripo AI calls are disabled (OFFLINE_MODE=True or TRIPO_API_KEY missing)"
             )
 
-    # ── Submit task ───────────────────────────────────────────────────────────
+    # ── Submit image-to-3D task ───────────────────────────────────────────────
 
     async def image_to_3d(self, image_url: str) -> str:
-        """
-        Submit an image-to-3D task.
-        Returns the Tripo task_id string.
-        Raises OfflineModeError, TripoAPIError.
-        """
+        """Submit a single-image image_to_model task. Returns task_id."""
         self._check_offline()
 
         payload = {
@@ -104,7 +98,99 @@ class TripoClient:
             logger.info("Tripo task submitted: task_id=%s", task_id)
             return task_id
 
-        raise TripoAPIError("image_to_3d: unreachable after retries")  # safety
+        raise TripoAPIError("image_to_3d: unreachable after retries")
+
+    # ── Avatar generation (multiview or single) ───────────────────────────────
+
+    async def generate_avatar(
+        self,
+        front_image_url: str,
+        side_image_url: Optional[str] = None,
+        back_image_url: Optional[str] = None,
+    ) -> bytes:
+        """
+        Generate a GLB avatar from 1–3 photos.
+
+        Uses multiview_to_model when side or back photos are provided,
+        falls back to image_to_model for a single front photo.
+
+        Returns GLB bytes directly (polls until done + downloads).
+        Raises OfflineModeError, TripoAPIError, TripoTaskFailed, TimeoutError.
+        """
+        self._check_offline()
+
+        # Build the appropriate payload
+        if side_image_url or back_image_url:
+            # Multiview task — include all available angles
+            files = [{"type": "url", "url": front_image_url, "direction": "front"}]
+            if side_image_url:
+                files.append({"type": "url", "url": side_image_url, "direction": "left"})
+            if back_image_url:
+                files.append({"type": "url", "url": back_image_url, "direction": "back"})
+
+            payload = {
+                "type": "multiview_to_model",
+                "files": files,
+            }
+            log_tag = "multiview"
+        else:
+            # Single image fallback
+            payload = {
+                "type": "image_to_model",
+                "file": {"type": "url", "url": front_image_url},
+            }
+            log_tag = "single"
+
+        # Submit with backoff
+        task_id: Optional[str] = None
+        for attempt, delay in enumerate((*_BACKOFF_DELAYS, None), start=1):
+            async with httpx.AsyncClient(timeout=30) as client:
+                response = await client.post(
+                    f"{TRIPO_BASE}/task",
+                    json=payload,
+                    headers=self._headers(),
+                )
+
+            if response.status_code == 429:
+                if delay is None:
+                    raise TripoAPIError("Tripo rate-limit exceeded after max retries")
+                logger.warning(
+                    "Tripo generate_avatar 429 (attempt %d), backing off %ds", attempt, delay
+                )
+                await asyncio.sleep(delay)
+                continue
+
+            data = response.json()
+            if response.status_code != 200 or data.get("code") != 0:
+                raise TripoAPIError(
+                    f"Tripo generate_avatar error ({log_tag}, "
+                    f"status={response.status_code}, "
+                    f"code={data.get('code')}, msg={data.get('message')})"
+                )
+
+            task_id = data["data"]["task_id"]
+            logger.info("Tripo avatar task submitted (%s): task_id=%s", log_tag, task_id)
+            break
+
+        if not task_id:
+            raise TripoAPIError("generate_avatar: failed to obtain task_id after retries")
+
+        # Poll until done
+        result = await self.poll_until_done(task_id, max_wait=300, interval=5)
+
+        # Extract GLB URL from result
+        glb_url = (
+            result.get("output", {}).get("pbr_model")
+            or result.get("output", {}).get("model")
+        )
+        if not glb_url:
+            raise TripoAPIError(
+                f"Tripo task {task_id} completed but returned no GLB URL. "
+                f"Output: {result.get('output')}"
+            )
+
+        logger.info("Tripo avatar GLB ready (%s): %s", log_tag, glb_url)
+        return await self.download_glb(glb_url)
 
     # ── Poll task ─────────────────────────────────────────────────────────────
 
@@ -114,11 +200,7 @@ class TripoClient:
         max_wait: int = 300,
         interval: int = 5,
     ) -> dict:
-        """
-        Poll the Tripo task until status is 'success' or timeout.
-        Returns the task result dict on success.
-        Raises TripoTaskFailed, TimeoutError.
-        """
+        """Poll Tripo task until status is 'success' or timeout."""
         self._check_offline()
 
         deadline = asyncio.get_event_loop().time() + max_wait
@@ -152,9 +234,7 @@ class TripoClient:
 
                 logger.debug(
                     "Tripo task=%s status=%s progress=%s",
-                    task_id,
-                    task_status,
-                    task_data.get("progress"),
+                    task_id, task_status, task_data.get("progress"),
                 )
                 await asyncio.sleep(interval)
 
@@ -165,10 +245,7 @@ class TripoClient:
     # ── Download GLB ──────────────────────────────────────────────────────────
 
     async def download_glb(self, glb_url: str) -> bytes:
-        """
-        Stream-download the generated GLB from Tripo CDN.
-        Does NOT use .content directly to avoid loading large files into memory at once.
-        """
+        """Stream-download the generated GLB from Tripo CDN."""
         self._check_offline()
 
         chunks: list[bytes] = []
