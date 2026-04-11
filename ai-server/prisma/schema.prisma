@@ -297,7 +297,6 @@ model ProcessingJob {
   @@map("processing_jobs")
 }
 
-
 model RecommendationLog {
   id      String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId  String  @map("user_id") @db.Uuid
@@ -325,8 +324,6 @@ model RecommendationLog {
   @@index([eventId])
   @@map("recommendation_logs")
 }
-
-
 
 model SystemMetric {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -438,7 +435,7 @@ model DressProduct {
 
 model GenerationJob {
   id                  String    @id @default(cuid())
-  userId              String
+  userId              String    @db.Uuid                -- FIX: add @db.Uuid to match User.id
   jobType             String
   status              String    @default("PENDING")
   progress            Int       @default(0)
@@ -447,13 +444,14 @@ model GenerationJob {
   inputS3Key          String?
   outputGlbS3Key      String?
   outputGlbRedisKey   String?
-  templateDressId     String?   // ← add if missing
-  userImageS3Key      String?   // ← add if missing
-  glbSource           String?   // ← add if missing
+  templateDressId     String?
+  userImageS3Key      String?
+  glbSource           String?
   errorMessage        String?
   createdAt           DateTime  @default(now())
   completedAt         DateTime?
-  user                User      @relation(fields: [userId], references: [id])
+
+  user                User      @relation(fields: [userId], references: [id])  -- FIX: add FK relation
 }
 
 model ConsentRecord {
@@ -507,8 +505,7 @@ model DressTemplate {
   category     String   @db.VarChar(50)
   ethnicity    String?  @db.VarChar(100)
   bodyLabel    String?  @map("body_label") @db.VarChar(50)
-  glbSource    String?  @map("glb_source") @db.Text
-  glbS3Key     String?  @map("glb_s3_key") @db.Text
+  glbSource    String?  @map("glb_source") @db.Text   -- canonical, was split across glbSource + glbS3Key
   thumbnailUrl String?  @map("thumbnail_url") @db.Text
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp
