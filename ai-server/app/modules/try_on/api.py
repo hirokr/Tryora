@@ -25,7 +25,7 @@ from app.modules.try_on.schemas import (
     TryOnRequest,
 )
 from app.modules.try_on.service import create_job, get_job
-from app.infrastructure.storage.s3 import s3_service
+from app.infrastructure.storage.storage_service import storage_service
 
 logger = logging.getLogger("api.try_on")
 
@@ -220,7 +220,7 @@ async def get_job_result(
         )
 
     try:
-        presigned = await s3_service.generate_presigned_url(
+        presigned = await storage_service.generate_presigned_url(
             result_key, ttl=_PRESIGNED_TTL
         )
     except Exception as exc:

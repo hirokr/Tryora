@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from app.api.deps import get_db
 from app.infrastructure.cache.cache_service import CacheService
 from app.infrastructure.db.repositories.user_profile_repo import check_consent, get_profile, upsert_profile
-from app.infrastructure.storage.s3 import s3_service
+from app.infrastructure.storage.storage_service import storage_service
 from app.modules.consent.service import gdpr_erase, record_consent
 from app.modules.profiles.repository import ConsentDecision
 from app.modules.profiles.schemas import ConsentRequest, ConsentResponse, GdprEraseResponse, ProfileResponse, ProfileUpdateRequest
@@ -80,7 +80,7 @@ class _EraseGatewayAdapter:
     cache: CacheService
 
     async def erase_user(self, *, user_id: str) -> str:
-        return await gdpr_erase(user_id=user_id, db=self.db, cache=self.cache, s3=s3_service)
+        return await gdpr_erase(user_id=user_id, db=self.db, cache=self.cache, s3=storage_service)
 
 
 def _service_factory(db: Any, cache: CacheService) -> ProfilesService:
