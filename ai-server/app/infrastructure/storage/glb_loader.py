@@ -44,10 +44,10 @@ async def load_glb(
     Load a GLB from the specified source URI.
 
     source_uri examples:
-      "redis:glb:base:user_abc"
-      "s3:tryora-assets/avatars/user_abc/base.glb"
-      "local:/data/glb/template_maxi_average.glb"
-      "url:https://cdn.tripo3d.ai/output/xyz.glb"
+        "redis:glb:base:user_abc"
+        "s3:tryora-assets/avatars/user_abc/base.glb"
+        "local:/data/glb/template_maxi_average.glb"
+        "url:https://cdn.tripo3d.ai/output/xyz.glb"
     """
     if ":" not in source_uri:
         raise ValueError(f"Invalid GLB source URI (missing scheme): {source_uri!r}")
