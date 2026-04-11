@@ -1,5 +1,5 @@
 """
-serper_shopping.py
+serper_client.py
 ------------------
 Thin async wrapper around the Serper.dev Google Shopping API.
 
@@ -13,7 +13,6 @@ Endpoint: POST https://google.serper.dev/shopping
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
@@ -44,8 +43,9 @@ class SerperShoppingService:
 
     def __init__(self) -> None:
         self._base_url = "https://google.serper.dev/shopping"
+        self._api_key = settings.SERPER_APIKEY
         self._headers = {
-            "X-API-KEY": settings.SERPER_APIKEY,
+            "X-API-KEY": self._api_key,
             "Content-Type": "application/json",
         }
 
@@ -81,6 +81,10 @@ class SerperShoppingService:
         list[dict]
             Normalised product list; empty list on any error.
         """
+        if not self._api_key:
+            logger.error("SerperShoppingService: SERPER_APIKEY is not configured")
+            return []
+
         payload = {
             "q": query,
             "num": num_results,

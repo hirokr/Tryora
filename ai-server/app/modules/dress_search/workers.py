@@ -47,12 +47,12 @@ from app.config.settings import settings
 from app.db.prisma_connect import db
 from app.db.vectordb import VectorStore
 from app.infrastructure.external.openrouter_client import open_api
+from app.infrastructure.external.scraper_api_client import scraper_api
+from app.infrastructure.external.serper_client import serper_shopping
 from app.modules.dress_search.formatter import llm_formatter
 from app.modules.dress_search.parser import llm_parser
 from app.schemas.dress_search import DressProductSchema, DressSearchParams
 from app.modules.dress_search.query_builder import build_shopping_query
-from app.modules.dress_search.scraper_api import scraper_api
-from app.modules.dress_search.serper_shopping import serper_shopping
 from app.infrastructure.queue.celery_app import celery_app
 
 logger = logging.getLogger("api_security")
