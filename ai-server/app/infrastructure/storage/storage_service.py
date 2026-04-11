@@ -43,6 +43,7 @@ def _get_client():
 
     elif settings.STORAGE_PROVIDER == "r2":
         kwargs: dict = {
+            "service_name": "s3",
             "region_name": "auto",
             "endpoint_url": settings.R2_ENDPOINT_URL,
             "aws_access_key_id": settings.R2_ACCESS_KEY_ID,

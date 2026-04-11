@@ -92,6 +92,9 @@ class Settings(BaseSettings):
     )
     AWS_REGION: str = Field(default="us-east-1", validation_alias="AWS_REGION")
     S3_BUCKET: str = Field(default="tryora-assets", validation_alias="AWS_S3_BUCKET")
+    S3_ENDPOINT_URL: Optional[str] = Field(
+        default=None, validation_alias="S3_ENDPOINT_URL"
+    )  # For S3-compatible providers like MinIO in offline mode
 
     # Cloudflare R2 (alternative to S3)
     R2_ENDPOINT_URL: Optional[str] = Field(
@@ -103,7 +106,7 @@ class Settings(BaseSettings):
     R2_SECRET_ACCESS_KEY: Optional[str] = Field(
         default=None, validation_alias="R2_SECRET_ACCESS_KEY"
     )
-    R2_BUCKET: str = Field(default="tryora-assets", validation_alias="R2_BUCKET")
+    R2_BUCKET: str = Field(default="tryora", validation_alias="R2_BUCKET")
 
     # Offline / local mode
     OFFLINE_MODE: bool = Field(default=False, validation_alias="OFFLINE_MODE")
