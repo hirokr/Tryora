@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Web Folder Structure
 
-## Getting Started
+This file documents the current structure of the `web` folder.
 
-First, run the development server:
+Note:
+- `node_modules/` and `.next/` are excluded because they are generated dependency/build folders.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```text
+web/
+|-- app/
+|   |-- (root)/
+|   |   |-- layout.tsx
+|   |   +-- page.tsx
+|   |-- api/
+|   |   |-- auth/
+|   |   |   +-- google/
+|   |   |       +-- callback/
+|   |   |           +-- route.ts
+|   |   |-- signout/
+|   |   |   +-- route.ts
+|   |   |-- update/
+|   |   |   +-- route.ts
+|   |   +-- uploadthing/
+|   |       |-- core.ts
+|   |       +-- route.ts
+|   |-- auth/
+|   |   |-- signin/
+|   |   |   |-- page.tsx
+|   |   |   +-- signupInFrom.tsx
+|   |   |-- signup/
+|   |   |   |-- page.tsx
+|   |   |   +-- SignUpFrom.tsx
+|   |   |-- layout.tsx
+|   |   +-- page.tsx
+|   |-- apple-icon.png
+|   |-- favicon.ico
+|   |-- globals.css
+|   |-- icon0.svg
+|   |-- icon1.png
+|   |-- layout.tsx
+|   +-- manifest.json
+|-- components/
+|   |-- theme/
+|   |   +-- toggle-theme.tsx
+|   |-- ui/
+|   |   |-- button.tsx
+|   |   |-- dropdown-menu.tsx
+|   |   |-- input.tsx
+|   |   |-- label.tsx
+|   |   |-- Loader.tsx
+|   |   +-- submitButton.tsx
+|   |-- utility/
+|   |   +-- Uploader.tsx
+|   |-- Footer.tsx
+|   |-- Header.tsx
+|   |-- Logo.tsx
+|   +-- SIgnInButton.tsx
+|-- constants/
+|   +-- constants.ts
+|-- hooks/
+|   +-- useDebounce.ts
+|-- lib/
+|   |-- auth/
+|   |   |-- action.ts
+|   |   |-- auth.ts
+|   |   |-- authFetch.ts
+|   |   +-- session.ts
+|   |-- gsap.ts
+|   |-- UserPreference.ts
+|   +-- utils.ts
+|-- providers/
+|   |-- gsapProvider.tsx
+|   |-- Provider.tsx
+|   |-- theme-provider.tsx
+|   +-- UploadThing-provider.tsx
+|-- public/
+|   |-- HomePage/
+|   |   |-- home 1.png
+|   |   |-- home 2.png
+|   |   |-- home 3.png
+|   |   |-- home 4.png
+|   |   |-- home 5.png
+|   |   +-- home 6.png
+|   |-- logo.svg
+|   |-- web-app-manifest-192x192.png
+|   +-- web-app-manifest-512x512.png
+|-- scripts/
+|   +-- env.sh
+|-- store/
+|   +-- useSceneStore.ts
+|-- types/
+|   |-- auth.d.ts
+|   |-- blob.d.ts
+|   +-- user.d.ts
+|-- utils/
+|   |-- test.ts
+|   +-- uploadthing.ts
+|-- validation/
+|   +-- auth.valid.ts
+|-- .dockerignore
+|-- .env.example
+|-- .gitignore
+|-- components.json
+|-- Dockerfile
+|-- eslint.config.mjs
+|-- next.config.ts
+|-- next-env.d.ts
+|-- package.json
+|-- package-lock.json
+|-- postcss.config.mjs
+|-- README.md
+|-- todo.md
++-- tsconfig.json
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
