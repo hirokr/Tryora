@@ -23,7 +23,7 @@ from app.config.settings import settings
 
 if TYPE_CHECKING:
     from app.infrastructure.cache.cache_service import CacheService
-    from app.infrastructure.storage.s3 import S3Service
+    from app.infrastructure.storage.storage_service import StorageService
 
 logger = logging.getLogger("api_security")
 
@@ -37,8 +37,8 @@ class GlbSource(str, Enum):
 
 async def load_glb(
     source_uri: str,
-    cache: "CacheService",
-    s3: "S3Service | None" = None,
+    cache: "CacheService | None",
+    s3: "StorageService | None" = None,
 ) -> bytes:
     """
     Load a GLB from the specified source URI.
@@ -60,6 +60,8 @@ async def load_glb(
         raise ValueError(f"Unknown GLB source scheme: {scheme!r}")
 
     if source == GlbSource.REDIS:
+        if cache is None:
+            raise RuntimeError("Cannot load redis: GLB source without cache service")
         data = await cache.get_bytes(path)
         if data is None:
             raise FileNotFoundError(f"GLB not found in Redis: {path}")
@@ -67,8 +69,8 @@ async def load_glb(
 
     if source == GlbSource.S3:
         if s3 is None:
-            from app.infrastructure.storage.s3 import s3_service as _s3
-            s3 = _s3
+            from app.infrastructure.storage.storage_service import storage_service as _storage
+            s3 = _storage
         # path format: bucket/key
         bucket, key = path.split("/", 1)
         return await s3.download_bytes(key, bucket=bucket)

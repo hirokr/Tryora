@@ -19,7 +19,7 @@ from app.shared.security.jwt import TokenPayload, get_current_user
 from app.modules.templates.schemas import DressTemplateListResponse, DressTemplateResponse
 from app.infrastructure.cache.cache_service import CacheService
 from app.infrastructure.storage.glb_loader import load_glb
-from app.infrastructure.storage.s3 import s3_service
+from app.infrastructure.storage.storage_service import storage_service
 
 logger = logging.getLogger("api.templates")
 
@@ -148,7 +148,7 @@ async def get_template_glb(
     if glb_bytes is None:
         # Load from source (s3: / url: / local: / redis:)
         try:
-            glb_bytes = await load_glb(template_obj.glbSource, cache=cache, s3=s3_service)
+            glb_bytes = await load_glb(template_obj.glbSource, cache=cache, s3=storage_service)
         except FileNotFoundError:
             raise HTTPException(status_code=404, detail="GLB file not found")
         except NotImplementedError:
