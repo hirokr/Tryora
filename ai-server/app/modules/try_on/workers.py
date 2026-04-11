@@ -13,30 +13,39 @@ Steps:
   5. Run GenerationRouter cascade (Tiers 1-4)
   6. Store result in S3
   7. Update job COMPLETED
+
+FIXES applied (vs original):
+  - app.core.config         → app.config.settings
+  - app.db.queries.jobs     → app.infrastructure.db.repositories.generation_job_repo
+  - app.db.queries.profile  → app.infrastructure.db.repositories.user_profile_repo
+  - app.infrastructure.storage.s3 → app.infrastructure.storage.storage_service
+  - app.services.job_service → app.modules.try_on.service
+  - app.worker.celery_app   → app.infrastructure.queue.celery_app
+  - s3_service.key_try_on_result(user_id, job_id) → key_try_on_result(job_id)  [1 arg]
 """
 from __future__ import annotations
 
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, cast
 
 from celery import Task
 
-from app.worker.celery_app import celery_app
+from app.infrastructure.queue.celery_app import celery_app          # FIX 6
 
 logger = logging.getLogger("worker.try_on")
 
 
 async def _run_pipeline(job_id: str, user_id: str) -> None:
-    from app.core.config import settings
+    from app.config.settings import settings                                          # FIX 1
     from app.db.prisma_connect import db
-    from app.db.queries.jobs import get_job_by_id
-    from app.db.queries.profile import get_profile
+    from app.infrastructure.db.repositories.generation_job_repo import get_job_by_id # FIX 2
+    from app.infrastructure.db.repositories.user_profile_repo import get_profile     # FIX 3
     from app.infrastructure.cache.cache_service import CacheService
-    from app.infrastructure.storage.s3 import s3_service
+    from app.infrastructure.storage.storage_service import storage_service            # FIX 4
     from app.modules.try_on.generation_router import GenerationRouter
-    from app.services.job_service import update_job_status
+    from app.modules.try_on.service import JobUpdateExtra, update_job_status          # FIX 5
 
     redis_client = None
     cache = None
@@ -82,7 +91,7 @@ async def _run_pipeline(job_id: str, user_id: str) -> None:
 
     # Step 3 — build router
     await _progress(3, "Selecting generation strategy")
-    router = GenerationRouter(db=db, cache=cache, s3=s3_service)
+    router = GenerationRouter(db=db, cache=cast("CacheService", cache), s3=storage_service)
 
     # Steps 4-7 — run cascade
     await _progress(4, "Checking cache")
@@ -114,9 +123,10 @@ async def _run_pipeline(job_id: str, user_id: str) -> None:
 
     # Step 8 — upload result to S3
     await _progress(8, "Uploading result")
-    s3_key = s3_service.key_try_on_result(user_id, job_id)
+    # FIX 7: key_try_on_result takes only job_id (1 arg), not (user_id, job_id)
+    s3_key = storage_service.key_try_on_result(job_id)
     try:
-        await s3_service.upload_bytes(result.glb_bytes, s3_key, "model/gltf-binary")
+        await storage_service.upload_bytes(s3_key, result.glb_bytes, "model/gltf-binary")
     except Exception as exc:
         logger.exception("S3 upload failed for job %s", job_id)
         await update_job_status(
@@ -128,21 +138,21 @@ async def _run_pipeline(job_id: str, user_id: str) -> None:
     # Step 9-10 — mark COMPLETED
     await _progress(9, "Finalising")
     now = datetime.now(timezone.utc).isoformat()
+    completed_extra: JobUpdateExtra = {
+        "resultS3Key": s3_key,
+        "completedAt": now,
+        "progress": 100,
+        "provider": result.provider,
+        "usedFallback": result.used_fallback,
+    }
     await update_job_status(
         job_id=job_id, status="COMPLETED", db=db, cache=cache,
-        extra={
-            "resultS3Key": s3_key,
-            "completedAt": now,
-            "progress": 100,
-            "provider": result.provider,        # expose which tier won
-            "usedFallback": result.used_fallback,
-        },
+        extra=completed_extra,
     )
     logger.info("Job %s COMPLETED → %s (via %s)", job_id, s3_key, result.provider)
 
     if redis_client:
         await redis_client.aclose()
-
 
 @celery_app.task(
     bind=True,

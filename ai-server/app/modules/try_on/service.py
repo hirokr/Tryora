@@ -28,7 +28,9 @@ class JobUpdateExtra(TypedDict, total=False):
     step: str
     error: str
     resultS3Key: str
-    completedAt: datetime
+    completedAt: str
+    provider: str
+    usedFallback: bool
     tripoTaskId: str
 # test run
 
@@ -87,8 +89,8 @@ async def update_job_status(
     Update job progress in both Redis (sync) and DB (async background).
     Redis update is done first so polling clients always see fresh data.
 
-    *extra* can contain any of: progress, currentStage, errorMessage,
-    resultS3Key, completedAt, tripoTaskId.
+    *extra* can contain any of: progress, step, error,
+    resultS3Key, completedAt, provider, usedFallback, tripoTaskId.
     """
     extra = extra or {}
 
@@ -97,6 +99,8 @@ async def update_job_status(
         "status": status,
         "progress": extra.get("progress", 0),
         "currentStage": extra.get("step"),
+        "provider": extra.get("provider"),
+        "usedFallback": extra.get("usedFallback"),
         "errorMessage": extra.get("error"),
         "resultS3Key": extra.get("resultS3Key"),
         "completedAt": extra.get("completedAt"),
