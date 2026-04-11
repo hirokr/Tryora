@@ -2,7 +2,7 @@
 formatter.py
 ------------
 Takes raw product data (either a Serper Shopping item dict or a
-Schema.org/Product JSON-LD dict from ScraperAPI) and asks xAI to
+Schema.org/Product JSON-LD dict from ScraperAPI) and asks Groq to
 normalise it into our canonical DressProductSchema format.
 
 This is deliberately a *light* LLM call:
@@ -22,16 +22,14 @@ import json
 import logging
 from typing import Any, Optional
 
-from openai import OpenAI
 from pydantic import ValidationError
 
-from app.config.settings import settings
+from app.infrastructure.external.groq_client import get_groq_client
 from app.schemas.dress_search import DressProductSchema
 
 logger = logging.getLogger("api_security")
 
-_XAI_BASE_URL = "https://api.x.ai/v1"
-_MODEL = "grok-3-mini"
+_MODEL = "llama-3.3-70b-versatile"
 
 _SYSTEM_PROMPT = """\
 You are a data-cleaning assistant for the Tryora fashion platform.
@@ -68,19 +66,12 @@ class LLMFormatterService:
     """
 
     def __init__(self) -> None:
-        self._client: Optional[OpenAI] = None
+        # Client is managed as a shared lazy singleton by groq_client.
+        pass
 
-    def _get_client(self) -> OpenAI:
-        if self._client is None:
-            if not settings.XAI_API_KEY:
-                raise RuntimeError(
-                    "XAI_API_KEY is not configured — cannot call the LLM formatter."
-                )
-            self._client = OpenAI(
-                api_key=settings.XAI_API_KEY,
-                base_url=_XAI_BASE_URL,
-            )
-        return self._client
+    @staticmethod
+    def _get_client() -> Any:
+        return get_groq_client()
 
     def format_product(
         self,
@@ -146,7 +137,7 @@ class LLMFormatterService:
         source: str,
     ) -> Optional[DressProductSchema]:
         """
-        Use xAI to extract and normalise fields from an arbitrary product
+        Use Groq to extract and normalise fields from an arbitrary product
         dict (typically JSON-LD from ScraperAPI).
         """
         client = self._get_client()

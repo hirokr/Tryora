@@ -8,10 +8,10 @@ GET  /api/3d/templates/{id}/glb   — stream binary GLB (cache-first)
 from __future__ import annotations
 
 import logging
-from typing import Annotated, Optional
+from typing import Annotated, Any, Optional, cast
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
-from fastapi.responses import Response, StreamingResponse
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi.responses import Response
 
 from app.api.deps import get_db
 from app.infrastructure.db.repositories.template_repo import get_template_by_id, list_templates
@@ -19,7 +19,7 @@ from app.shared.security.jwt import TokenPayload, get_current_user
 from app.modules.templates.schemas import DressTemplateListResponse, DressTemplateResponse
 from app.infrastructure.cache.cache_service import CacheService
 from app.infrastructure.storage.glb_loader import load_glb
-from app.infrastructure.storage.s3 import s3_service
+from app.infrastructure.storage.storage_service import storage_service
 
 logger = logging.getLogger("api.templates")
 
@@ -43,12 +43,12 @@ def _get_cache(request: Request) -> CacheService:
     summary="List pre-baked dress templates",
 )
 async def list_dress_templates(
+    current_user: Annotated[TokenPayload, Depends(get_current_user)],
     category: Optional[str] = None,
     body_label: Optional[str] = None,
     ethnicity: Optional[str] = None,
     page: int = 1,
     page_size: int = 20,
-    current_user: Annotated[TokenPayload, Depends(get_current_user)] = None,
     db=Depends(get_db),
 ) -> DressTemplateListResponse:
     if page < 1:
@@ -72,7 +72,6 @@ async def list_dress_templates(
             category=t.category,
             bodyLabel=t.bodyLabel,
             ethnicity=t.ethnicity,
-            glbSource=t.glbSource if t.glbSource else None,
             thumbnailUrl=t.thumbnailUrl if t.thumbnailUrl else None,
             isActive=t.isActive,
             createdAt=t.createdAt,
@@ -103,17 +102,17 @@ async def get_template(
     template = await get_template_by_id(template_id, db)
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
+    template_obj = cast(Any, template)
 
     return DressTemplateResponse(
-        id=template.id,
-        name=template.name,
-        category=template.category,
-        bodyLabel=template.bodyLabel,
-        ethnicity=template.ethnicity,
-        glbSource=template.glbSource if template.glbSource else None,
-        thumbnailUrl=template.thumbnailUrl if template.thumbnailUrl else None,
-        isActive=template.isActive,
-        createdAt=template.createdAt,
+        id=template_obj.id,
+        name=template_obj.name,
+        category=template_obj.category,
+        bodyLabel=template_obj.bodyLabel,
+        ethnicity=template_obj.ethnicity,
+        thumbnailUrl=template_obj.thumbnailUrl if template_obj.thumbnailUrl else None,
+        isActive=template_obj.isActive,
+        createdAt=template_obj.createdAt,
     )
 
 
@@ -135,11 +134,13 @@ async def get_template_glb(
     template = await get_template_by_id(template_id, db)
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
-    if not template.glbSource:
+    template_obj = cast(Any, template)
+
+    if not template_obj.glbSource:
         raise HTTPException(status_code=404, detail="No GLB available for this template")
 
     # Build cache key using template id + bodyLabel
-    body_label = template.bodyLabel or "universal"
+    body_label = template_obj.bodyLabel or "universal"
     cache_key = cache.key_template_dress(template_id, body_label)
 
     glb_bytes: bytes | None = await cache.get_glb(cache_key)
@@ -147,7 +148,7 @@ async def get_template_glb(
     if glb_bytes is None:
         # Load from source (s3: / url: / local: / redis:)
         try:
-            glb_bytes = await load_glb(template.glbSource, cache=cache, s3=s3_service)
+            glb_bytes = await load_glb(template_obj.glbSource, cache=cache, s3=storage_service)
         except FileNotFoundError:
             raise HTTPException(status_code=404, detail="GLB file not found")
         except NotImplementedError:

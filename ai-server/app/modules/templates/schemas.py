@@ -34,5 +34,6 @@ class UploadDressImageResponse(BaseModel):
 
     s3Key: str = Field(..., description="S3 key of the uploaded (EXIF-stripped) image")
     sha256: str = Field(..., description="SHA-256 hex digest of the stripped image content")
+    presignedUrl: Optional[str] = None
     sizeBytes: int
     contentType: str

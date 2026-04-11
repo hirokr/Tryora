@@ -258,6 +258,7 @@ class GenerationRouter:
         try:
             from app.modules.templates.selector import select_best_template
             from app.infrastructure.storage.glb_loader import load_glb
+            from app.infrastructure.storage.storage_service import storage_service
 
             template = await select_best_template(
                 user_id=user_id,
@@ -282,7 +283,7 @@ class GenerationRouter:
                 from app.config.settings import settings
                 glb_source = f"s3:{settings.S3_BUCKET}/{glb_source}"
 
-            glb = await load_glb(glb_source, cache=self._cache, s3=self._s3)
+            glb = await load_glb(glb_source, cache=self._cache, s3=storage_service)
             logger.info(
                 "Router Tier 4 (template) SUCCESS  template=%s bytes=%d",
                 template.get("id"), len(glb),

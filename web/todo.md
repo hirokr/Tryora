@@ -5,6 +5,86 @@
 
 ---
 
+## Module Breakdown (Granular)
+
+> This section breaks frontend work into smaller tasks. Keep this in sync with the phase plan below.
+> Priority labels: `P0` = critical path, `P1` = high impact, `P2` = polish/backlog.
+
+### Module 1 (P0) — Auth UX & Session
+
+- [x] Build sign-up page + form action wiring
+- [x] Build sign-in page + form action wiring
+- [x] Add Google sign-in redirect flow
+- [x] Add session utilities (`createSession`, `getSession`)
+- [x] Add authenticated fetch helper (`authFetch`)
+- [x] Add sign-out API route
+- [ ] Add protected-route middleware (`middleware.ts`)
+- [ ] Add verify-email, forgot-password, reset-password pages
+- [ ] Polish form loading/error states
+
+### Module 2 (P0) — Onboarding Upload Flow
+
+- [x] Configure UploadThing API route (`imageUploader`)
+- [x] Add UploadThing provider in root providers
+- [x] Add reusable uploader component
+- [ ] Create 3-step onboarding page (front/side/back uploads)
+- [ ] Collect all 3 uploaded URLs in client state
+- [ ] Submit URLs to backend `/api/avatar/generate`
+- [ ] Complete server-side `onUploadComplete` persistence logic
+- [ ] Add upload previews, validation hints, and progress indicator
+- [ ] Redirect user to avatar status page after submit
+
+### Module 3 (P1) — Avatar Status & 3D Viewer
+
+- [ ] Create avatar status polling page
+- [ ] Stop polling safely on unmount
+- [ ] Persist `jobId` to Zustand store for resume support
+- [ ] Create 3D avatar viewer with `react-three-fiber` + `drei`
+- [ ] Add offline banner and cached model experience
+
+### Module 4 (P1) — Discovery & Saved Dresses
+
+- [ ] Build discovery page + prompt submission flow
+- [ ] Create reusable dress card with Save + Try On actions
+- [ ] Add `useDiscovery` hook for request state management
+- [ ] Add debounced search input behavior
+- [ ] Persist discovery results in IndexedDB
+- [ ] Build saved-dresses page with optimistic remove behavior
+- [ ] Sync saved dresses between API and IndexedDB
+
+### Module 5 (P1) — Try-On & Gallery
+
+- [x] Base Zustand scene store exists
+- [ ] Extend store for `currentJobId`, `selectedDressId`, `scenePrompt`, `resultUrl`, `status`
+- [ ] Build try-on initiation page/flow
+- [ ] Build try-on status polling page
+- [ ] Build try-on result presentation page/modal
+- [ ] Build gallery page with pagination/infinite loading
+- [ ] Add optimistic delete from gallery
+
+### Module 6 (P1) — PWA & Offline
+
+- [x] Add web app manifest
+- [ ] Register service worker in app layout/provider
+- [ ] Configure `next-pwa` (or custom worker generation)
+- [ ] Add icon set for installable PWA
+- [ ] Add cache versioning and stale cache cleanup
+- [ ] Add Background Sync queue for offline mutations
+- [ ] Add online/offline detection hook and global banner
+
+### Module 7 (P2) — Shell, Profile, API Layer, Security
+
+- [x] Root providers + app shell scaffolded
+- [x] Base Header, Footer, Logo, Theme toggle present
+- [ ] Expand authenticated navigation links + user menu
+- [ ] Add mobile navigation pattern
+- [ ] Build profile page with update + account actions
+- [ ] Create centralized typed API client (`lib/api.ts`)
+- [ ] Standardize API error handling + optimistic updates
+- [ ] Verify CSRF/CSP/sanitization/cooldown protections
+
+---
+
 ## Phase 0 — Project Bootstrap & Infrastructure
 
 - [x] **Next.js 15 app initialized** — App Router structure under `app/`, TypeScript configured via `tsconfig.json`

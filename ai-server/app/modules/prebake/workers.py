@@ -2,15 +2,15 @@
 prebake_task.py — Celery task: pre-bake catalog template GLBs
 --------------------------------------------------------------
 Pipeline (9 steps for each template):
-  1. Load template metadata from DB
-  2. Check if GLB is already cached (Redis + S3)
-  3. Fetch template's reference thumbnail / source image
-  4. Call Tripo AI image-to-3D
-  5. Poll until done
-  6. Download the resulting GLB
-  7. Cache in Redis (GLB bytes, 1-hour TTL)
-  8. Upload to S3 at catalog key
-  9. Update DressTemplate.glbSource in DB
+    1. Load template metadata from DB
+    2. Check if GLB is already cached (Redis + S3)
+    3. Fetch template's reference thumbnail / source image
+    4. Call Tripo AI image-to-3D
+    5. Poll until done
+    6. Download the resulting GLB
+    7. Cache in Redis (GLB bytes, 1-hour TTL)
+    8. Upload to S3 at catalog key
+    9. Update DressTemplate.glbSource in DB
 
 Triggered manually via POST /api/admin/templates/{id}/prebake
 or bulk-baked via scripts/seed_templates.py.
@@ -19,11 +19,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from celery import Task
 
 from app.infrastructure.queue.celery_app import celery_app
+
+if TYPE_CHECKING:
+    from app.infrastructure.cache.cache_service import CacheService
 
 logger = logging.getLogger("worker.prebake")
 
@@ -34,11 +37,17 @@ async def _run_prebake(template_id: str) -> None:
     from app.infrastructure.db.repositories.template_repo import get_template_by_id
     from app.infrastructure.cache.cache_service import CacheService
     from app.infrastructure.storage.glb_loader import load_glb
-    from app.infrastructure.storage.s3 import s3_service
+    from app.infrastructure.storage.storage_service import storage_service
     from app.infrastructure.external.tripo_client import OfflineModeError, TripoAPIError, TripoTaskFailed, tripo_client
 
     redis_client = None
     cache = None
+
+    async def _close_redis_client() -> None:
+        nonlocal redis_client
+        if redis_client is not None:
+            await redis_client.aclose()
+            redis_client = None
 
     try:
         import redis.asyncio as aioredis
@@ -47,6 +56,16 @@ async def _run_prebake(template_id: str) -> None:
     except Exception as exc:
         logger.warning("Redis unavailable in prebake worker: %s", exc)
 
+    class _NoopCache:
+        async def get_bytes(self, key: str) -> bytes | None:
+            return None
+
+    cache_for_loader = (
+        cast("CacheService", cache)
+        if cache is not None
+        else cast("CacheService", _NoopCache())
+    )
+
     if not db.is_connected():
         await db.connect()
 
@@ -54,9 +73,11 @@ async def _run_prebake(template_id: str) -> None:
     template = await get_template_by_id(template_id, db)
     if not template:
         logger.error("Prebake: template %s not found", template_id)
+        await _close_redis_client()
         return
+    template_obj = cast(Any, template)
 
-    body_label = template.bodyLabel or "universal"
+    body_label = template_obj.bodyLabel or "universal"
 
     # ── Step 2: cache check ──────────────────────────────────────────────────
     if cache:
@@ -64,19 +85,20 @@ async def _run_prebake(template_id: str) -> None:
         existing = await cache.get_glb(cache_key)
         if existing:
             logger.info("Prebake: template %s already cached; skipping", template_id)
+            await _close_redis_client()
             return
 
     # ── Step 3-6: Tripo generation ───────────────────────────────────────────
     glb_bytes: bytes | None = None
 
     try:
-        if template.glbSource and template.glbSource.startswith(("s3:", "url:", "local:")):
+        if template_obj.glbSource and template_obj.glbSource.startswith(("s3:", "url:", "local:")):
             # Already has a GLB source — just load & warm cache
-            glb_bytes = await load_glb(template.glbSource, cache=cache, s3=s3_service)
-        elif template.thumbnailUrl:
+            glb_bytes = await load_glb(template_obj.glbSource, cache=cache_for_loader, s3=storage_service)
+        elif template_obj.thumbnailUrl:
             # Generate from thumbnail
             logger.info("Prebake: generating GLB for template %s via Tripo", template_id)
-            task_id = await tripo_client.image_to_3d(template.thumbnailUrl)
+            task_id = await tripo_client.image_to_3d(template_obj.thumbnailUrl)
             result = await tripo_client.poll_until_done(task_id, max_wait=300, interval=5)
             glb_url = (
                 result.get("output", {}).get("pbr_model")
@@ -87,22 +109,25 @@ async def _run_prebake(template_id: str) -> None:
             glb_bytes = await tripo_client.download_glb(glb_url)
         else:
             logger.warning("Prebake: template %s has no thumbnailUrl and no existing GLB; skipping", template_id)
+            await _close_redis_client()
             return
 
     except OfflineModeError:
         logger.info("Offline mode: skipping Tripo call for template %s", template_id)
         placeholder = f"local:{settings.LOCAL_GLB_DIR}/placeholder.glb"
         try:
-            glb_bytes = await load_glb(placeholder, cache=cache, s3=s3_service)
+            glb_bytes = await load_glb(placeholder, cache=cache_for_loader, s3=storage_service)
         except Exception:
             glb_bytes = b""
 
     except (TripoAPIError, TripoTaskFailed, Exception) as exc:
         logger.exception("Prebake failed for template %s: %s", template_id, exc)
+        await _close_redis_client()
         return
 
     if not glb_bytes:
         logger.warning("Prebake: empty GLB for template %s; aborting", template_id)
+        await _close_redis_client()
         return
 
     # ── Step 7: warm Redis cache ─────────────────────────────────────────────
@@ -112,16 +137,17 @@ async def _run_prebake(template_id: str) -> None:
         logger.info("Prebake: cached template %s in Redis (%d bytes)", template_id, len(glb_bytes))
 
     # ── Step 8: upload to S3 catalog path ────────────────────────────────────
-    s3_key = s3_service.key_catalog_variant(template_id, body_label)
+    s3_key = storage_service.key_catalog_variant(template_id, body_label)
     try:
-        await s3_service.upload_bytes(glb_bytes, s3_key, "model/gltf-binary")
+        await storage_service.upload_bytes(s3_key, glb_bytes, "model/gltf-binary")
         logger.info("Prebake: uploaded template %s to S3 → %s", template_id, s3_key)
     except Exception as exc:
         logger.exception("Prebake S3 upload failed for template %s: %s", template_id, exc)
+        await _close_redis_client()
         return
 
     # ── Step 9: update DressTemplate.glbSource in DB ─────────────────────────
-    new_source = f"s3:{settings.S3_BUCKET}/{s3_key}"
+    new_source = f"s3:{storage_service.bucket}/{s3_key}"
     try:
         await db.dresstemplate.update(
             where={"id": template_id},
@@ -131,8 +157,7 @@ async def _run_prebake(template_id: str) -> None:
     except Exception as exc:
         logger.warning("Prebake DB update failed for template %s: %s", template_id, exc)
 
-    if redis_client:
-        await redis_client.aclose()
+    await _close_redis_client()
 
 
 # ---------------------------------------------------------------------------
