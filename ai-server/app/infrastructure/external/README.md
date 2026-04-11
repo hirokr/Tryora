@@ -13,8 +13,7 @@ Provides async HTTP client wrappers for all third-party APIs the application int
 | `scraper_api_client.py` | `ScraperAPIService` — fetches product pages via ScraperAPI and extracts Schema.org/Product JSON-LD structured data (fallback enrichment when Serper lacks descriptions). |
 | `serper_client.py` | `SerperShoppingService` — async client for Serper Google Shopping API, returns normalized product dicts. |
 | `tripo_client.py` | `TripoClient` — async Tripo AI API client for image-to-3D model generation, with task polling, GLB download, exponential backoff on 429s, and offline mode support. |
-| `xai_client.py` | Placeholder for xAI client integration. |
+| `groq_client.py` | Placeholder for groq client integration. |
 
-## Subdirectories
-
-None.
+# Todo
+[] implemeting Groq Client

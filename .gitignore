@@ -15,6 +15,7 @@ node_modules
 # Local Ignore Files
 .ignore
 /generators
+ai-server_old-11
 second-ai-server
 2Dto3D-20days.pdf
 

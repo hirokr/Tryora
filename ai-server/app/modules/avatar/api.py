@@ -121,24 +121,24 @@ async def generate_avatar(
     # ── Dispatch Celery task ─────────────────────────────────────────────────
     try:
         from app.modules.avatar.workers import generate_avatar as _task
-        _task.delay(job.id, current_user.user_id)
+        _task.delay(job.id, current_user.user_id) #type: ignore 
         logger.info(
             "Avatar job dispatched: job_id=%s user_id=%s photos=[front=%s, side=%s, back=%s]",
-            job.id, current_user.user_id,
+            job.id, current_user.user_id, #type: ignore 
             body.frontPhotoS3Key,
             body.sidePhotoS3Key or "—",
             body.backPhotoS3Key or "—",
         )
     except Exception as exc:
-        logger.exception("Failed to enqueue avatar task for job %s", job.id)
+        logger.exception("Failed to enqueue avatar task for job %s", job.id) #type: ignore 
         # Non-fatal: job is in DB, operator can manually re-trigger
-        logger.warning("Job %s queued in DB but Celery dispatch failed", job.id)
+        logger.warning("Job %s queued in DB but Celery dispatch failed", job.id) #type: ignore 
 
     return AvatarGenerateResponse(
-        jobId=job.id,
+        jobId=job.id, #type: ignore 
         status="PENDING",
         message=(
-            f"Avatar generation queued. Poll GET /api/3d/avatar/jobs/{job.id} "
+            f"Avatar generation queued. Poll GET /api/3d/avatar/jobs/{job.id} " #type: ignore 
             "for progress updates."
         ),
     )

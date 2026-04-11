@@ -2,7 +2,7 @@
 schemas.py — Pydantic models for the avatar generation endpoints.
 
 Flow:
-  1. User uploads 1–3 photos via POST /api/3d/upload/dress-image → gets S3 keys
+  1. User uploads 1-3 photos via POST /api/3d/upload/dress-image → gets S3 keys
   2. User calls POST /api/3d/avatar/generate with those S3 keys
   3. Poll GET /api/3d/avatar/jobs/{jobId} for progress
   4. GET /api/3d/avatar/jobs/{jobId}/result → 302 redirect to presigned GLB URL

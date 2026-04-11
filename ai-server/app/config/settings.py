@@ -60,6 +60,11 @@ class Settings(BaseSettings):
         default="redis://localhost:6379/0", validation_alias="REDIS_URL"
     )
 
+    # Groq configuration
+    GROQ_API_KEY: Optional[str] = Field(
+        default=None, validation_alias="GROQ_API_KEY"
+    )
+
     # ---- 3D Customization ---------------------------------------------------
 
     # Tripo AI
