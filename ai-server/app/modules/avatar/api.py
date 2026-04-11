@@ -19,7 +19,7 @@ from fastapi.responses import RedirectResponse
 from app.api.deps import get_db
 from app.config.settings import settings
 from app.infrastructure.cache.cache_service import CacheService
-from app.infrastructure.storage.s3 import s3_service
+from app.infrastructure.storage.storage_service import storage_service
 from app.modules.avatar.schemas import (
     AvatarGenerateRequest,
     AvatarGenerateResponse,
@@ -207,7 +207,7 @@ async def get_job_result(
         raise HTTPException(status_code=500, detail="Result key missing from job")
 
     try:
-        url = await s3_service.generate_presigned_url(result_key, ttl=_PRESIGNED_TTL)
+        url = await storage_service.generate_presigned_url(result_key, ttl=_PRESIGNED_TTL)
     except Exception as exc:
         logger.exception("Presign failed for job %s key %s", job_id, result_key)
         raise HTTPException(status_code=500, detail="Could not generate result URL") from exc
@@ -232,7 +232,7 @@ async def get_my_avatar(
 ) -> dict:
     cache = _get_cache(request)
 
-    avatar_s3_key = s3_service.key_base_avatar(current_user.user_id)
+    avatar_s3_key = storage_service.key_base_avatar(current_user.user_id)
 
     # Check Redis first for a hot cache hit
     redis_key = cache.key_base_avatar(current_user.user_id)
@@ -240,14 +240,14 @@ async def get_my_avatar(
     if cached_glb:
         # GLB is in Redis — generate a presigned URL from S3 (still the source of truth)
         try:
-            url = await s3_service.generate_presigned_url(avatar_s3_key, ttl=_PRESIGNED_TTL)
+            url = await storage_service.generate_presigned_url(avatar_s3_key, ttl=_PRESIGNED_TTL)
             return {"glbUrl": url, "source": "cache"}
         except Exception:
             pass  # S3 key may not exist yet — fall through to 404
 
     # Try S3 directly
     try:
-        url = await s3_service.generate_presigned_url(avatar_s3_key, ttl=_PRESIGNED_TTL)
+        url = await storage_service.generate_presigned_url(avatar_s3_key, ttl=_PRESIGNED_TTL)
         return {"glbUrl": url, "source": "s3"}
     except Exception:
         raise HTTPException(
