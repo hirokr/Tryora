@@ -77,7 +77,7 @@ class Settings(BaseSettings):
     JWT_SECRET: str = Field(default="changeme", validation_alias="JWT_SECRET")
     JWT_ALGORITHM: str = Field(default="HS256", validation_alias="JWT_ALGORITHM")
 
-    # Storage provider: "s3" for AWS S3, "r2" for Cloudflare R2, or "local" for offline mode
+    # Storage provider: "s3" for AWS S3 or "r2" for Cloudflare R2
     STORAGE_PROVIDER: str = Field(
         default="r2",
         validation_alias="STORAGE_PROVIDER",
@@ -91,7 +91,10 @@ class Settings(BaseSettings):
         default=None, validation_alias="AWS_SECRET_ACCESS_KEY"
     )
     AWS_REGION: str = Field(default="us-east-1", validation_alias="AWS_REGION")
-    S3_BUCKET: str = Field(default="tryora-assets", validation_alias="AWS_S3_BUCKET")
+    S3_BUCKET: str = Field(
+        default="tryora-assets",
+        validation_alias=AliasChoices("AWS_S3_BUCKET", "S3_BUCKET"),
+    )
     S3_ENDPOINT_URL: Optional[str] = Field(
         default=None, validation_alias="S3_ENDPOINT_URL"
     )  # For S3-compatible providers like MinIO in offline mode
