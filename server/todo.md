@@ -5,6 +5,88 @@
 
 ---
 
+## Module Breakdown (Granular)
+
+> This section breaks the backend into smaller deliverables. Keep this in sync with the phase plan below.
+> Priority labels: `P0` = critical path, `P1` = high impact, `P2` = polish/backlog.
+
+### Module 1 (P0) — Auth & Session Core
+
+- [x] Mount `/api/auth` router in `src/app.ts`
+- [x] Implement signup with body validation + password hashing
+- [x] Implement signin with JWT + refresh token + Redis session cache
+- [x] Implement refresh + signout endpoints
+- [x] Implement Google OAuth entry, callback, and failure routes
+- [ ] Make refresh rotation atomic to avoid race conditions
+- [ ] Add signin-specific brute-force protection
+
+### Module 2 (P0) — User Account Management
+
+- [x] Implement `GET /api/users/profile`
+- [x] Implement `PATCH /api/users/profile`
+- [x] Implement forgot/reset password endpoints
+- [x] Implement verify/resend verification endpoints
+- [x] Implement change password + delete account endpoints
+- [ ] Add canonical `GET /api/users/me` alias
+- [ ] Add canonical `PUT /api/users/me` update endpoint
+- [ ] Persist audit log rows for account mutations
+
+### Module 3 (P0) — Avatar Orchestration
+
+- [ ] Create avatar router and mount under `/api/avatar`
+- [ ] Accept + validate 3-photo upload payload (front/side/back)
+- [ ] Upload input photos to object storage (S3/GCS)
+- [ ] Enqueue `ProcessingJob` with returned AI job ID
+- [ ] Implement `GET /api/avatar/status/:jobId`
+- [ ] Implement `GET /api/avatar/me`
+
+### Module 4 (P1) — Dress Discovery
+
+- [ ] Implement `POST /api/discovery/search`
+- [ ] Add deterministic prompt normalization + cache-key hashing
+- [ ] Persist search results in Postgres garments table
+- [ ] Wire Redis cache-aside for hit/miss paths
+- [ ] Implement save favorites endpoint
+- [ ] Implement fetch saved favorites endpoint
+
+### Module 5 (P1) — Try-On Job Lifecycle
+
+- [ ] Implement `POST /api/try-on/generate`
+- [ ] Validate avatar availability + dress existence before enqueue
+- [ ] Implement `GET /api/try-on/status/:jobId`
+- [ ] Implement `GET /api/try-on/history` with pagination
+- [ ] Implement `DELETE /api/try-on/:id`
+
+### Module 6 (P1) — Webhooks & Async Completion
+
+- [ ] Implement `POST /api/webhooks/ai-complete`
+- [ ] Validate webhook secret for internal callbacks
+- [ ] Update `ProcessingJob` state on completion/failure
+- [ ] Add polling fallback when webhook events are delayed
+- [ ] Add optional real-time push channel (WebSocket)
+
+### Module 7 (P1) — Security Hardening
+
+- [x] Enable Helmet and CORS baseline protections
+- [x] Verify JWT on protected routes
+- [x] Keep Arcjet protection configured
+- [ ] Sanitize user-provided text fields
+- [ ] Review raw query usage for SQL injection risk
+- [ ] Add internal secret rotation procedure
+- [ ] Add repo secret-scanning hook/CI check
+
+### Module 8 (P2) — Test Coverage
+
+- [x] Auth route tests present
+- [x] User route tests present
+- [ ] Add avatar route integration tests
+- [ ] Add discovery hit/miss behavior tests
+- [ ] Add try-on route integration tests
+- [ ] Add Redis and S3 mocks for deterministic tests
+- [ ] Reach and enforce 80%+ coverage threshold
+
+---
+
 ## Phase 0 — Project Bootstrap & Infrastructure
 
 - [x] **Initialize Node.js / TypeScript project** — `package.json`, `tsconfig.json`, `eslint.config.js`, `nodemon.json` set up
