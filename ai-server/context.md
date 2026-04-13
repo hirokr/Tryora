@@ -1,773 +1,504 @@
-# context.md — Tryora 3D Character Customization Backend
+# Context.md — Tryora AI Server Current State
 
-> **Scope:** FastAPI backend only. No frontend code.
-> **Stack:** FastAPI · PostgreSQL (Prisma-managed) · Redis · AWS S3 · Tripo AI API
-> **Deliverable:** Runnable skeleton — all files exist, core logic stubbed with TODO comments.
-> **AI tooling:** VS Code + GitHub Copilot + Claude 4.6 (Sonnet)
+> **Generated:** 2026-04-03
+> **Server:** ai-server (FastAPI) — AI & Scraping Engine for Tryora
+> **Role:** Not user-facing. Express.js is the only caller.
 
 ---
 
-## 1. Feature Goals
+## 1. What This Server Does
 
-| Goal | Detail |
+The ai-server is the **AI & Scraping Engine** for Tryora, an AI-powered 3D virtual try-on platform. It handles all GPU-intensive and AI tasks:
+
+- **Dress Search** — Natural language → LLM parsing → Serper Google Shopping → web scraping → structured product results
+- **3D Virtual Try-On** — Tripo AI image-to-3D → GLB generation → template compositing → S3 delivery
+- **Profile Management** — Body measurements, consent, GDPR-compliant data handling
+- **Template Catalog** — Pre-baked 3D dress templates (GLB) with filtering and streaming
+
+---
+
+## 2. Architecture Position
+
+```
+┌─────────────┐     Redis Jobs      ┌──────────────┐
+│  Express.js │ ──────────────────► │  ai-server   │
+│  (API GW)   │                     │  (FastAPI)    │
+│             │ ◄────────────────── │              │
+└─────────────┘    Poll Results     └──────────────┘
+                                             │
+                              ┌──────────────┼──────────────┐
+                              ▼              ▼              ▼
+                         PostgreSQL     Redis Cache    External APIs
+                         (Supabase)     (L1 hot)       (Tripo, Serper,
+                                                         ScraperAPI,
+                                                         OpenRouter)
+                              │
+                              ▼
+                         AWS S3 / R2
+                         (L2 warm storage,
+                          GLB files, images)
+```
+
+- **Express.js** places job tickets in Redis and polls for results
+- **FastAPI** picks up jobs via Celery workers
+- **Results** saved to S3/R2, status updated in PostgreSQL
+- **Express** retrieves final result URLs from `ai_jobs` table
+
+---
+
+## 3. Tech Stack
+
+| Layer | Technology |
 |---|---|
-| Local-first 3D model customization | Serve cached base models and dress GLBs from Redis/S3 before calling any external API |
-| Body-type-aware dress templates | Pre-built GLB templates per ethnicity × body-type grid (3×3 = 9 base variants per dress) |
-| Offline-first cache | Two-layer cache: Redis (hot, in-memory) → S3 (warm, persistent). API only called on cache miss |
-| Remote generation via Tripo AI | When no cached or template dress exists, call `tripo3d.ai` to generate a new GLB |
-| GDPR consent & right to delete | Ethnicity and body-type data stored only after explicit consent; full deletion on request |
+| **Framework** | FastAPI (Python 3.11–3.12) |
+| **Package Manager** | `uv` (pyproject.toml) |
+| **Database** | PostgreSQL + Prisma ORM (shared schema with Express) |
+| **Task Queue** | Celery 5.x + Redis (broker + result backend) |
+| **Cache** | Redis (L1) + AWS S3 (L2) |
+| **Vector DB** | ChromaDB (semantic search caching) |
+| **3D Generation** | Tripo AI API (image-to-3D) |
+| **Web Search** | Serper.dev (Google Shopping) |
+| **Web Scraping** | ScraperAPI (JS-rendered HTML) + BeautifulSoup/lxml |
+| **LLM** | OpenRouter (OpenAI embeddings), Anthropic, xAI SDKs |
+| **3D Processing** | trimesh, pygltflib, pyrender, smplx, xatlas, open3d |
+| **Auth** | JWT (shared with Express) + API key middleware |
+| **Testing** | pytest, pytest-cov, pytest-asyncio |
+| **Containerization** | Docker (separate app.Dockerfile + worker.Dockerfile) |
 
 ---
 
-## 2. Tech Stack
+## 4. Folder Structure
 
 ```
-FastAPI (Python 3.11+)          — async HTTP API, background tasks, dependency injection
-PostgreSQL                      — user profiles, job state, consent records (existing Tryora DB)
-Prisma (Python client)          — shared schema with Express backend (source of truth)
-Redis                           — Layer-1 GLB cache, rate-limit counters, job dedup
-AWS S3                          — Layer-2 GLB cache, user-uploaded dress images, final output storage
-Tripo AI REST API               — remote 3D model generation (Bearer token auth)
-Celery + Redis broker           — async generation jobs (reuses existing Tryora worker infra)
-python-jose / passlib           — JWT auth (reuses existing Tryora auth tokens)
-boto3                           — S3 client
-httpx                           — async Tripo AI client
+ai-server/
+├── app/
+│   ├── main.py                     # FastAPI app factory (create_app)
+│   ├── api/                        # Router composition layer
+│   │   ├── router.py               # Aggregates all feature routers
+│   │   ├── admin.py                # Admin endpoints
+│   │   ├── health.py               # Health check
+│   │   └── deps.py                 # FastAPI deps (get_db)
+│   ├── config/                     # Settings + logging
+│   │   ├── settings.py             # Single source of truth (pydantic-settings)
+│   │   ├── logging.py              # Logging configuration
+│   │   └── constants.py            # Shared constants
+│   ├── modules/                    # Feature modules (canonical — heart of app)
+│   │   ├── dress_search/           # Dress search API + Celery workers
+│   │   │   ├── api.py              # POST /internal/ai/search-dresses + WS/SSE
+│   │   │   ├── service.py          # Business logic
+│   │   │   ├── workers.py          # Celery pipeline (LLM → Serper → ScraperAPI → persist)
+│   │   │   ├── parser.py           # LLM prompt → structured params
+│   │   │   ├── formatter.py        # Format results via LLM
+│   │   │   ├── query_builder.py    # Build Serper queries
+│   │   │   ├── serper_shopping.py  # Serper Shopping API client wrapper
+│   │   │   ├── scraper_api.py      # ScraperAPI client wrapper
+│   │   │   └── schemas.py          # Pydantic request/response models
+│   │   ├── try_on/                 # 3D try-on API, service, workers
+│   │   │   ├── api.py              # Job submit, list, status, result redirect
+│   │   │   ├── service.py          # GenerationJob lifecycle management
+│   │   │   ├── workers.py          # 10-step pipeline (profile → body class → template → Tripo → GLB → S3)
+│   │   │   ├── body_classifier.py  # Classify body type from measurements
+│   │   │   ├── orchestration.py    # Pipeline orchestration
+│   │   │   └── schemas.py          # TryOnRequest, TryOnJobResponse, JobStatusResponse
+│   │   ├── profiles/               # Profile + consent + GDPR
+│   │   │   ├── api.py              # Profile CRUD, consent, GDPR erasure
+│   │   │   ├── service.py          # Profile business logic
+│   │   │   ├── domain.py           # Domain models
+│   │   │   ├── policies.py         # Access policies
+│   │   │   └── schemas.py          # Pydantic models
+│   │   ├── templates/              # Template catalog + GLB delivery
+│   │   │   ├── api.py              # List, get metadata, stream GLB
+│   │   │   ├── service.py          # Template service
+│   │   │   ├── selector.py         # Best template selection logic
+│   │   │   └── schemas.py          # Template response models
+│   │   ├── uploads/                # Dress image uploads
+│   │   │   ├── api.py              # Upload, delete, presign
+│   │   │   ├── service.py          # Upload service (EXIF strip, SHA-256 dedup)
+│   │   │   └── schemas.py          # Upload request/response models
+│   │   ├── consent/                # Consent domain logic
+│   │   │   ├── api.py              # Consent endpoints
+│   │   │   ├── service.py          # Consent recording
+│   │   │   ├── domain.py           # Consent domain models
+│   │   │   └── schemas.py          # Consent request/response models
+│   │   └── prebake/                # Pre-bake template GLBs
+│   │       ├── workers.py          # Prebake Celery tasks
+│   │       └── service.py          # Prebake service
+│   ├── infrastructure/             # Platform layer
+│   │   ├── cache/                  # Redis cache service
+│   │   │   ├── cache_service.py    # Get/set/delete, key builders, rate limiting
+│   │   │   ├── keys.py             # Cache key conventions
+│   │   │   └── redis.py            # Redis client initialization
+│   │   ├── db/                     # Prisma client + repositories
+│   │   │   ├── prisma.py           # Prisma client singleton
+│   │   │   └── repositories/       # Data access layer
+│   │   │       ├── dress_search_repo.py
+│   │   │       ├── generation_job_repo.py
+│   │   │       ├── template_repo.py
+│   │   │       └── user_profile_repo.py
+│   │   ├── external/               # External API clients
+│   │   │   ├── tripo_client.py     # Tripo AI (submit, poll, download GLB)
+│   │   │   ├── serper_client.py    # Serper Google Shopping
+│   │   │   ├── scraper_api_client.py # ScraperAPI + JSON-LD extraction
+│   │   │   ├── openrouter_client.py # OpenRouter embeddings
+│   │   │   └── xai_client.py       # xAI/Grok client
+│   │   ├── queue/                  # Celery configuration
+│   │   │   ├── celery_app.py       # Celery app + Redis broker config
+│   │   │   └── events.py           # Redis Pub/Sub for real-time updates
+│   │   ├── storage/                # S3 + GLB handling
+│   │   │   ├── s3.py               # Async S3 wrapper (upload, download, presign, purge)
+│   │   │   ├── glb_loader.py       # GLB dispatcher (redis/s3/local/url)
+│   │   │   └── local_storage.py    # Local file fallback (offline mode)
+│   │   └── vectorstore/            # ChromaDB
+│   │       └── chroma.py           # ChromaDB wrapper (embeddings, similarity search)
+│   ├── schemas/                    # Shared Pydantic models
+│   ├── shared/                     # Cross-cutting concerns
+│   │   ├── security/               # Auth
+│   │   │   ├── jwt.py              # JWT auth (shared with Express)
+│   │   │   ├── api_key.py          # API key middleware
+│   │   │   └── permissions.py      # Permission checks
+│   │   ├── exceptions.py           # Custom exceptions
+│   │   ├── responses.py            # Standard response helpers
+│   │   └── utils/                  # Utilities
+│   │       ├── files.py            # File utilities
+│   │       ├── hashing.py          # Hashing utilities
+│   │       └── time.py             # Time utilities
+│   └── middleware/                 # HTTP middleware
+│       └── audit_log.py            # Request logging (method, path, status, duration)
+├── prisma/
+│   ├── schema.prisma               # Database schema (shared with Express)
+│   └── migrations/                 # Migration history
+├── assets/                         # 3D GLB assets for dev/testing
+│   ├── 3d-asset-1/                 # rp_posedplus character models (100k, 300k)
+│   └── 3d-asset-2/                 # rp_posed character model
+├── docker/                         # Docker configs
+│   ├── app.Dockerfile              # API server image
+│   └── worker.Dockerfile           # Celery worker image
+├── scripts/                        # Utility scripts
+│   ├── start.sh                    # Start all services
+│   ├── dev_start.sh                # Dev mode start
+│   ├── stop.sh                     # Stop services
+│   ├── seed_templates.py           # Seed DressTemplate rows
+│   ├── warm_cache.py               # Pre-warm Redis from S3
+│   └── test.sh                     # Run tests
+├── tests/                          # Test suite
+│   ├── conftest.py                 # Pytest fixtures
+│   ├── unit/                       # Unit tests
+│   │   ├── dress_search/
+│   │   ├── try_on/
+│   │   ├── profiles/
+│   │   ├── consent/
+│   │   ├── infrastructure/
+│   │   └── templates/
+│   └── integration/                # Integration tests
+│       ├── api/
+│       ├── repositories/
+│       └── workers/
+├── logs/                           # Application logs
+├── context.md                      # Original project spec (reference)
+├── todo.md                         # Task tracking (see section 7)
+├── MIGRATION.md                    # Refactor migration guide
+├── pyproject.toml                  # Dependencies
+├── requirements.txt                # Pinned versions
+├── Dockerfile                      # Main Dockerfile
+├── .env.example                    # Environment template
+└── README.md                       # Project README
 ```
 
 ---
 
-## 3. Data Model
+## 5. Database Schema (Key Models)
 
-### 3.1 PostgreSQL Tables (add to existing Prisma schema)
+### Core Models (shared with Express)
+- **User** — Core user accounts with OAuth support
+- **Garment** — Garment catalog items with category, brand, tags, image URLs
+- **ProcessingJob** — Generic job queue with status, retry logic, priority
+- **TryonResult** — Try-on generation results with image URLs
+- **AuditLog** — Audit trail for entity changes
 
-```prisma
-// schema.prisma additions — append to existing Tryora schema
+### AI Server Specific Models
+- **UserProfile** — Body measurements (height, chest, waist, hips, shoulders), t-shirt params (tHeight, tFullness), bodyLabel, ethnicity, gender, location, consent state, soft-delete for GDPR
+- **DressTemplate** — Pre-baked 3D dress templates with GLB S3 keys, category, ethnicity, bodyLabel
+- **GenerationJob** — Try-on/generation job tracking with Tripo task IDs, S3 keys for input/output, progress tracking, status (PENDING|PROCESSING|COMPLETED|FAILED)
+- **ConsentRecord** — GDPR consent audit trail (consentType, granted, IP, userAgent, timestamp)
+- **DressSearch** — User-initiated search sessions with LLM-parsed params, Celery task IDs, status
+- **DressProduct** — Individual dress/product results linked to searches
 
-model UserProfile {
-  id              String    @id @default(cuid())
-  userId          String    @unique
-  // Body measurements (from avatar pipeline — see 20-day guide)
-  measHeight      Float?
-  measChest       Float?
-  measWaist       Float?
-  measHips        Float?
-  measShoulders   Float?
-  tHeight         Float?    // normalized [0,1]
-  tFullness       Float?    // normalized [0,1]
-  bodyLabel       String?   // e.g. "TALL_AVERAGE"
-  // Sensitive fields — only populated after consent
-  ethnicity       String?   // NULL until consent granted
-  gender          String?
-  location        String?
-  preferences     Json?     // {"style": ["boho"], "colors": ["earth"]}
-  consentGiven    Boolean   @default(false)
-  consentAt       DateTime?
-  deletedAt       DateTime? // soft-delete for GDPR right-to-erase
-  user            User      @relation(fields: [userId], references: [id])
-}
-
-model DressTemplate {
-  id            String   @id @default(cuid())
-  name          String
-  category      String   // "maxi", "midi", "mini", "bodycon", "flowy"
-  ethnicity     String?  // NULL = universal template
-  bodyLabel     String?  // NULL = universal; else "TALL_SLIM", etc.
-  glbS3Key      String   // S3 key for the pre-baked GLB
-  thumbnailUrl  String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-}
-
-model GenerationJob {
-  id            String   @id @default(cuid())
-  userId        String
-  jobType       String   // "BASE_AVATAR" | "DRESS_FROM_IMAGE" | "DRESS_FROM_TEMPLATE"
-  status        String   @default("PENDING") // PENDING|PROCESSING|COMPLETED|FAILED
-  progress      Int      @default(0)
-  currentStage  String?
-  tripoTaskId   String?  // Tripo AI task ID for polling
-  inputS3Key    String?  // uploaded dress image
-  outputGlbS3Key String?
-  outputGlbRedisKey String?
-  errorMessage  String?
-  createdAt     DateTime @default(now())
-  completedAt   DateTime?
-  user          User     @relation(fields: [userId], references: [id])
-}
-
-model ConsentRecord {
-  id          String   @id @default(cuid())
-  userId      String
-  consentType String   // "ETHNICITY_DATA" | "IMAGE_PROCESSING" | "BODY_DATA"
-  granted     Boolean
-  ipAddress   String?
-  userAgent   String?
-  createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id])
-}
-```
-
-### 3.2 Body Type Inference
-
-Body type is inferred from avatar mesh measurements (extracted on Day 4 of the 20-day guide).
-It is **never** inferred from ethnicity — they are independent fields.
-
+### Body Type Inference
 ```
 tHeight   [0,1]  → SHORT / AVERAGE / TALL
 tFullness [0,1]  → SLIM  / AVERAGE / PLUS
 bodyLabel = "{HEIGHT_LABEL}_{FULLNESS_LABEL}"
 ```
 
-Template lookup order:
+### Template Lookup Priority
 1. Exact match: `ethnicity + bodyLabel`
 2. Partial match: `bodyLabel` only (ethnicity = NULL/universal)
 3. Universal fallback: `bodyLabel = NULL, ethnicity = NULL`
 
 ---
 
-## 4. 3D Workflow
+## 6. API Endpoints
 
-### 4.1 Startup: Base Model Loading
+### Dress Search
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/internal/ai/search-dresses` | API Key | Submit natural language dress search |
+| WS | `/ws/status/{task_id}` | — | WebSocket for real-time job status |
+| SSE | `/sse/status/{task_id}` | — | Server-Sent Events for job status |
 
-```
-App startup
-  └─ For each active user session:
-       1. Check Redis: GET glb:base:{userId}
-       2. Cache hit  → stream GLB from Redis → done
-       3. Cache miss → Check S3: s3://tryora-assets/avatars/{userId}/base.glb
-       4. S3 hit     → load → write-back to Redis (TTL 1h) → done
-       5. Both miss  → check DB: avatars.glbS3Key exists?
-                    → yes: trigger background S3→Redis warm-up job
-                    → no:  return 404 (avatar not yet generated)
-```
+### 3D Try-On
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/api/3d/try-on` | JWT | Submit try-on job |
+| GET | `/api/3d/jobs` | JWT | List user's try-on jobs |
+| GET | `/api/3d/jobs/{jobId}` | JWT | Poll job status |
+| GET | `/api/3d/jobs/{jobId}/result` | JWT | Get result (302 redirect to presigned S3 URL) |
 
-### 4.2 Dress Application
+### Profile
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/profile/me` | JWT | Get own profile (sensitive fields masked without consent) |
+| PUT | `/api/profile/me` | JWT | Update profile fields |
+| DELETE | `/api/profile/me` | JWT | GDPR right to erase |
 
-```
-POST /api/3d/try-on
-  Body: { avatarId, templateDressId?, userImageUrl?, scenePrompt? }
+### Consent
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/api/profile/consent` | JWT | Record consent for sensitive fields |
 
-  ┌─ Path A: Template dress (fast path)
-  │   1. Load DressTemplate from DB
-  │   2. Check Redis: GET glb:dress:template:{templateDressId}:{bodyLabel}
-  │   3. Hit  → return cached GLB key for rendering
-  │   4. Miss → load from S3 → write-back to Redis → return
-  │
-  ├─ Path B: User-provided dress image (medium path)
-  │   1. Validate user image already uploaded to S3 (inputS3Key)
-  │   2. Check S3 hash cache: has this exact image been processed before?
-  │   3. Hit  → return existing output GLB
-  │   4. Miss → invoke Tripo AI (see 4.3) → queue Celery job → return jobId
-  │
-  └─ Path C: No match anywhere (slow path → Tripo AI)
-      → same as Path B miss branch
-```
+### Templates
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/3d/templates` | — | List dress templates (paginated, filtered) |
+| GET | `/api/3d/templates/{id}` | — | Get single template metadata |
+| GET | `/api/3d/templates/{id}/glb` | — | Stream template GLB binary |
 
-### 4.3 Tripo AI Invocation
+### Uploads
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| POST | `/api/3d/upload/dress-image` | JWT | Upload dress image (EXIF strip, SHA-256 dedup) |
+| DELETE | `/api/3d/upload/{s3Key}` | JWT | Delete uploaded image |
 
-Called **only** when both cache layers miss and no matching template exists.
-
-```
-Trigger conditions:
-  - User provides a dress image not previously processed
-  - Admin requests a new template for an unsupported ethnicity/bodyLabel combo
-
-Rate limits enforced:
-  - Redis counter: tripo:rate:{userId} → max 10 calls/hour per user
-  - Global counter: tripo:rate:global → max 500 calls/hour
-  - On limit hit: return HTTP 429 with Retry-After header
-
-Auth: Authorization: Bearer {TRIPO_API_KEY}  (from env var, never in code)
-
-Endpoints used:
-  POST https://api.tripo3d.ai/v2/openapi/task    — submit job
-  GET  https://api.tripo3d.ai/v2/openapi/task/{id} — poll status
-
-Fallback on Tripo failure:
-  1. If task fails: select nearest template (body-label match, no ethnicity)
-  2. If Tripo times out (>5 min): mark job FAILED, notify user, offer template fallback
-  3. If Tripo returns 429: exponential backoff (1s, 2s, 4s, max 3 retries)
-```
-
-### 4.4 Local GLB Loading (Dev / Offline Mode)
-
-When `TRIPO_API_KEY` is not set or `OFFLINE_MODE=true`, the backend loads GLBs from local disk.
-
-```python
-# app/services/glb_loader.py
-
-async def load_glb(source: str) -> bytes:
-    """
-    source can be:
-      - "redis:{key}"          → load from Redis
-      - "s3:{bucket}/{key}"    → load from S3
-      - "local:{/abs/path}"    → load from local disk (dev/offline mode)
-      - "url:{https://...}"    → download from URL (Tripo CDN output)
-    """
-    # TODO: implement dispatch logic
-    ...
-```
+### Admin
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/health` | — | Health check |
+| GET | `/api/admin/*` | Admin | Admin endpoints |
 
 ---
 
-## 5. Caching Architecture
+## 7. Caching Architecture
 
-### Two-Layer Cache: Redis → S3
+### Two-Layer Cache: Redis (L1) → S3 (L2)
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │  Layer 1: Redis (hot cache)                         │
-│  Key pattern : glb:{type}:{id}:{variant}            │
-│  TTL         : 1 hour (base models), 30 min (dress) │
-│  Max memory  : set maxmemory-policy allkeys-lru      │
-│  Eviction    : LRU (automatic via Redis policy)      │
+│  Key patterns:                                      │
+│    glb:base:{userId}                                │
+│    glb:dress:template:{id}:{bodyLabel}              │
+│    glb:dress:generated:{sha256}                     │
+│    glb:result:{jobId}                               │
+│    job:status:{jobId}                               │
+│    tripo:rate:{userId} / tripo:rate:global          │
+│  TTL: 1h (base models), 30min (dress), 24h (jobs)  │
+│  Eviction: allkeys-lru                              │
 └─────────────────────────────────────────────────────┘
-         ↓ miss
+          ↓ miss
 ┌─────────────────────────────────────────────────────┐
 │  Layer 2: S3 (warm persistent cache)                │
 │  Bucket structure:                                   │
 │    avatars/{userId}/base.glb                         │
-│    avatars/{userId}/measurements.json                │
 │    catalog/dresses/{dressId}/variants/{label}.glb   │
 │    uploads/dresses/{userId}/{sha256}.jpg             │
 │    results/try-on/{jobId}/dressed.glb               │
 │  Lifecycle: auto-delete results after 30 days        │
-│  Eviction: S3 Lifecycle rules (not manual)           │
 └─────────────────────────────────────────────────────┘
-```
-
-### Cache Key Conventions
-
-```
-glb:base:{userId}                     — user's base avatar
-glb:dress:template:{id}:{bodyLabel}   — pre-baked template dress variant
-glb:dress:generated:{sha256}          — generated dress (keyed by image hash)
-glb:result:{jobId}                    — final dressed avatar output
-tripo:rate:{userId}                   — rate limit counter (INCR + TTL 3600)
-tripo:rate:global                     — global rate limit counter
-job:status:{jobId}                    — job progress (TTL 24h)
 ```
 
 ### Cache Invalidation
 
 | Trigger | Action |
 |---|---|
-| User deletes avatar | DEL `glb:base:{userId}` in Redis + S3 object delete |
-| New dress template uploaded | DEL all `glb:dress:template:{id}:*` in Redis |
-| User exercises GDPR delete right | Purge all `glb:*:{userId}*` keys + S3 prefix delete |
-| Tripo regenerates a dress | DEL `glb:dress:generated:{sha256}` in Redis |
-| Job TTL expires (24h) | Redis TTL auto-expires `job:status:{jobId}` |
+| User deletes avatar | DEL `glb:base:{userId}` + S3 object delete |
+| New dress template uploaded | DEL all `glb:dress:template:{id}:*` |
+| GDPR delete | Purge all `glb:*:{userId}*` + S3 prefix delete |
+| Tripo regenerates dress | DEL `glb:dress:generated:{sha256}` |
+| Job TTL expires (24h) | Redis auto-expires `job:status:{jobId}` |
 
 ---
 
-## 6. API Endpoints
+## 8. Celery Job Types
 
-```
-POST   /api/profile/consent          — record consent for sensitive fields
-GET    /api/profile/me               — get own profile (no ethnicity if no consent)
-PUT    /api/profile/me               — update profile fields
-DELETE /api/profile/me               — GDPR right to erase (soft-delete + cache purge)
+### 1. DRESS_SEARCH
+- **Trigger:** POST `/internal/ai/search-dresses`
+- **Pipeline:** LLM parse prompt → ChromaDB cache check → Serper Shopping → ScraperAPI enrichment → LLM formatting → PostgreSQL persist → Redis Pub/Sub broadcast
+- **Result:** DressProduct records in DB, real-time via WebSocket/SSE
 
-POST   /api/3d/avatar/generate       — trigger avatar generation from photos
-GET    /api/3d/avatar/{avatarId}     — get avatar GLB (streams from cache)
+### 2. TRY_ON (3D Try-On)
+- **Trigger:** POST `/api/3d/try-on`
+- **Pipeline (10 steps):**
+  1. Validate job & load profile
+  2. Classify body type from measurements
+  3. Select best dress template (3-tier lookup)
+  4. Check GLB cache (Redis then S3)
+  5. Call Tripo AI for generation
+  6. Poll until complete, download GLB
+  7. Cache result
+  8. Upload to S3
+  9. Mark job COMPLETED
+- **Rate limits:** Per-user + global (configurable via Redis counters)
+- **Result:** Presigned S3 URL (15-min TTL)
 
-GET    /api/3d/templates             — list dress templates (filtered by body type)
-GET    /api/3d/templates/{id}/glb    — stream template GLB
-
-POST   /api/3d/try-on                — submit try-on job
-GET    /api/3d/jobs/{jobId}          — poll job status + progress
-GET    /api/3d/jobs/{jobId}/result   — stream final GLB when COMPLETED
-
-POST   /api/3d/upload/dress-image    — upload dress image to S3, returns S3 key
-DELETE /api/3d/upload/{s3Key}        — delete uploaded image
-
-GET    /api/admin/cache/stats        — Redis memory + key counts (admin only)
-DELETE /api/admin/cache/flush        — flush specific cache key pattern (admin only)
-```
-
----
-
-## 7. Security & Privacy
-
-### GDPR Compliance
-
-```
-Sensitive fields: ethnicity, gender, location, uploaded images
-Storage rule:     NULL until ConsentRecord exists for that field type
-Consent flow:
-  1. User calls POST /api/profile/consent { consentType, granted: true }
-  2. ConsentRecord created with IP + userAgent + timestamp
-  3. Only then can the corresponding profile field be written
-
-Right to erase (DELETE /api/profile/me):
-  1. Soft-delete: UserProfile.deletedAt = now()
-  2. Nullify sensitive fields immediately
-  3. Queue background task: purge all S3 objects under uploads/dresses/{userId}/
-  4. DEL all Redis keys matching glb:*:{userId}*
-  5. ConsentRecords retained for audit (legal requirement) — personal data zeroed
-  6. Response: 200 with deletion confirmation + ticket ID
-```
-
-### Image Handling
-
-```
-Upload validation:
-  - Max file size: 10 MB
-  - Accepted MIME types: image/jpeg, image/png, image/webp
-  - No EXIF data retained (strip on upload)
-  - S3 key includes SHA-256 of content for dedup and cache keying
-
-Retention:
-  - User uploads: 90 days (S3 Lifecycle rule)
-  - Generated GLBs: 30 days
-  - Job records: 1 year (for support/debugging)
-
-Access control:
-  - All S3 objects private (no public URLs)
-  - Access via presigned URLs (15-min TTL) only
-  - GLB streaming via FastAPI endpoint that validates JWT before generating presigned URL
-```
-
-### API Key Security
-
-```python
-# NEVER hardcode keys. Load exclusively from environment:
-TRIPO_API_KEY = os.environ["TRIPO_API_KEY"]       # required
-AWS_ACCESS_KEY_ID = os.environ["AWS_ACCESS_KEY_ID"]
-AWS_SECRET_ACCESS_KEY = os.environ["AWS_SECRET_ACCESS_KEY"]
-REDIS_URL = os.environ["REDIS_URL"]
-DATABASE_URL = os.environ["DATABASE_URL"]
-```
+### 3. PREBAKE
+- **Trigger:** Admin/manual
+- **Purpose:** Pre-generate template GLB variants for ethnicity × bodyLabel grid
+- **Result:** DressTemplate records with GLB S3 keys
 
 ---
 
-## 8. Folder Structure
+## 9. Completion Status
 
-```
-tryora-fastapi/
-├── app/
-│   ├── main.py                     # FastAPI app factory, lifespan, middleware
-│   ├── config.py                   # Settings (pydantic-settings, reads .env)
-│   ├── dependencies.py             # Shared FastAPI deps: db, redis, current_user
-│   │
-│   ├── api/
-│   │   ├── __init__.py
-│   │   ├── profile.py              # /api/profile/* routes
-│   │   ├── avatar.py               # /api/3d/avatar/* routes
-│   │   ├── templates.py            # /api/3d/templates/* routes
-│   │   ├── try_on.py               # /api/3d/try-on + jobs routes
-│   │   ├── uploads.py              # /api/3d/upload/* routes
-│   │   └── admin.py                # /api/admin/* routes
-│   │
-│   ├── services/
-│   │   ├── glb_loader.py           # load_glb() dispatcher (redis/s3/local/url)
-│   │   ├── cache.py                # CacheService: get/set/delete, key builders
-│   │   ├── tripo_client.py         # async Tripo AI client (create_task, poll, download)
-│   │   ├── s3_service.py           # upload, download, presign, delete, purge_prefix
-│   │   ├── body_classifier.py      # classify body type from measurements
-│   │   ├── template_selector.py    # pick best DressTemplate for a user
-│   │   ├── consent_service.py      # consent recording, GDPR delete
-│   │   └── job_service.py          # job lifecycle: create, update, poll
-│   │
-│   ├── workers/
-│   │   ├── celery_app.py           # Celery app + Redis broker config
-│   │   ├── try_on_task.py          # @shared_task: full 3D try-on pipeline
-│   │   └── prebake_task.py         # @shared_task: catalog variant pre-baking
-│   │
-│   ├── models/
-│   │   ├── profile.py              # Pydantic request/response schemas
-│   │   ├── try_on.py               # TryOnRequest, TryOnJobResponse
-│   │   ├── template.py             # DressTemplateResponse
-│   │   └── job.py                  # JobStatus, JobProgress
-│   │
-│   ├── db/
-│   │   ├── prisma_client.py        # Prisma async client singleton
-│   │   └── queries/
-│   │       ├── profile.py          # DB queries for UserProfile
-│   │       ├── jobs.py             # DB queries for GenerationJob
-│   │       └── templates.py        # DB queries for DressTemplate
-│   │
-│   └── middleware/
-│       ├── auth.py                 # JWT validation (reuses Tryora tokens)
-│       ├── rate_limit.py           # Redis-backed rate limiting per user
-│       └── request_id.py          # X-Request-ID header injection
-│
-├── tests/
-│   ├── conftest.py                 # pytest fixtures: test DB, mock Redis, mock S3
-│   ├── test_profile.py
-│   ├── test_try_on.py
-│   ├── test_cache.py
-│   ├── test_tripo_client.py
-│   └── test_consent.py
-│
-├── scripts/
-│   ├── seed_templates.py           # Load initial DressTemplate rows from CSV
-│   └── warm_cache.py               # Pre-warm Redis from S3 for top N dresses
-│
-├── .env.example                    # All required env vars documented
-├── requirements.txt
-├── Dockerfile
-├── docker-compose.yml              # FastAPI + Redis + (points to existing PG)
-└── README.md
-```
+### ✅ Completed Features
+
+| Feature | Status | Details |
+|---|---|---|
+| **Project Bootstrap** | ✅ Done | FastAPI app, Prisma client, config, logging, health check, Docker, test scaffold |
+| **API Key Security** | ✅ Done | `X-Internal-Api-Key` middleware, `checkApiKey` dependency |
+| **LLM Integration** | ✅ Done | OpenRouter embeddings (text-embedding-3-small), xAI client stub, Anthropic SDK |
+| **Web Search** | ✅ Done | Serper API client, Serper Shopping integration |
+| **Web Scraping** | ✅ Done | ScraperAPI client with JSON-LD extraction, BeautifulSoup/lxml parsing |
+| **ChromaDB Vector Store** | ✅ Done | Embedding pipeline, similarity search, `web_scrapes` collection |
+| **Dress Search** | ✅ Done | Full pipeline: LLM parsing → ChromaDB cache → Serper → ScraperAPI → LLM format → persist → WebSocket/SSE streaming |
+| **3D Try-On** | ✅ Done | Job submission, status polling, Tripo AI integration, 10-step Celery pipeline, S3 presigned URL delivery |
+| **Profile Management** | ✅ Done | CRUD, body type classification, sensitive field masking |
+| **Consent & GDPR** | ✅ Done | Consent recording with audit trail, right-to-erase (soft-delete + cache purge + S3 purge) |
+| **Template Catalog** | ✅ Done | Paginated listing, filtering, GLB binary streaming (cache-first) |
+| **Image Uploads** | ✅ Done | EXIF stripping, SHA-256 dedup, presigned URLs, ownership-enforced deletion |
+| **Two-Layer Caching** | ✅ Done | Redis L1 + S3 L2 with graceful degradation |
+| **Repository Pattern** | ✅ Done | DB access abstracted through repositories |
+| **Module Architecture** | ✅ Done | Feature modules with api/service/schemas/workers pattern |
+| **Legacy Compatibility** | ✅ Done | Re-export shims for old import paths |
+| **Offline Mode** | ✅ Done | `OFFLINE_MODE` flag disables external APIs, uses local GLBs |
+| **Real-Time Updates** | ✅ Done | WebSocket + SSE via Redis Pub/Sub |
+| **Rate Limiting** | ✅ Done | Redis-backed per-user and global rate limits for Tripo AI |
+| **Prebake System** | ✅ Done | Celery workers for pre-generating template variants |
+| **3D Asset Pipeline** | ✅ Done | trimesh, pygltflib, pyrender, smplx, xatlas, open3d integration |
+
+### ⚠️ Partially Complete / Needs Work
+
+| Feature | Status | What's Missing |
+|---|---|---|
+| **API Key Coverage** | ⚠️ Partial | `checkApiKey` needs to be applied to ALL `/internal/ai/` routes; key rotation not implemented |
+| **Audit Logging** | ⚠️ Partial | Middleware exists but needs verification it's writing to `AuditLog` Postgres table |
+| **Structured LLM Output** | ⚠️ Partial | No `instructor` library integration yet; LLM output validation could be stricter |
+| **LLM Provider Abstraction** | ⚠️ Partial | OpenRouter, xAI, Anthropic clients exist but no unified `BaseLLMClient` interface |
+| **Prompt Versioning** | ⚠️ Partial | Prompts not yet extracted to dedicated `app/prompts/` directory |
+| **Duplicate Detection** | ⚠️ Partial | Dress search needs upsert logic to avoid duplicate `DressProduct` records |
+| **Scraping Rate Limits** | ⚠️ Partial | No exponential backoff for Serper/ScraperAPI 429 responses |
+| **Fallback Dress Catalog** | ⚠️ Partial | No generic/default dress fallback when Serper + ScraperAPI both fail |
+| **Garment Embeddings** | ⚠️ Partial | Embeddings not auto-generated when new `Garment` records are saved |
+| **Vector Search Endpoint** | ⚠️ Partial | No `POST /internal/ai/vector-search` endpoint for Express to query ChromaDB |
+| **Task De-duplication** | ⚠️ Partial | Same `(userId, dressId, scenePrompt)` combinations not yet de-duplicated |
+| **S3 Presigned URLs** | ⚠️ Partial | Some endpoints return direct URLs instead of presigned URLs with TTL |
+
+### ❌ Not Yet Started
+
+| Feature | Priority | Notes |
+|---|---|---|
+| **Docker Compose GPU Profile** | Medium | `docker-compose.override.yml` with NVIDIA runtime for GPU workers |
+| **Migration CI Step** | Medium | Automate `prisma db push` / `prisma generate` in startup/CI |
+| **Celery GPU Worker Setup** | High | GPU-bound tasks (avatar generation, VTON) need GPU worker configuration |
+| **Avatar Generation (PIFuHD/SMPL-X)** | High | `POST /internal/ai/avatar` endpoint + Celery task with 3D body estimation |
+| **VTON Model Integration** | High | OOTDiffusion/HR-VITON integration for virtual try-on |
+| **Stable Diffusion Background** | Medium | `diffusers` library integration for scene background generation |
+| **Queue Position Tracking** | Low | Redis-backed queue position for Express polling |
+| **Multi-angle Avatar Rendering** | Low | 360° preview frames from generated `.glb` |
+| **Content Moderation** | Medium | NSFW classifier for uploaded images |
+| **LangChain Agent** | Low | Replace direct LLM + Serper with autonomous LangChain agent |
+| **Model Weight Caching** | Low | Cache AI model weights locally to avoid re-downloading on container restart |
+| **Prometheus Metrics** | Low | `/metrics` endpoint for queue depth, task rates, GPU utilization |
+| **GPU Worker Auto-scaling** | Low | K8s GPU node pool / AWS EC2 GPU auto-scaling documentation |
+| **Outfit Style Transfer** | Low | Fine-tune VTON model on event-specific clothing categories |
+| **Embedding Model Versioning** | Medium | Document model version, plan for migration |
+| **Key Rotation Support** | Low | Comma-separated list of valid API keys for zero-downtime rotation |
+| **80% Test Coverage** | Medium | `pytest-cov` configured but coverage not yet at target |
 
 ---
 
-## 9. Core Snippet Examples
-
-### 9.1 GLB Loader (dispatcher)
-
-```python
-# app/services/glb_loader.py
-import asyncio, boto3, os
-from enum import Enum
-from app.services.cache import CacheService
-
-class GlbSource(str, Enum):
-    REDIS = "redis"
-    S3    = "s3"
-    LOCAL = "local"
-    URL   = "url"
-
-async def load_glb(source_uri: str, cache: CacheService) -> bytes:
-    """
-    source_uri examples:
-      "redis:glb:base:user_abc"
-      "s3:tryora-assets/avatars/user_abc/base.glb"
-      "local:/data/glb/template_maxi_average.glb"
-      "url:https://cdn.tripo3d.ai/output/xyz.glb"
-    """
-    scheme, path = source_uri.split(":", 1)
-    source = GlbSource(scheme)
-
-    if source == GlbSource.REDIS:
-        # TODO: return await cache.get_bytes(path)
-        ...
-
-    elif source == GlbSource.S3:
-        bucket, key = path.split("/", 1)
-        # TODO: return await s3_service.download_bytes(bucket, key)
-        ...
-
-    elif source == GlbSource.LOCAL:
-        # TODO: return open(path, "rb").read()
-        # Used when OFFLINE_MODE=true or TRIPO_API_KEY not set
-        ...
-
-    elif source == GlbSource.URL:
-        # TODO: async with httpx.AsyncClient() as c:
-        #           r = await c.get(path); return r.content
-        ...
-
-    raise ValueError(f"Unknown GLB source scheme: {scheme}")
-```
-
-### 9.2 Cache Service
-
-```python
-# app/services/cache.py
-import json
-from typing import Optional
-import redis.asyncio as aioredis
-
-class CacheService:
-    """
-    Two-layer cache: Redis (L1) → S3 (L2).
-    All methods async. S3 fallback handled by callers via load_glb().
-    """
-
-    def __init__(self, redis_client: aioredis.Redis):
-        self.redis = redis_client
-
-    # ── Key builders ──────────────────────────────────────────
-    @staticmethod
-    def key_base_avatar(user_id: str) -> str:
-        return f"glb:base:{user_id}"
-
-    @staticmethod
-    def key_template_dress(template_id: str, body_label: str) -> str:
-        return f"glb:dress:template:{template_id}:{body_label}"
-
-    @staticmethod
-    def key_generated_dress(image_sha256: str) -> str:
-        return f"glb:dress:generated:{image_sha256}"
-
-    @staticmethod
-    def key_job_status(job_id: str) -> str:
-        return f"job:status:{job_id}"
-
-    @staticmethod
-    def key_rate_limit(user_id: str) -> str:
-        return f"tripo:rate:{user_id}"
-
-    # ── GLB bytes ─────────────────────────────────────────────
-    async def get_glb(self, key: str) -> Optional[bytes]:
-        # TODO: return await self.redis.get(key)
-        ...
-
-    async def set_glb(self, key: str, data: bytes, ttl_seconds: int = 3600) -> None:
-        # TODO: await self.redis.setex(key, ttl_seconds, data)
-        ...
-
-    async def delete(self, key: str) -> None:
-        # TODO: await self.redis.delete(key)
-        ...
-
-    async def delete_pattern(self, pattern: str) -> int:
-        """Delete all keys matching pattern. Returns count deleted."""
-        # TODO: use SCAN + pipeline DELETE (never use KEYS in production)
-        ...
-
-    # ── Job status ────────────────────────────────────────────
-    async def set_job_status(self, job_id: str, payload: dict) -> None:
-        # TODO: await self.redis.setex(
-        #           self.key_job_status(job_id), 86400, json.dumps(payload))
-        ...
-
-    async def get_job_status(self, job_id: str) -> Optional[dict]:
-        # TODO: raw = await self.redis.get(self.key_job_status(job_id))
-        #       return json.loads(raw) if raw else None
-        ...
-
-    # ── Rate limiting ─────────────────────────────────────────
-    async def check_and_increment_rate(
-        self, user_id: str, limit: int = 10, window_seconds: int = 3600
-    ) -> tuple[bool, int]:
-        """Returns (allowed, current_count)."""
-        # TODO: use Redis INCR + EXPIRE pipeline
-        # If key doesn't exist, INCR creates it at 1; set TTL on first call
-        ...
-```
-
-### 9.3 Tripo AI Client
-
-```python
-# app/services/tripo_client.py
-import asyncio, os
-import httpx
-from app.config import settings
-
-TRIPO_BASE = "https://api.tripo3d.ai/v2/openapi"
-
-class TripoClient:
-
-    def __init__(self):
-        self.headers = {
-            "Authorization": f"Bearer {settings.TRIPO_API_KEY}",
-            "Content-Type": "application/json",
-        }
-
-    async def image_to_3d(self, image_url: str) -> str:
-        """Submit image-to-3D task. Returns task_id."""
-        async with httpx.AsyncClient(timeout=30) as client:
-            # TODO: POST to TRIPO_BASE/task with image_to_model payload
-            # TODO: raise TripoAPIError on non-zero code
-            ...
-
-    async def poll_until_done(
-        self, task_id: str, max_wait: int = 300, interval: int = 5
-    ) -> dict:
-        """Poll task until success/failure. Returns result dict."""
-        async with httpx.AsyncClient(timeout=30) as client:
-            deadline = asyncio.get_event_loop().time() + max_wait
-            while asyncio.get_event_loop().time() < deadline:
-                # TODO: GET TRIPO_BASE/task/{task_id}
-                # TODO: check status field: success → return data
-                #                           failed  → raise TripoTaskFailed
-                #                           else    → await asyncio.sleep(interval)
-                await asyncio.sleep(interval)
-        raise TimeoutError(f"Tripo task {task_id} timed out after {max_wait}s")
-
-    async def download_glb(self, glb_url: str) -> bytes:
-        """Download generated GLB from Tripo CDN."""
-        async with httpx.AsyncClient(timeout=120) as client:
-            # TODO: r = await client.get(glb_url); return r.content
-            ...
-
-
-class TripoAPIError(Exception):
-    pass
-
-class TripoTaskFailed(Exception):
-    pass
-```
-
-### 9.4 Template Selector
-
-```python
-# app/services/template_selector.py
-from app.db.queries.templates import get_templates_for_body
-from app.models.profile import UserProfile
-
-async def select_best_template(
-    user: UserProfile, category: str, db
-) -> "DressTemplate | None":
-    """
-    Priority:
-    1. ethnicity + bodyLabel exact match
-    2. bodyLabel match (any ethnicity)
-    3. universal (no ethnicity, no bodyLabel)
-    Returns None if no template found → caller invokes Tripo AI.
-    """
-    if user.consent_given and user.ethnicity:
-        # TODO: exact match query
-        ...
-
-    # TODO: body-label-only match query
-    # TODO: universal fallback query
-    # TODO: return None if nothing found
-    ...
-```
-
-### 9.5 Consent Service (GDPR)
-
-```python
-# app/services/consent_service.py
-from datetime import datetime
-from app.db.prisma_client import get_prisma
-
-async def record_consent(
-    user_id: str, consent_type: str, granted: bool,
-    ip_address: str, user_agent: str
-) -> None:
-    # TODO: prisma.consentrecord.create(...)
-    # TODO: if granted and consent_type == "ETHNICITY_DATA":
-    #           await prisma.userprofile.update(
-    #               where={"userId": user_id},
-    #               data={"consentGiven": True, "consentAt": datetime.utcnow()})
-    ...
-
-async def gdpr_erase(user_id: str, cache: "CacheService", s3: "S3Service") -> str:
-    """
-    Full right-to-erase flow. Returns deletion ticket ID.
-    Steps:
-      1. Soft-delete UserProfile (set deletedAt, zero sensitive fields)
-      2. Purge Redis keys: glb:*:{user_id}*
-      3. Delete S3 prefix: uploads/dresses/{user_id}/
-      4. ConsentRecords: retain record existence, zero personal data fields
-    """
-    # TODO: implement all 4 steps
-    # TODO: return ticket_id for user confirmation email
-    ...
-```
-
----
-
-## 10. VS Code + Copilot + Claude Integration
-
-### .vscode/settings.json
-
-```json
-{
-  "editor.formatOnSave": true,
-  "python.defaultInterpreterPath": "./venv/bin/python",
-  "github.copilot.enable": { "*": true },
-  "[python]": { "editor.defaultFormatter": "ms-python.black-formatter" }
-}
-```
-
-### Copilot Prompt Strategy (in-file comments before each TODO)
-
-Write the intent as a docstring or comment immediately above the `# TODO` line.
-Copilot uses the surrounding context. Example pattern:
-
-```python
-async def set_glb(self, key: str, data: bytes, ttl_seconds: int = 3600) -> None:
-    """Store GLB bytes in Redis with TTL. Key follows glb:{type}:{id} convention."""
-    # TODO: await self.redis.setex(key, ttl_seconds, data)
-    # ↑ Copilot will suggest the implementation from the docstring + TODO comment
-```
-
-### Claude 4.6 Sample Prompts
-
-**Initial scaffolding prompt (paste into Claude with this context.md attached):**
-```
-You are building the FastAPI backend for Tryora's 3D character customization feature.
-Read context.md for the full spec. Generate the skeleton implementation for:
-  app/services/cache.py
-Fill in all TODO stubs. Use redis.asyncio. Follow the key conventions in section 9.2.
-Do not add any frontend code. Do not change the function signatures.
-```
-
-**Per-service completion prompt:**
-```
-Complete the TripoClient in app/services/tripo_client.py.
-Use httpx.AsyncClient for all HTTP calls.
-Raise TripoAPIError for non-zero API codes.
-Raise TripoTaskFailed if task status is 'failed' or 'cancelled'.
-Raise TimeoutError after max_wait seconds.
-Include exponential backoff (1s, 2s, 4s) on HTTP 429 responses.
-```
-
-**GDPR delete prompt:**
-```
-Implement gdpr_erase() in app/services/consent_service.py.
-It must: (1) soft-delete UserProfile, (2) zero ethnicity/gender/location fields,
-(3) call cache.delete_pattern for the user's Redis keys,
-(4) call s3.purge_prefix for uploads/dresses/{user_id}/,
-(5) retain ConsentRecord rows but zero IP and userAgent fields,
-(6) return a UUID ticket_id.
-All steps must run in order. If any step fails, log the error and continue the others.
-```
-
----
-
-## 11. Running the Skeleton
+## 10. Running the Server
 
 ```bash
-# 1. Clone / create project
-cd tryora-fastapi
+# Install dependencies
+uv sync
 
-# 2. Python env
-python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
+# Generate Prisma client
+uv run prisma generate --schema prisma/schema.prisma
 
-# 3. Environment
-cp .env.example .env
-# Fill in: TRIPO_API_KEY, DATABASE_URL, REDIS_URL, AWS_* vars
+# Run migrations
+uv run prisma migrate dev --schema prisma/schema.prisma
 
-# 4. Prisma
-prisma generate     # generates Python client from schema.prisma
-prisma migrate dev  # applies new tables (UserProfile, DressTemplate, etc.)
+# Start API server
+uv run uvicorn app.main:app --reload --port 8888
 
-# 5. Start services
-docker-compose up -d redis   # Redis only (Postgres is existing Tryora instance)
+# Start Celery worker (separate terminal)
+uv run celery -A app.infrastructure.queue.celery_app worker -l INFO
 
-# 6. Run FastAPI
-uvicorn app.main:app --reload --port 8001
+# Run tests
+uv run pytest
 
-# 7. Run Celery worker
-celery -A app.workers.celery_app worker -Q gpu_jobs,catalog -l INFO
+# Run tests with coverage
+uv run pytest --cov=app --cov-report=term-missing
 
-# 8. Verify
-curl http://localhost:8001/docs   # FastAPI auto-docs — all routes visible
+# Docker
+docker build -t tryora-ai-server .
+docker run -p 8888:8888 tryora-ai-server
 ```
 
 ---
 
-## 12. Environment Variables (.env.example)
+## 11. Environment Variables
 
-```env
-# Tripo AI
-TRIPO_API_KEY=your_tripo_api_key_here
+See `.env.example` for all required variables. Key variables:
 
-# Database (reuse existing Tryora PostgreSQL)
-DATABASE_URL=postgresql://user:pass@localhost:5432/tryora
+| Variable | Description |
+|---|---|
+| `MASTER_APIKEY` | Server-to-server API key |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `REDIS_URL` | Redis connection string |
+| `JWT_SECRET` | Shared JWT secret with Express backend |
+| `SERPER_APIKEY` | Serper.dev API key |
+| `TRIPO_API_KEY` | Tripo AI API key |
+| `SCRAPER_API_KEY` | ScraperAPI key |
+| `OPEN_ROUTER_APIKEY` | OpenRouter API key (embeddings) |
+| `S3_BUCKET` | AWS S3 bucket name |
+| `AWS_ACCESS_KEY_ID` | AWS credentials |
+| `AWS_SECRET_ACCESS_KEY` | AWS credentials |
+| `OFFLINE_MODE` | Disable external API calls (dev) |
+| `CHROMADB_HOST` | ChromaDB host |
+| `CHROMADB_PORT` | ChromaDB port |
 
-# Redis
-REDIS_URL=redis://localhost:6379/0
+---
 
-# AWS S3
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-AWS_REGION=us-east-1
-S3_BUCKET=tryora-assets
+## 12. Key Design Decisions
 
-# App
-OFFLINE_MODE=false          # set true to bypass Tripo API, use local GLBs
-LOCAL_GLB_DIR=/data/glb     # path to local GLB files when OFFLINE_MODE=true
-JWT_SECRET=                 # same secret as Express backend
-MAX_TRIPO_CALLS_PER_USER=10
-MAX_TRIPO_CALLS_GLOBAL=500
-TRIPO_RATE_WINDOW_SECONDS=3600
-```
+1. **Module-Based Architecture** — Each feature is self-contained with api/service/schemas/workers
+2. **Async-First** — FastAPI is fully async; Celery workers wrap async in `asyncio.run()`
+3. **Two-Layer Caching** — Redis (fast) + S3 (persistent) with graceful degradation
+4. **Repository Pattern** — DB access abstracted through repositories
+5. **Legacy Compatibility** — Re-export shims preserve old import paths during migration
+6. **Event-Driven Real-Time** — WebSocket/SSE via Redis Pub/Sub bridges Celery workers to clients
+7. **Offline Mode** — `OFFLINE_MODE` flag disables external APIs for dev/testing
+8. **GDPR by Design** — Consent-gated sensitive fields, soft-delete, cache purge, audit trail
+
+---
+
+## 13. Known Issues & Technical Debt
+
+1. **Legacy import shims** should be removed after all callers migrate to canonical paths
+2. **`todo.md` and `context.md`** contain outdated information from pre-refactor state
+3. **Test coverage** is below 80% target
+4. **No GPU worker Dockerfile** — `worker.Dockerfile` exists but GPU dependencies not configured
+5. **Prompt management** — LLM prompts are inline in code, not versioned separately
+6. **No structured output enforcement** — LLM responses not validated against strict JSON schemas
+7. **Rate limit backoff** — Serper/ScraperAPI 429 responses not handled with exponential backoff
