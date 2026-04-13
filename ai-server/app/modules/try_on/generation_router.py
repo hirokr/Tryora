@@ -9,14 +9,17 @@ Implements a 5-tier fallback cascade to distribute load and minimise cost:
   Tier 3  Tripo AI                    — ~$0.01/call, needs image URL
   Tier 4  Pre-baked template (S3)     — free, instant, always available
 
-FIXES applied (vs original):
+Each tier is attempted in order. On any error the router logs the failure
+and immediately tries the next tier. The caller always gets GLB bytes back
+(Tier 4 is guaranteed to succeed as long as at least one template exists).
+
+Fixes applied:
+  - app.services.tripo_client                → app.infrastructure.external.tripo_client
   - app.modules.try_on.providers.smplx_provider → app.modules.try_on.smplx_provider
-    (no providers/ subdirectory under try_on/)
   - app.modules.try_on.providers.hf_provider    → app.modules.try_on.hf_provider
-    (same: no providers/ subdirectory under try_on/)
-  - app.services.tripo_client                   → app.infrastructure.external.tripo_client
   - TYPE_CHECKING: app.infrastructure.storage.s3.S3Service
                  → app.infrastructure.storage.storage_service.StorageService
+  - upload_bytes(image_bytes, temp_key, ...) → upload_bytes(temp_key, image_bytes, ...)
 """
 from __future__ import annotations
 
@@ -27,7 +30,7 @@ from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from prisma import Prisma
     from app.infrastructure.cache.cache_service import CacheService
-    from app.infrastructure.storage.storage_service import StorageService  # FIX 4
+    from app.infrastructure.storage.storage_service import StorageService
 
 logger = logging.getLogger("worker.generation_router")
 
@@ -45,8 +48,7 @@ class GenerationRouter:
     Orchestrates GLB generation across all available providers.
 
     Instantiate once per Celery task execution (it holds no mutable state
-    between jobs — the model singleton lives in the individual provider
-    modules).
+    between jobs — the model singleton lives in the individual provider modules).
     """
 
     def __init__(
@@ -73,6 +75,26 @@ class GenerationRouter:
     ) -> GenerationResult:
         """
         Run the generation cascade and return the first successful result.
+
+        Parameters
+        ----------
+        job_id, user_id
+            Job tracking IDs.
+        t_height, t_fullness
+            Normalized [0,1] body measurements from UserProfile.
+            When both are present, Tier 1 (SMPL-X) is attempted.
+        image_s3_key
+            S3 key for a previously uploaded dress/photo image.
+            When present, Tier 2 (HF Spaces) and Tier 3 (Tripo) are attempted.
+        category, ethnicity, consent_given
+            Passed through to the Tier 4 template selector.
+        gender
+            Passed to SMPL-X. "neutral" | "male" | "female".
+
+        Returns
+        -------
+        GenerationResult
+            Always returns a result — Tier 4 is the guaranteed fallback.
         """
         cache_key = self._cache.key_result(user_id, job_id)
 
@@ -96,7 +118,7 @@ class GenerationRouter:
 
         # Download image bytes once (shared by Tier 2 + 3)
         image_bytes: Optional[bytes] = None
-        image_url:   Optional[str]   = None
+        image_url: Optional[str] = None
         if image_s3_key:
             image_bytes, image_url = await self._prepare_image(
                 user_id, job_id, image_s3_key
@@ -167,12 +189,13 @@ class GenerationRouter:
         gender: str,
     ) -> Optional[bytes]:
         try:
-            # FIX 2: no providers/ subdirectory under try_on/
+            # smplx_provider.py lives directly in app/modules/try_on/ — no providers/ subdir
             from app.modules.try_on.smplx_provider import (
-                smplx_provider, SMPLXUnavailableError,
+                smplx_provider,
+                SMPLXUnavailableError,
             )
             if not smplx_provider.is_available():
-                logger.info("Router Tier 1 (SMPL-X) skipped — not installed/weights missing")
+                logger.info("Router Tier 1 (SMPL-X) skipped — not installed / weights missing")
                 return None
             glb = await smplx_provider.generate_glb(t_height, t_fullness, gender)
             logger.info("Router Tier 1 (SMPL-X) SUCCESS  bytes=%d", len(glb))
@@ -183,9 +206,10 @@ class GenerationRouter:
 
     async def _try_hf(self, image_bytes: bytes) -> Optional[bytes]:
         try:
-            # FIX 3: no providers/ subdirectory under try_on/
+            # hf_provider.py lives directly in app/modules/try_on/ — no providers/ subdir
             from app.modules.try_on.hf_provider import (
-                hf_provider, HFSpaceUnavailableError,
+                hf_provider,
+                HFSpaceUnavailableError,
             )
             glb = await hf_provider.image_to_glb(image_bytes)
             logger.info("Router Tier 2 (HF Spaces) SUCCESS  bytes=%d", len(glb))
@@ -196,12 +220,15 @@ class GenerationRouter:
 
     async def _try_tripo(self, image_url: str) -> Optional[bytes]:
         try:
-            # FIX 1: canonical tripo client path
+            # Canonical import path — app.services.tripo_client does not exist
             from app.infrastructure.external.tripo_client import (
-                tripo_client, OfflineModeError, TripoAPIError, TripoTaskFailed,
+                tripo_client,
+                OfflineModeError,
+                TripoAPIError,
+                TripoTaskFailed,
             )
             task_id = await tripo_client.image_to_3d(image_url)
-            result  = await tripo_client.poll_until_done(task_id, max_wait=300)
+            result = await tripo_client.poll_until_done(task_id, max_wait=300)
             glb_url = (
                 result.get("output", {}).get("pbr_model")
                 or result.get("output", {}).get("model")
@@ -242,11 +269,13 @@ class GenerationRouter:
                 logger.warning("Router Tier 4 (template) — no template found")
                 return None
 
-            glb_source = template.get("glbS3Key") or template.get("glbSource")
+            # glbSource is the canonical field; fall back to glbS3Key for legacy rows
+            glb_source = template.get("glbSource") or template.get("glbS3Key")
             if not glb_source:
                 logger.warning("Router Tier 4 (template) — template has no GLB source")
                 return None
 
+            # Normalise bare S3 key (no scheme prefix) to s3: URI
             if not glb_source.startswith(("s3:", "url:", "local:", "redis:")):
                 from app.config.settings import settings
                 glb_source = f"s3:{settings.S3_BUCKET}/{glb_source}"
@@ -254,7 +283,8 @@ class GenerationRouter:
             glb = await load_glb(glb_source, cache=self._cache, s3=storage_service)
             logger.info(
                 "Router Tier 4 (template) SUCCESS  template=%s bytes=%d",
-                template.get("id"), len(glb),
+                template.get("id"),
+                len(glb),
             )
             return glb
         except Exception as exc:
@@ -267,15 +297,18 @@ class GenerationRouter:
         job_id: str,
         s3_key: str,
     ) -> tuple[Optional[bytes], Optional[str]]:
-        """Download image from S3 and generate a short-lived presigned URL."""
+        """Download image from S3 and generate a short-lived presigned URL for Tripo / HF."""
         try:
             image_bytes = await self._s3.download_bytes(s3_key)
             temp_key = f"temp-router/{job_id}.jpg"
+            # upload_bytes(object_key, data, content_type) — object_key is first arg
             await self._s3.upload_bytes(temp_key, image_bytes, "image/jpeg")
             image_url = await self._s3.generate_presigned_url(temp_key, ttl=600)
             return image_bytes, image_url
         except Exception as exc:
-            logger.warning("Router: failed to prepare image from S3 key=%s: %s", s3_key, exc)
+            logger.warning(
+                "Router: failed to prepare image from S3 key=%s: %s", s3_key, exc
+            )
             return None, None
 
     async def _write_cache(self, cache_key: str, glb: bytes) -> None:
