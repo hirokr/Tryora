@@ -10,8 +10,13 @@ returns something, even when GPU services are unavailable.
   Tier 3  SMPL-X local CPU (measurements)  — free, ~10s, body-accurate
   Tier 4  Pre-baked universal template     — free, instant, always works
 
-Result: base avatar GLB stored at S3 key avatars/{userId}/base.glb
-and cached in Redis under glb:avatar:{userId}.
+FIXES applied (vs original):
+  - `import aioredis` (bare legacy package)
+    → `import redis.asyncio as aioredis`  (matches the rest of the codebase)
+  - `await s3.put_object(s3_key, glb_bytes, content_type=...)`
+    → `await s3.upload_bytes(s3_key, glb_bytes, content_type)`
+    StorageService exposes upload_bytes(); put_object() does not exist and
+    raises AttributeError every time an avatar job reaches _finish().
 """
 from __future__ import annotations
 
@@ -36,14 +41,15 @@ async def _run_avatar_pipeline(job_id: str, user_id: str) -> None:
     from app.config.settings import settings
     from app.db.prisma_connect import db
     from app.infrastructure.cache.cache_service import CacheService
-    from app.infrastructure.storage.s3 import s3_service
+    from app.infrastructure.storage.storage_service import storage_service
     from app.modules.avatar.service import update_avatar_job
 
     # ── Bootstrap Redis cache ────────────────────────────────────────────────
     redis_client = None
     cache: Optional[CacheService] = None
     try:
-        import aioredis
+        # FIX 1: use redis.asyncio (same pattern as every other worker/module)
+        import redis.asyncio as aioredis
         redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=False)
         cache = CacheService(redis_client)
     except Exception as exc:
@@ -98,7 +104,6 @@ async def _run_avatar_pipeline(job_id: str, user_id: str) -> None:
     if gender not in ("male", "female", "neutral"):
         gender = "neutral"
 
-    # If the request included a height, update the profile and derive tHeight
     if height_cm and profile:
         t_height_new = _height_cm_to_t(height_cm)
         try:
@@ -112,7 +117,7 @@ async def _run_avatar_pipeline(job_id: str, user_id: str) -> None:
 
     # ── Step 3: Check result cache ───────────────────────────────────────────
     await progress(3, "Checking cache")
-    avatar_s3_key = s3_service.key_base_avatar(user_id)
+    avatar_s3_key = storage_service.key_base_avatar(user_id)
     redis_cache_key = cache.key_base_avatar(user_id) if cache else None
 
     if redis_cache_key and cache:
@@ -131,18 +136,17 @@ async def _run_avatar_pipeline(job_id: str, user_id: str) -> None:
             )
             return
 
-    # Generate presigned URLs so Tripo can fetch the photos
     await progress(4, "Preparing photo URLs")
     front_url: Optional[str] = None
     side_url:  Optional[str] = None
     back_url:  Optional[str] = None
 
     try:
-        front_url = await s3_service.generate_presigned_url(front_s3_key, ttl=900)
+        front_url = await storage_service.generate_presigned_url(front_s3_key, ttl=900)
         if side_s3_key:
-            side_url = await s3_service.generate_presigned_url(side_s3_key, ttl=900)
+            side_url = await storage_service.generate_presigned_url(side_s3_key, ttl=900)
         if back_s3_key:
-            back_url = await s3_service.generate_presigned_url(back_s3_key, ttl=900)
+            back_url = await storage_service.generate_presigned_url(back_s3_key, ttl=900)
     except Exception as exc:
         logger.error("Avatar: failed to generate presigned photo URLs — %s", exc)
         await update_avatar_job(
@@ -156,9 +160,7 @@ async def _run_avatar_pipeline(job_id: str, user_id: str) -> None:
 
     # ── Tier 1: Tripo multiview (front + side + back) ────────────────────────
     await progress(5, "Generating avatar (Tripo multiview)")
-    glb_bytes, provider = await _try_tripo_multiview(
-        front_url, side_url, back_url
-    )
+    glb_bytes, provider = await _try_tripo_multiview(front_url, side_url, back_url)
 
     # ── Tier 2: Tripo single-image (front only) ──────────────────────────────
     if glb_bytes is None:
@@ -188,7 +190,7 @@ async def _run_avatar_pipeline(job_id: str, user_id: str) -> None:
     await _finish(
         job_id=job_id, user_id=user_id, glb_bytes=glb_bytes,
         s3_key=avatar_s3_key, provider=provider,
-        db=db, cache=cache, s3=s3_service,
+        db=db, cache=cache, s3=storage_service,
     )
 
     if redis_client:
@@ -206,11 +208,7 @@ async def _try_tripo_multiview(
 ) -> tuple[Optional[bytes], str]:
     try:
         from app.modules.avatar.providers.tripo_avatar_provider import tripo_avatar_provider
-        from app.infrastructure.external.tripo_client import OfflineModeError
-
-        glb = await tripo_avatar_provider.generate_from_multiview(
-            front_url, side_url, back_url
-        )
+        glb = await tripo_avatar_provider.generate_from_multiview(front_url, side_url, back_url)
         logger.info("Tier 1 (Tripo multiview) SUCCESS — %d bytes", len(glb))
         return glb, "tripo_multiview"
     except Exception as exc:
@@ -221,7 +219,6 @@ async def _try_tripo_multiview(
 async def _try_tripo_single(front_url: str) -> tuple[Optional[bytes], str]:
     try:
         from app.modules.avatar.providers.tripo_avatar_provider import tripo_avatar_provider
-
         glb = await tripo_avatar_provider.generate_from_single(front_url)
         logger.info("Tier 2 (Tripo single) SUCCESS — %d bytes", len(glb))
         return glb, "tripo_single"
@@ -234,9 +231,8 @@ async def _try_smplx(
     t_height: float, t_fullness: float, gender: str
 ) -> tuple[Optional[bytes], str]:
     try:
-        from app.modules.avatar.providers.smplx_provider import generate_smplx_avatar
-
-        glb = await generate_smplx_avatar(t_height, t_fullness, gender)
+        from app.modules.try_on.smplx_provider import smplx_provider
+        glb = await smplx_provider.generate_glb(t_height, t_fullness, gender)
         logger.info("Tier 3 (SMPL-X) SUCCESS — %d bytes", len(glb))
         return glb, "smplx_local"
     except Exception as exc:
@@ -253,8 +249,6 @@ async def _try_template(
 ) -> tuple[Optional[bytes], str]:
     try:
         from app.modules.prebake.service import get_template_glb
-
-        # Try to get a cached template or load the universal fallback
         glb = await get_template_glb(user_id, t_height, t_fullness, db, cache)
         logger.info("Tier 4 (Template) SUCCESS — %d bytes", len(glb))
         return glb, "template_fallback"
@@ -279,9 +273,9 @@ async def _finish(
 ) -> None:
     from app.modules.avatar.service import update_avatar_job
 
-    # Upload to S3
+    # FIX 2: StorageService uses upload_bytes(), not put_object()
     try:
-        await s3.put_object(s3_key, glb_bytes, content_type="model/gltf-binary")
+        await s3.upload_bytes(s3_key, glb_bytes, "model/gltf-binary")
     except Exception as exc:
         logger.error("Avatar: Failed to upload GLB to S3 — %s", exc)
         await update_avatar_job(
@@ -290,7 +284,7 @@ async def _finish(
         )
         return
 
-    # Warm Redis cache (key_base_avatar)
+    # Warm Redis cache
     if cache:
         await cache.set_glb(cache.key_base_avatar(user_id), glb_bytes)
 
@@ -334,9 +328,7 @@ def _height_cm_to_t(height_cm: float) -> float:
     acks_late=True,
 )
 def generate_avatar(self: Task, job_id: str, user_id: str) -> dict[str, Any]:
-    """
-    Celery task wrapper for avatar generation pipeline.
-    """
+    """Celery task wrapper for avatar generation pipeline."""
     try:
         asyncio.run(_run_avatar_pipeline(job_id, user_id))
         return {"status": "success", "job_id": job_id}

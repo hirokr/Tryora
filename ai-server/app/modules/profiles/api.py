@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from app.api.deps import get_db
 from app.infrastructure.cache.cache_service import CacheService
 from app.infrastructure.db.repositories.user_profile_repo import check_consent, get_profile, upsert_profile
-from app.infrastructure.storage.s3 import s3_service
+from app.infrastructure.storage.storage_service import storage_service
 from app.modules.consent.service import gdpr_erase, record_consent
 from app.modules.profiles.repository import ConsentDecision
 from app.modules.profiles.schemas import ConsentRequest, ConsentResponse, GdprEraseResponse, ProfileResponse, ProfileUpdateRequest
@@ -80,7 +80,7 @@ class _EraseGatewayAdapter:
     cache: CacheService
 
     async def erase_user(self, *, user_id: str) -> str:
-        return await gdpr_erase(user_id=user_id, db=self.db, cache=self.cache, s3=s3_service)
+        return await gdpr_erase(user_id=user_id, db=self.db, cache=self.cache, s3=storage_service)
 
 
 def _service_factory(db: Any, cache: CacheService) -> ProfilesService:
@@ -91,27 +91,49 @@ def _service_factory(db: Any, cache: CacheService) -> ProfilesService:
         erase_gateway=_EraseGatewayAdapter(db, cache),
     )
 
+from app.modules.profiles.schemas import ProfileResponse
+
+def _attr(obj: Any, snake: str, camel: str, default: Any = None) -> Any:
+    """
+    Read an attribute from either a domain model (snake_case) or a raw
+    Prisma record (camelCase), returning *default* if neither is present.
+    This makes _to_profile_response() safe regardless of which object type
+    a service method accidentally returns.
+    """
+    v = getattr(obj, snake, None)
+    if v is None:
+        v = getattr(obj, camel, None)
+    return v if v is not None else default
+
 
 def _to_profile_response(profile: Any) -> ProfileResponse:
+    """
+    Map a domain.UserProfile (snake_case) or a raw Prisma UserProfile
+    record (camelCase) to a ProfileResponse.
+ 
+    Both object shapes are handled so that any code path — whether it goes
+    through ProfilesService (returns domain.UserProfile) or directly queries
+    Prisma (returns a Prisma record) — produces a correctly populated
+    response with no silent None fields.
+    """
     return ProfileResponse(
-        id=profile.id,
-        userId=profile.user_id,
-        measHeight=profile.meas_height,
-        measChest=profile.meas_chest,
-        measWaist=profile.meas_waist,
-        measHips=profile.meas_hips,
-        measShoulders=profile.meas_shoulders,
-        tHeight=profile.t_height,
-        tFullness=profile.t_fullness,
-        bodyLabel=profile.body_label,
-        ethnicity=profile.ethnicity,
-        gender=profile.gender,
-        location=profile.location,
-        preferences=profile.preferences,
-        consentGiven=profile.consent_given,
-        consentAt=profile.consent_at,
+        id=_attr(profile, "id", "id", ""),
+        userId=_attr(profile, "user_id", "userId", ""),
+        measHeight=_attr(profile, "meas_height", "measHeight"),
+        measChest=_attr(profile, "meas_chest", "measChest"),
+        measWaist=_attr(profile, "meas_waist", "measWaist"),
+        measHips=_attr(profile, "meas_hips", "measHips"),
+        measShoulders=_attr(profile, "meas_shoulders", "measShoulders"),
+        tHeight=_attr(profile, "t_height", "tHeight"),
+        tFullness=_attr(profile, "t_fullness", "tFullness"),
+        bodyLabel=_attr(profile, "body_label", "bodyLabel"),
+        ethnicity=_attr(profile, "ethnicity", "ethnicity"),
+        gender=_attr(profile, "gender", "gender"),
+        location=_attr(profile, "location", "location"),
+        preferences=_attr(profile, "preferences", "preferences"),
+        consentGiven=bool(_attr(profile, "consent_given", "consentGiven", False)),
+        consentAt=_attr(profile, "consent_at", "consentAt"),
     )
-
 
 def _get_cache(request: Request) -> CacheService:
     cache: CacheService | None = getattr(request.app.state, "cache", None)

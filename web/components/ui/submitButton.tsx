@@ -2,8 +2,13 @@
 import React, { PropsWithChildren } from "react";
 import { Button } from "./button";
 import { useFormStatus } from "react-dom";
+import { cn } from "@/lib/utils";
 
-const SubmitButton = ({ children }: PropsWithChildren) => {
+type SubmitButtonProps = PropsWithChildren<{
+	className?: string;
+}>;
+
+const SubmitButton = ({ children, className }: SubmitButtonProps) => {
 	const { pending } = useFormStatus();
 
 	return (
@@ -11,7 +16,7 @@ const SubmitButton = ({ children }: PropsWithChildren) => {
 			type='submit'
 
 			aria-disabled={pending}
-			className='w-full mt-2'
+			className={cn("w-full mt-2", className)}
 		>
 			{pending ? "Submitting..." : children}
 		</Button>

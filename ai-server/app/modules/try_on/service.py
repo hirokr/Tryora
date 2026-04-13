@@ -12,14 +12,27 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, TypedDict, cast
 
 if TYPE_CHECKING:
     from prisma import Prisma
+    from prisma.models import GenerationJob
+    from prisma.types import GenerationJobCreateInput, GenerationJobUpdateInput
     from app.infrastructure.cache.cache_service import CacheService
 
 logger = logging.getLogger("api.try_on")
 
+
+class JobUpdateExtra(TypedDict, total=False):
+    progress: int
+    step: str
+    error: str
+    resultS3Key: str
+    completedAt: str
+    provider: str
+    usedFallback: bool
+    tripoTaskId: str
+# test run
 
 async def create_job(
     user_id: str,
@@ -27,17 +40,22 @@ async def create_job(
     template_dress_id: Optional[str] = None,
     user_image_s3_key: Optional[str] = None,
     cache: Optional["CacheService"] = None,
-) -> object:
+) -> "GenerationJob":
     """Create a new GenerationJob record with PENDING status. Returns the job object."""
-    job = await db.generationjob.create(
-        data={
+    create_data = cast(
+        "GenerationJobCreateInput",
+        {
             "userId": user_id,
             "jobType": "TRYON_GENERATION",
             "status": "PENDING",
             "progress": 0,
             "templateDressId": template_dress_id,
             "userImageS3Key": user_image_s3_key,
-        }
+        },
+    )
+
+    job = await db.generationjob.create(
+        data=create_data
     )
 
     # Seed Redis cache for fast polling
@@ -65,14 +83,14 @@ async def update_job_status(
     status: str,
     db: "Prisma",
     cache: Optional["CacheService"] = None,
-    extra: Optional[dict] = None,
+    extra: Optional[JobUpdateExtra] = None,
 ) -> None:
     """
     Update job progress in both Redis (sync) and DB (async background).
     Redis update is done first so polling clients always see fresh data.
 
-    *extra* can contain any of: progress, currentStage, errorMessage,
-    resultS3Key, completedAt, tripoTaskId.
+    *extra* can contain any of: progress, step, error,
+    resultS3Key, completedAt, provider, usedFallback, tripoTaskId.
     """
     extra = extra or {}
 
@@ -81,6 +99,8 @@ async def update_job_status(
         "status": status,
         "progress": extra.get("progress", 0),
         "currentStage": extra.get("step"),
+        "provider": extra.get("provider"),
+        "usedFallback": extra.get("usedFallback"),
         "errorMessage": extra.get("error"),
         "resultS3Key": extra.get("resultS3Key"),
         "completedAt": extra.get("completedAt"),
@@ -92,7 +112,7 @@ async def update_job_status(
 
     # Async DB update (fire-and-forget)
     now = datetime.now(timezone.utc)
-    db_data: dict = {
+    db_data: "GenerationJobUpdateInput" = {
         "status": status,
         "progress": extra.get("progress", 0),
         "currentStage": extra.get("step"),
@@ -100,10 +120,12 @@ async def update_job_status(
     }
     if status == "COMPLETED":
         db_data["completedAt"] = now
-    if extra.get("resultS3Key"):
-        db_data["outputGlbS3Key"] = extra["resultS3Key"]
-    if extra.get("tripoTaskId"):
-        db_data["tripoTaskId"] = extra["tripoTaskId"]
+    result_s3_key = extra.get("resultS3Key")
+    if result_s3_key:
+        db_data["outputGlbS3Key"] = result_s3_key
+    tripo_task_id = extra.get("tripoTaskId")
+    if tripo_task_id:
+        db_data["tripoTaskId"] = tripo_task_id
 
     async def _update_db() -> None:
         try:

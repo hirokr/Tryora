@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+import asyncio
 
 import httpx
 
@@ -54,33 +55,7 @@ class SerperShoppingService:
         query: str,
         num_results: int = 10,
         country: str = "us",
-    ) -> list[dict[str, Any]]:
-        """
-        Execute a Google Shopping search and return a normalised list of
-        product dicts.
-
-        Each returned dict is guaranteed to have:
-        - ``productName``  — display title
-        - ``price``        — price string (may be empty)
-        - ``imageUrl``     — thumbnail URL (may be empty)
-        - ``productUrl``   — link to the retailer page
-
-        Additional raw fields from Serper are kept inside ``_raw``.
-
-        Parameters
-        ----------
-        query:
-            The search string (ideally built by :func:`build_shopping_query`).
-        num_results:
-            How many Shopping results to request (max 100 per Serper docs).
-        country:
-            Two-letter country code for localised results (default: "us").
-
-        Returns
-        -------
-        list[dict]
-            Normalised product list; empty list on any error.
-        """
+    ) -> list[dict]:
         if not self._api_key:
             logger.error("SerperShoppingService: SERPER_APIKEY is not configured")
             return []
@@ -92,35 +67,58 @@ class SerperShoppingService:
             "type": "shopping",
         }
 
-        try:
-            async with httpx.AsyncClient(timeout=_REQUEST_TIMEOUT_S) as client:
-                response = await client.post(
-                    self._base_url,
-                    headers=self._headers,
-                    json=payload,
-                )
+        backoff_delays = (1, 2, 4)
+
+        for attempt, delay in enumerate((*backoff_delays, None), start=1):
+            try:
+                async with httpx.AsyncClient(timeout=_REQUEST_TIMEOUT_S) as client:
+                    response = await client.post(
+                        self._base_url,
+                        headers=self._headers,
+                        json=payload,
+                    )
+
+                if response.status_code == 429:
+                    if delay is None:
+                        logger.error(
+                            "SerperShoppingService: rate-limited after %d attempts, giving up",
+                            attempt,
+                        )
+                        return []
+                    logger.warning(
+                        "SerperShoppingService: 429 (attempt %d), backing off %ds",
+                        attempt, delay,
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+
                 response.raise_for_status()
                 data: dict = response.json()
+                raw_items: list[dict] = data.get("shopping", [])
+                return [self._normalise(item) for item in raw_items if self._is_valid(item)]
 
-        except httpx.TimeoutException:
-            logger.error("SerperShoppingService: request timed out for query=%r", query)
-            return []
+            except httpx.TimeoutException:
+                logger.error(
+                    "SerperShoppingService: request timed out (attempt %d) for query=%r",
+                    attempt, query,
+                )
+                if delay is None:
+                    return []
+                await asyncio.sleep(delay)
+                continue
 
-        except httpx.HTTPStatusError as exc:
-            logger.error(
-                "SerperShoppingService: HTTP %s for query=%r — %s",
-                exc.response.status_code,
-                query,
-                exc.response.text[:200],
-            )
-            return []
+            except httpx.HTTPStatusError as exc:
+                logger.error(
+                    "SerperShoppingService: HTTP %s for query=%r — %s",
+                    exc.response.status_code, query, exc.response.text[:200],
+                )
+                return []
 
-        except Exception as exc:
-            logger.exception("SerperShoppingService: unexpected error — %s", exc)
-            return []
+            except Exception as exc:
+                logger.exception("SerperShoppingService: unexpected error — %s", exc)
+                return []
 
-        raw_items: list[dict] = data.get("shopping", [])
-        return [self._normalise(item) for item in raw_items if self._is_valid(item)]
+        return []
 
     # ------------------------------------------------------------------
     # Private helpers

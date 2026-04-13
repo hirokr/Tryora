@@ -8,11 +8,9 @@ export default function UploaderLayout({
 	children: React.ReactNode;
 }) {
 	return (
-		<html lang='en'>
-			<body>
-				<NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
-				{children}
-			</body>
-		</html>
+		<>
+			<NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
+			{children}
+		</>
 	);
 }
