@@ -40,6 +40,10 @@ model User {
   refreshTokens     RefreshToken[]
   dressSearches     DressSearch[]
 
+  generationJobs GenerationJob[]
+  consentRecords ConsentRecord[]
+  userProfile    UserProfile?
+
   @@index([email])
   @@index([oauthProvider, oauthId])
   @@map("users")
@@ -99,9 +103,6 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
-// ============================================================================
-// EVENT MANAGEMENT
-// ============================================================================
 
 model Event {
   id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -126,9 +127,6 @@ model Event {
   @@map("events")
 }
 
-// ============================================================================
-// GARMENT CATALOG
-// ============================================================================
 
 model Garment {
   id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -166,9 +164,6 @@ model Garment {
   @@map("garments")
 }
 
-// ============================================================================
-// OUTFIT MANAGEMENT
-// ============================================================================
 
 model Outfit {
   id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -212,9 +207,6 @@ model OutfitItem {
   @@map("outfit_items")
 }
 
-// ============================================================================
-// VIRTUAL TRY-ON
-// ============================================================================
 
 model TryonResult {
   id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -249,9 +241,6 @@ model TryonResult {
   @@map("tryon_results")
 }
 
-// ============================================================================
-// BACKGROUND JOB PROCESSING
-// ============================================================================
 
 enum JobStatus {
   QUEUED
@@ -308,10 +297,6 @@ model ProcessingJob {
   @@map("processing_jobs")
 }
 
-// ============================================================================
-// RECOMMENDATIONS
-// ============================================================================
-
 model RecommendationLog {
   id      String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId  String  @map("user_id") @db.Uuid
@@ -339,10 +324,6 @@ model RecommendationLog {
   @@index([eventId])
   @@map("recommendation_logs")
 }
-
-// ============================================================================
-// SYSTEM ANALYTICS & MONITORING
-// ============================================================================
 
 model SystemMetric {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -374,10 +355,6 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-// ============================================================================
-// CONTENT MODERATION (Phase 2)
-// ============================================================================
-
 enum ModerationStatus {
   PENDING
   APPROVED
@@ -398,10 +375,6 @@ model ContentModeration {
   @@map("content_moderation")
 }
 
-// ============================================================================
-// DRESS SEARCH & PRODUCT CATALOG
-// ============================================================================
-
 enum SearchStatus {
   PENDING
   PROCESSING
@@ -411,9 +384,6 @@ enum SearchStatus {
   @@map("search_status")
 }
 
-/// Represents a single user-initiated dress search session.
-/// Created immediately when the endpoint is hit (status = PENDING),
-/// updated by the Celery worker as it progresses.
 model DressSearch {
   id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   /// Optional: link to a Tryora user account
@@ -441,9 +411,6 @@ model DressSearch {
   @@map("dress_searches")
 }
 
-/// A single dress/product result linked to a DressSearch.
-/// Populated by the Celery pipeline from Serper Shopping, ScraperAPI,
-/// and the LLM formatting step.
 model DressProduct {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   searchId     String   @map("search_id") @db.Uuid
@@ -466,71 +433,43 @@ model DressProduct {
   @@map("dress_products")
 }
 
-// Social Features (Phase 3)
-// model UserFollow {
-//   followerId  String   @map("follower_id") @db.Uuid
-//   followingId String   @map("following_id") @db.Uuid
-//   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp
-//
-//   follower  User @relation("Followers", fields: [followerId], references: [id], onDelete: Cascade)
-//   following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
-//
-//   @@id([followerId, followingId])
-//   @@map("user_follows")
-// }
+model GenerationJob {
+  id                  String    @id @default(cuid())
+  userId              String    @db.Uuid                -- FIX: add @db.Uuid to match User.id
+  jobType             String
+  status              String    @default("PENDING")
+  progress            Int       @default(0)
+  currentStage        String?
+  tripoTaskId         String?
+  inputS3Key          String?
+  outputGlbS3Key      String?
+  outputGlbRedisKey   String?
+  templateDressId     String?
+  userImageS3Key      String?
+  glbSource           String?
+  errorMessage        String?
+  createdAt           DateTime  @default(now())
+  completedAt         DateTime?
 
-// model OutfitShare {
-//   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-//   outfitId   String   @map("outfit_id") @db.Uuid
-//   userId     String   @map("user_id") @db.Uuid
-//   shareUrl   String   @unique @map("share_url") @db.VarChar(255)
-//   viewCount  Int      @default(0) @map("view_count") @db.Integer
-//   likeCount  Int      @default(0) @map("like_count") @db.Integer
-//   expiresAt  DateTime? @map("expires_at") @db.Timestamp
-//   createdAt  DateTime @default(now()) @map("created_at") @db.Timestamp
-//
-//   outfit Outfit @relation(fields: [outfitId], references: [id], onDelete: Cascade)
-//   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-//
-//   @@map("outfit_shares")
-// }
+  user                User      @relation(fields: [userId], references: [id])  -- FIX: add FK relation
+}
 
-// E-Commerce Integration (Phase 3)
-// model Product {
-//   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-//   garmentId    String?  @map("garment_id") @db.Uuid
-//   merchantId   String   @map("merchant_id") @db.VarChar(255)
-//   productUrl   String   @map("product_url") @db.Text
-//   price        Decimal  @db.Decimal(10, 2)
-//   currency     String   @db.VarChar(3)
-//   inStock      Boolean  @default(true) @map("in_stock")
-//   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp
-//   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp
+model ConsentRecord {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @map("user_id") @db.Uuid
 
-//   garment Garment? @relation(fields: [garmentId], references: [id])
+  consentType String   @map("consent_type") @db.VarChar(50)
+  granted     Boolean
+  ipAddress   String?  @map("ip_address") @db.VarChar(45)
+  userAgent   String?  @map("user_agent") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp
 
-//   @@map("products")
-// }
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade, map: "consent_user_fkey")
+  userProfile UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade, map: "consent_profile_fkey")
 
-// AI moderation results
-// aiScore  Float? @map("ai_score") @db.Real // Confidence score
-// aiLabels Json?  @map("ai_labels") // Detected labels/categories
-
-// // Manual review
-// reviewerId  String?   @map("reviewer_id") @db.Uuid
-// reviewNotes String?   @map("review_notes") @db.Text
-// reviewedAt  DateTime? @map("reviewed_at") @db.Timestamp
-
-// createdAt DateTime @default(now()) @map("created_at") @db.Timestamp
-
-// @@index([status, createdAt])
-// @@index([entityType, entityId])
-// @@map("content_moderation")
-// }
-
-// ============================================================================
-// 3D CUSTOMIZATION & AI FEATURES (ai-server)
-// ============================================================================
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("consent_records")
+}
 
 model UserProfile {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -553,7 +492,7 @@ model UserProfile {
   createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamp
   updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamp
 
-  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   consentRecords ConsentRecord[]
 
   @@index([userId])
@@ -561,147 +500,18 @@ model UserProfile {
 }
 
 model DressTemplate {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name         String    @db.VarChar(255)
-  category     String    @db.VarChar(50)
-  ethnicity    String?   @db.VarChar(100)
-  bodyLabel    String?   @map("body_label") @db.VarChar(50)
-  glbSource    String?   @map("glb_source") @db.Text
-  glbS3Key     String?   @map("glb_s3_key") @db.Text
-  thumbnailUrl String?   @map("thumbnail_url") @db.Text
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamp
-  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamp
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String   @db.VarChar(255)
+  category     String   @db.VarChar(50)
+  ethnicity    String?  @db.VarChar(100)
+  bodyLabel    String?  @map("body_label") @db.VarChar(50)
+  glbSource    String?  @map("glb_source") @db.Text   -- canonical, was split across glbSource + glbS3Key
+  thumbnailUrl String?  @map("thumbnail_url") @db.Text
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp
 
   @@index([category, isActive])
   @@index([ethnicity, bodyLabel, isActive])
   @@map("dress_templates")
-}
-
-model GenerationJob {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId         String    @map("user_id") @db.Uuid
-  jobType        String    @map("job_type") @db.VarChar(50)
-  status         String    @default("PENDING") @db.VarChar(20)
-  progress       Int       @default(0)
-  currentStage   String?   @map("current_stage") @db.VarChar(100)
-  tripoTaskId    String?   @map("tripo_task_id") @db.VarChar(255)
-  inputS3Key     String?   @map("input_s3_key") @db.Text
-  outputGlbS3Key String?   @map("output_glb_s3_key") @db.Text
-  errorMessage   String?   @map("error_message") @db.Text
-  templateDressId String?  @map("template_dress_id") @db.Uuid
-  userImageS3Key String?   @map("user_image_s3_key") @db.Text
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamp
-  completedAt    DateTime? @map("completed_at") @db.Timestamp
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([status])
-  @@map("generation_jobs")
-}
-
-model ConsentRecord {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId      String   @map("user_id") @db.Uuid
-  consentType String   @map("consent_type") @db.VarChar(50)
-  granted     Boolean
-  ipAddress   String?  @map("ip_address") @db.VarChar(45)
-  userAgent   String?  @map("user_agent") @db.Text
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp
-
-  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userProfile UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@map("consent_records")
-}
-
-// ============================================================================
-// 3D CUSTOMIZATION & AI FEATURES (ai-server)
-// ============================================================================
-
-model UserProfile {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId        String    @unique @map("user_id") @db.Uuid
-  measHeight    Float?    @map("meas_height")
-  measChest     Float?    @map("meas_chest")
-  measWaist     Float?    @map("meas_waist")
-  measHips      Float?    @map("meas_hips")
-  measShoulders Float?    @map("meas_shoulders")
-  tHeight       Float?    @map("t_height")
-  tFullness     Float?    @map("t_fullness")
-  bodyLabel     String?   @map("body_label") @db.VarChar(50)
-  ethnicity     String?   @db.VarChar(100)
-  gender        String?   @db.VarChar(50)
-  location      String?   @db.VarChar(255)
-  preferences   Json?
-  consentGiven  Boolean   @default(false) @map("consent_given")
-  consentAt     DateTime? @map("consent_at") @db.Timestamp
-  deletedAt     DateTime? @map("deleted_at") @db.Timestamp
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamp
-  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamp
-
-  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  consentRecords ConsentRecord[]
-
-  @@index([userId])
-  @@map("user_profiles")
-}
-
-model DressTemplate {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name         String    @db.VarChar(255)
-  category     String    @db.VarChar(50)
-  ethnicity    String?   @db.VarChar(100)
-  bodyLabel    String?   @map("body_label") @db.VarChar(50)
-  glbSource    String?   @map("glb_source") @db.Text
-  glbS3Key     String?   @map("glb_s3_key") @db.Text
-  thumbnailUrl String?   @map("thumbnail_url") @db.Text
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamp
-  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamp
-
-  @@index([category, isActive])
-  @@index([ethnicity, bodyLabel, isActive])
-  @@map("dress_templates")
-}
-
-model GenerationJob {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId         String    @map("user_id") @db.Uuid
-  jobType        String    @map("job_type") @db.VarChar(50)
-  status         String    @default("PENDING") @db.VarChar(20)
-  progress       Int       @default(0)
-  currentStage   String?   @map("current_stage") @db.VarChar(100)
-  tripoTaskId    String?   @map("tripo_task_id") @db.VarChar(255)
-  inputS3Key     String?   @map("input_s3_key") @db.Text
-  outputGlbS3Key String?   @map("output_glb_s3_key") @db.Text
-  errorMessage   String?   @map("error_message") @db.Text
-  templateDressId String?  @map("template_dress_id") @db.Uuid
-  userImageS3Key String?   @map("user_image_s3_key") @db.Text
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamp
-  completedAt    DateTime? @map("completed_at") @db.Timestamp
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([status])
-  @@map("generation_jobs")
-}
-
-model ConsentRecord {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId      String   @map("user_id") @db.Uuid
-  consentType String   @map("consent_type") @db.VarChar(50)
-  granted     Boolean
-  ipAddress   String?  @map("ip_address") @db.VarChar(45)
-  userAgent   String?  @map("user_agent") @db.Text
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamp
-
-  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userProfile UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@map("consent_records")
 }

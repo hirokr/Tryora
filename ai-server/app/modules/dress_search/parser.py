@@ -2,10 +2,10 @@
 parser.py
 ---------
 Translates a free-text user prompt into a strict DressSearchParams object
-by calling the xAI (Grok) model with a system prompt that instructs it to
+by calling a Groq-hosted model with a system prompt that instructs it to
 return *only* valid JSON conforming to the DressSearchParams schema.
 
-We use the OpenAI-compatible xAI REST API so we can leverage
+We use the OpenAI-compatible Groq API so we can leverage
 ``response_format={"type": "json_object"}`` for deterministic JSON output —
 no regex post-processing required.
 
@@ -18,22 +18,16 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Optional
+from typing import Any, Optional
 
-from openai import OpenAI  # xAI exposes an OpenAI-compatible endpoint
 from pydantic import ValidationError
 
-from app.config.settings import settings
+from app.infrastructure.external.groq_client import get_groq_client
 from app.schemas.dress_search import DressSearchParams
 
 logger = logging.getLogger("api_security")
 
-# ------------------------------------------------------------------
-# xAI client — OpenAI-compatible base URL
-# ------------------------------------------------------------------
-
-_XAI_BASE_URL = "https://api.x.ai/v1"
-_MODEL = "grok-3-mini"   # fast, cheap reasoning model; swap to grok-3 for richer output
+_MODEL = "llama-3.3-70b-versatile"
 
 # System prompt drives the LLM's behaviour.  It is injected once per call
 # (not stored on the client) so we can version-control it here easily.
@@ -76,29 +70,22 @@ class LLMParserService:
     """
     Parses a raw user prompt into a validated DressSearchParams instance.
 
-    The xAI client is constructed lazily on first use so the module can be
-    imported even when XAI_API_KEY is not set (e.g. in unit tests that mock
+    The Groq client is constructed lazily on first use so the module can be
+    imported even when GROQ_API_KEY is not set (e.g. in unit tests that mock
     this class).
     """
 
     def __init__(self) -> None:
-        self._client: Optional[OpenAI] = None
+        # Client is managed as a shared lazy singleton by groq_client.
+        pass
 
-    def _get_client(self) -> OpenAI:
-        if self._client is None:
-            if not settings.XAI_API_KEY:
-                raise RuntimeError(
-                    "XAI_API_KEY is not configured — cannot call the LLM parser."
-                )
-            self._client = OpenAI(
-                api_key=settings.XAI_API_KEY,
-                base_url=_XAI_BASE_URL,
-            )
-        return self._client
+    @staticmethod
+    def _get_client() -> Any:
+        return get_groq_client()
 
     def parse_prompt(self, prompt: str, geo: str) -> DressSearchParams:
         """
-        Synchronously call xAI and parse the JSON response into
+        Synchronously call Groq and parse the JSON response into
         DressSearchParams.
 
         This method blocks until the LLM responds and is safe to run in a

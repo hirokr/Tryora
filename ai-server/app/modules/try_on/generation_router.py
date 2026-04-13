@@ -9,28 +9,14 @@ Implements a 5-tier fallback cascade to distribute load and minimise cost:
   Tier 3  Tripo AI                    — ~$0.01/call, needs image URL
   Tier 4  Pre-baked template (S3)     — free, instant, always available
 
-Each tier is attempted in order. On any error the router logs the failure
-and immediately tries the next tier. The caller always gets GLB bytes back
-(Tier 4 is guaranteed to succeed as long as at least one template exists).
-
-Usage (inside an async context, e.g. a Celery task with asyncio.run):
-
-    from app.modules.try_on.generation_router import GenerationRouter
-
-    router = GenerationRouter(db=db, cache=cache, s3=s3_service)
-    result = await router.generate(
-        job_id="...",
-        user_id="...",
-        t_height=0.6,
-        t_fullness=0.4,
-        image_s3_key="uploads/dresses/user/abc.jpg",   # optional
-        category="CASUAL",
-        ethnicity=None,
-        consent_given=False,
-    )
-    # result.glb_bytes  — the GLB
-    # result.provider   — which tier won: "cache"|"smplx"|"hf"|"tripo"|"template"
-    # result.cache_key  — Redis key to store/retrieve this GLB
+FIXES applied (vs original):
+  - app.modules.try_on.providers.smplx_provider → app.modules.try_on.smplx_provider
+    (no providers/ subdirectory under try_on/)
+  - app.modules.try_on.providers.hf_provider    → app.modules.try_on.hf_provider
+    (same: no providers/ subdirectory under try_on/)
+  - app.services.tripo_client                   → app.infrastructure.external.tripo_client
+  - TYPE_CHECKING: app.infrastructure.storage.s3.S3Service
+                 → app.infrastructure.storage.storage_service.StorageService
 """
 from __future__ import annotations
 
@@ -41,7 +27,7 @@ from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from prisma import Prisma
     from app.infrastructure.cache.cache_service import CacheService
-    from app.infrastructure.storage.s3 import S3Service
+    from app.infrastructure.storage.storage_service import StorageService  # FIX 4
 
 logger = logging.getLogger("worker.generation_router")
 
@@ -67,7 +53,7 @@ class GenerationRouter:
         self,
         db: "Prisma",
         cache: "CacheService",
-        s3: "S3Service",
+        s3: "StorageService",
     ) -> None:
         self._db = db
         self._cache = cache
@@ -87,26 +73,6 @@ class GenerationRouter:
     ) -> GenerationResult:
         """
         Run the generation cascade and return the first successful result.
-
-        Parameters
-        ----------
-        job_id, user_id
-            Job tracking IDs.
-        t_height, t_fullness
-            Normalized [0,1] body measurements from UserProfile.
-            When both are present, Tier 1 (SMPL-X) is attempted.
-        image_s3_key
-            S3 key for a previously uploaded dress/photo image.
-            When present, Tier 2 (HF Spaces) and Tier 3 (Tripo) are attempted.
-        category, ethnicity, consent_given
-            Passed through to the Tier 4 template selector.
-        gender
-            Passed to SMPL-X. "neutral" | "male" | "female".
-
-        Returns
-        -------
-        GenerationResult
-            Always returns a result — Tier 4 is the guaranteed fallback.
         """
         cache_key = self._cache.key_result(user_id, job_id)
 
@@ -201,7 +167,8 @@ class GenerationRouter:
         gender: str,
     ) -> Optional[bytes]:
         try:
-            from app.modules.try_on.providers.smplx_provider import (
+            # FIX 2: no providers/ subdirectory under try_on/
+            from app.modules.try_on.smplx_provider import (
                 smplx_provider, SMPLXUnavailableError,
             )
             if not smplx_provider.is_available():
@@ -216,7 +183,8 @@ class GenerationRouter:
 
     async def _try_hf(self, image_bytes: bytes) -> Optional[bytes]:
         try:
-            from app.modules.try_on.providers.hf_provider import (
+            # FIX 3: no providers/ subdirectory under try_on/
+            from app.modules.try_on.hf_provider import (
                 hf_provider, HFSpaceUnavailableError,
             )
             glb = await hf_provider.image_to_glb(image_bytes)
@@ -228,7 +196,8 @@ class GenerationRouter:
 
     async def _try_tripo(self, image_url: str) -> Optional[bytes]:
         try:
-            from app.services.tripo_client import (
+            # FIX 1: canonical tripo client path
+            from app.infrastructure.external.tripo_client import (
                 tripo_client, OfflineModeError, TripoAPIError, TripoTaskFailed,
             )
             task_id = await tripo_client.image_to_3d(image_url)
@@ -258,6 +227,7 @@ class GenerationRouter:
         try:
             from app.modules.templates.selector import select_best_template
             from app.infrastructure.storage.glb_loader import load_glb
+            from app.infrastructure.storage.storage_service import storage_service
 
             template = await select_best_template(
                 user_id=user_id,
@@ -277,12 +247,11 @@ class GenerationRouter:
                 logger.warning("Router Tier 4 (template) — template has no GLB source")
                 return None
 
-            # Normalise: if it's a bare S3 key, prepend scheme
             if not glb_source.startswith(("s3:", "url:", "local:", "redis:")):
                 from app.config.settings import settings
                 glb_source = f"s3:{settings.S3_BUCKET}/{glb_source}"
 
-            glb = await load_glb(glb_source, cache=self._cache, s3=self._s3)
+            glb = await load_glb(glb_source, cache=self._cache, s3=storage_service)
             logger.info(
                 "Router Tier 4 (template) SUCCESS  template=%s bytes=%d",
                 template.get("id"), len(glb),
@@ -301,9 +270,8 @@ class GenerationRouter:
         """Download image from S3 and generate a short-lived presigned URL."""
         try:
             image_bytes = await self._s3.download_bytes(s3_key)
-            # Re-upload to a temp key so Tripo / HF can fetch a public URL
             temp_key = f"temp-router/{job_id}.jpg"
-            await self._s3.upload_bytes(image_bytes, temp_key, "image/jpeg")
+            await self._s3.upload_bytes(temp_key, image_bytes, "image/jpeg")
             image_url = await self._s3.generate_presigned_url(temp_key, ttl=600)
             return image_bytes, image_url
         except Exception as exc:

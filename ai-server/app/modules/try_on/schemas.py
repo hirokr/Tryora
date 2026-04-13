@@ -30,6 +30,7 @@ class TryOnJobResponse(BaseModel):
 
     jobId: str
     status: str = "PENDING"
+    createdAt: str
 
 
 class JobStatusResponse(BaseModel):
@@ -40,3 +41,5 @@ class JobStatusResponse(BaseModel):
     progress: int
     currentStage: Optional[str] = None
     errorMessage: Optional[str] = None
+    createdAt: str
+    completedAt: Optional[str] = None

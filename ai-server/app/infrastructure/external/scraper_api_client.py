@@ -1,205 +1,128 @@
 """
-scraper_api.py
---------------
-Fallback enrichment layer using ScraperAPI + BeautifulSoup.
-
-When Serper Shopping lacks rich product descriptions (no "description"
-field), we:
-
-1. Fetch the raw HTML of the product page via ScraperAPI (which handles
-   JS rendering, CAPTCHAs, proxy rotation, etc.).
-2. Parse the HTML with BeautifulSoup and look for the canonical
-   ``<script type="application/ld+json">`` tag that most e-commerce sites
-   emit as Schema.org/Product structured data.
-3. Return the parsed JSON-LD dict — NOT the raw HTML — so the LLM
-   formatter never has to deal with HTML noise.
-
-Security note: we never pass raw HTML to the LLM.  JSON-LD is already
-structured and bounded in size.
-
-Reference: https://schema.org/Product
+scraper_api_client.py — ScraperAPI client with JSON-LD extraction
+------------------------------------------------------------------
+Used as fallback enrichment when Serper lacks product descriptions.
 """
-
 from __future__ import annotations
 
-import json
+import asyncio
 import logging
 from typing import Any, Optional
 
 import httpx
-from bs4 import BeautifulSoup
 
 from app.config.settings import settings
 
 logger = logging.getLogger("api_security")
 
-# ------------------------------------------------------------------
-# Constants
-# ------------------------------------------------------------------
-
-_SCRAPER_API_BASE = "https://api.scraperapi.com"
-_REQUEST_TIMEOUT_S: float = 30.0  # JS rendering can be slow
-
-# Schema.org types we consider "product-like"
-_PRODUCT_TYPES = {"Product", "ProductGroup", "https://schema.org/Product"}
+_REQUEST_TIMEOUT_S: float = 20.0
+_BACKOFF_DELAYS = (1, 2, 4)
 
 
 class ScraperAPIService:
-    """
-    Fetches a product page via ScraperAPI and extracts Schema.org/Product
-    JSON-LD without touching raw HTML in downstream code.
-
-    Usage
-    -----
-    ::
-        service = ScraperAPIService()
-        json_ld = await service.extract_json_ld("https://shop.example.com/dress/123")
-        if json_ld:
-            description = json_ld.get("description")
-    """
+    """Fetches product pages via ScraperAPI and extracts JSON-LD structured data."""
 
     def __init__(self) -> None:
         self._api_key = settings.SCRAPER_API_KEY
+        self._base_url = "http://api.scraperapi.com"
 
-    async def extract_json_ld(
-        self,
-        product_url: str,
-        render_js: bool = True,
-    ) -> Optional[dict[str, Any]]:
+    async def extract_json_ld(self, product_url: str) -> Optional[dict[str, Any]]:
         """
-        Fetch *product_url* through ScraperAPI and return the first
-        Schema.org Product JSON-LD block found on the page, or *None*.
-
-        Parameters
-        ----------
-        product_url:
-            The e-commerce product page URL to fetch.
-        render_js:
-            Whether to enable ScraperAPI's JS rendering (needed for SPA
-            shops like Shopify).  Costs one extra credit but dramatically
-            improves extraction success rate.
-
-        Returns
-        -------
-        dict | None
-            Parsed JSON-LD dict, or None if not found / on any error.
+        Fetch a product page via ScraperAPI and return the first
+        Schema.org/Product JSON-LD block found, or None on failure.
         """
+        if not self._api_key:
+            logger.warning("ScraperAPIService: SCRAPER_API_KEY not configured — skipping")
+            return None
+
         params = {
             "api_key": self._api_key,
             "url": product_url,
-            "render": "true" if render_js else "false",
+            "render": "true",
         }
 
-        try:
-            async with httpx.AsyncClient(timeout=_REQUEST_TIMEOUT_S) as client:
-                resp = await client.get(_SCRAPER_API_BASE, params=params)
-                resp.raise_for_status()
-                html_content = resp.text
-
-        except httpx.TimeoutException:
-            logger.warning(
-                "ScraperAPIService: timeout fetching %s (timeout=%ss)",
-                product_url,
-                _REQUEST_TIMEOUT_S,
-            )
-            return None
-
-        except httpx.HTTPStatusError as exc:
-            logger.warning(
-                "ScraperAPIService: HTTP %s for %s",
-                exc.response.status_code,
-                product_url,
-            )
-            return None
-
-        except Exception as exc:
-            logger.exception("ScraperAPIService: unexpected error — %s", exc)
-            return None
-
-        return self._parse_json_ld(html_content, product_url)
-
-    # ------------------------------------------------------------------
-    # Private helpers
-    # ------------------------------------------------------------------
-
-    def _parse_json_ld(
-        self,
-        html: str,
-        source_url: str,
-    ) -> Optional[dict[str, Any]]:
-        """
-        Locate ``<script type="application/ld+json">`` blocks and return
-        the first one whose ``@type`` maps to a Schema.org Product.
-
-        Multiple ld+json blocks may appear (breadcrumbs, website, product,
-        etc.).  We iterate all of them and pick the first Product-typed one.
-
-        Parameters
-        ----------
-        html:
-            Raw HTML string from ScraperAPI.
-        source_url:
-            Only used for log messages.
-
-        Returns
-        -------
-        dict | None
-        """
-        try:
-            soup = BeautifulSoup(html, "lxml")
-        except Exception:
-            # lxml may not be installed; fall back to the built-in parser
-            soup = BeautifulSoup(html, "html.parser")
-
-        ld_json_tags = soup.find_all("script", attrs={"type": "application/ld+json"})
-
-        if not ld_json_tags:
-            logger.debug("ScraperAPIService: no ld+json tags found at %s", source_url)
-            return None
-
-        for tag in ld_json_tags:
-            raw_text = tag.string or tag.get_text()
-            if not raw_text or not raw_text.strip():
-                continue
-
+        for attempt, delay in enumerate((*_BACKOFF_DELAYS, None), start=1):
             try:
-                data = json.loads(raw_text.strip())
-            except json.JSONDecodeError as exc:
-                logger.debug(
-                    "ScraperAPIService: failed to parse ld+json block — %s", exc
+                async with httpx.AsyncClient(timeout=_REQUEST_TIMEOUT_S) as client:
+                    response = await client.get(self._base_url, params=params)
+
+                if response.status_code == 429:
+                    if delay is None:
+                        logger.error(
+                            "ScraperAPIService: rate-limited after %d attempts for %s",
+                            attempt, product_url[:80],
+                        )
+                        return None
+                    logger.warning(
+                        "ScraperAPIService: 429 (attempt %d), backing off %ds",
+                        attempt, delay,
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+
+                if response.status_code != 200:
+                    logger.warning(
+                        "ScraperAPIService: HTTP %s for %s",
+                        response.status_code, product_url[:80],
+                    )
+                    return None
+
+                return self._extract_json_ld_from_html(response.text, product_url)
+
+            except httpx.TimeoutException:
+                logger.warning(
+                    "ScraperAPIService: timeout (attempt %d) for %s",
+                    attempt, product_url[:80],
                 )
+                if delay is None:
+                    return None
+                await asyncio.sleep(delay)
                 continue
 
-            # Handle both plain objects and @graph arrays
-            candidates: list[dict] = []
-            if isinstance(data, dict):
-                graph = data.get("@graph")
-                if graph and isinstance(graph, list):
-                    candidates.extend(graph)
-                else:
-                    candidates.append(data)
-            elif isinstance(data, list):
-                candidates.extend(data)
+            except Exception as exc:
+                logger.exception("ScraperAPIService: unexpected error — %s", exc)
+                return None
 
-            for candidate in candidates:
-                if not isinstance(candidate, dict):
-                    continue
-                obj_type = candidate.get("@type", "")
-                # @type may be a string or a list
-                types = (
-                    obj_type if isinstance(obj_type, list) else [obj_type]
-                )
-                if any(t in _PRODUCT_TYPES for t in types):
-                    logger.debug(
-                        "ScraperAPIService: found Schema.org/Product at %s", source_url
-                    )
-                    return candidate
+        return None
 
-        logger.debug(
-            "ScraperAPIService: no Schema.org/Product block found at %s", source_url
+    @staticmethod
+    def _extract_json_ld_from_html(
+        html: str, url: str
+    ) -> Optional[dict[str, Any]]:
+        """Parse JSON-LD Product schema from raw HTML."""
+        import json
+        import re
+
+        # Find all <script type="application/ld+json"> blocks
+        pattern = re.compile(
+            r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
+            re.DOTALL | re.IGNORECASE,
         )
+
+        for match in pattern.finditer(html):
+            raw = match.group(1).strip()
+            try:
+                data = json.loads(raw)
+                # Handle both single object and @graph arrays
+                if isinstance(data, list):
+                    for item in data:
+                        if isinstance(item, dict) and "Product" in str(item.get("@type", "")):
+                            item["_source_url"] = url
+                            return item
+                elif isinstance(data, dict):
+                    if "Product" in str(data.get("@type", "")):
+                        data["_source_url"] = url
+                        return data
+                    # @graph wrapper
+                    for item in data.get("@graph", []):
+                        if isinstance(item, dict) and "Product" in str(item.get("@type", "")):
+                            item["_source_url"] = url
+                            return item
+            except (json.JSONDecodeError, Exception):
+                continue
+
         return None
 
 
-# Module-level singleton
+# Singleton
 scraper_api = ScraperAPIService()

@@ -39,7 +39,7 @@ from app.schemas.dress_search import (
     SearchDressesRequest,
 )
 from app.modules.dress_search.query_builder import build_shopping_query
-from app.modules.dress_search.scraper_api import ScraperAPIService
+from app.infrastructure.external.scraper_api_client import ScraperAPIService
 
 # ── Auth header used in all protected-route calls ────────────────────────────
 AUTH = {"X-API-Key": "server_a_key"}
