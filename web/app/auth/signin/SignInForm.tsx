@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useActionState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { BACKEND_URL } from "@/constants/constants";
 const SignInForm = () => {
 	const [state, action] = useActionState(signIn, undefined);
 	const [showPassword, setShowPassword] = useState(false);
+	const emailInputRef = useRef<HTMLInputElement | null>(null);
 
 	return (
 		<div
@@ -50,7 +51,16 @@ const SignInForm = () => {
 					<h1 className='text-3xl font-serif text-white mb-2 leading-tight'>Welcome Back</h1>
 					<p className='text-slate-400 mb-7 text-sm'>Enter your credentials to access your account</p>
 
-					<form className='space-y-5' action={action}>
+					<form
+						className='space-y-5'
+						action={action}
+						onSubmit={() => {
+							const emailValue = emailInputRef.current?.value?.trim();
+							if (emailValue) {
+								sessionStorage.setItem("authEmail", emailValue);
+							}
+						}}
+					>
 						{state?.message && (
 							<p className='text-sm text-red-400'>{state.message}</p>
 						)}
@@ -59,6 +69,7 @@ const SignInForm = () => {
 								Email
 							</Label>
 							<Input
+								ref={emailInputRef}
 								id='email'
 								name='email'
 								type='email'
