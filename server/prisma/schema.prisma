@@ -52,9 +52,9 @@ model UserProfile {
 
   age       Int
   bodyLabel String? @db.VarChar(50)
-  ethnicity String @db.VarChar(100)
-  gender    String @db.VarChar(50)
-  location  String @db.VarChar(255)
+  ethnicity String  @db.VarChar(100)
+  gender    String  @db.VarChar(50)
+  location  String  @db.VarChar(255)
 
   preferredColors String[]
   styleTags       String[]
@@ -237,27 +237,26 @@ model Product {
   id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   searchId String @map("search_id") @db.Uuid
 
-  productName String  @db.VarChar(500)
-  price       Float?
-  currency    String? @db.VarChar(10)
+  title    String  @db.VarChar(500)
+  price    Float?
+  currency String? @db.VarChar(10)
 
-  productUrl  String  @db.Text
-  category    String
-  subCategory String?
-
-  description String?
+  image    String  @db.Text
+  category String?
 
   colorTags Json?
   brand     String?
   source    String?
+  rating    Float?
 
   createdAt DateTime @default(now())
+  editedAt  DateTime @updatedAt
 
   processedImageUrl String?
   mesh3dModelUrl    String?
 
   search       ProductSearch  @relation(fields: [searchId], references: [id], onDelete: Cascade)
-  user         User?          @relation(fields: [userId], references: [id])
+  user         User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
   userId       String?        @db.Uuid
   images       ProductImage[]
   tryonResults TryonResult[]
