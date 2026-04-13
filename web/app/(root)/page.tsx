@@ -1,308 +1,259 @@
-import {
-	ArrowRight,
-	Box,
-	CalendarDays,
-	Camera,
-	ChevronsDown,
-	CircleCheck,
-	CircleX,
-	MapPin,
-} from "lucide-react";
-import type { ComponentType } from "react";
+import Link from "next/link";
 
-export const dynamic = "force-static";
-
-const journeyCards = [
-	{
-		title: "Create Your 3D Avatar",
-		description:
-			"Upload a high-res photo to generate a pixel-perfect digital twin with your exact measurements.",
-		cta: "Begin Scanning",
-		icon: Camera,
-	},
-	{
-		title: "Setup Your Event",
-		description:
-			"Sync your gala, wedding, or fashion week schedule to receive personalized wardrobe curations.",
-		cta: "Sync Calendar",
-		icon: CalendarDays,
-	},
-	{
-		title: "Virtual Try-On",
-		description:
-			"Simulate fabric physics and drape to see exactly how luxury garments move on your body.",
-		cta: "Open Fitting Room",
-		icon: Box,
-	},
-	{
-		title: "Shop Local",
-		description:
-			"Reserve your favorites at elite boutiques nearby for an in-person VIP styling session.",
-		cta: "Find Boutiques",
-		icon: MapPin,
-	},
-];
-
-const plans = [
-	{
-		tier: "Essential",
-		price: "$0",
-		period: "/mo",
-		features: [
-			{ text: "1 HD Avatar Creation", available: true },
-			{ text: "Standard Catalog Access", available: true },
-			{ text: "3D File Export", available: false },
-		],
-		button: "Select Plan",
-		featured: false,
-		elite: false,
-	},
-	{
-		tier: "Couture Pro",
-		price: "$29",
-		period: "/mo",
-		features: [
-			{ text: "Unlimited Avatar Variants", available: true },
-			{ text: "Full Designer Catalog", available: true },
-			{ text: "3D Exports (OBJ/GLB)", available: true },
-		],
-		button: "Get Started Pro",
-		featured: true,
-		elite: false,
-	},
-	{
-		tier: "Elite Concierge",
-		price: "$99",
-		period: "/yr",
-		features: [
-			{ text: "Personal AI Stylist", available: true },
-			{ text: "VIP Boutique Access", available: true },
-			{ text: "Early Collection Access", available: true },
-		],
-		button: "Join Elite",
-		featured: false,
-		elite: true,
-	},
-];
-
-function JourneyCard({
-	title,
-	description,
-	cta,
-	icon: Icon,
-}: {
-	title: string;
-	description: string;
-	cta: string;
-	icon: ComponentType<{ className?: string }>;
-}) {
-	return (
-		<div className='group flex flex-col gap-6 rounded-3xl border border-[#302839] bg-[#191022] p-8 transition-all hover:-translate-y-2 hover:border-primary/50'>
-			<div className='flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-white'>
-				<Icon className='size-7' />
-			</div>
-			<div className='flex flex-col gap-3'>
-				<h4 className='text-xl leading-tight font-bold text-white'>{title}</h4>
-				<p className='text-base leading-relaxed text-slate-400'>
-					{description}
-				</p>
-			</div>
-			<a
-				className='mt-auto flex items-center gap-2 text-sm font-bold tracking-tighter text-primary uppercase'
-				href='#'
-			>
-				{cta}
-				<ArrowRight className='size-4' />
-			</a>
-		</div>
-	);
-}
-
-function PricingCard({
-	tier,
-	price,
-	period,
-	features,
-	button,
-	featured,
-	elite,
-}: {
-	tier: string;
-	price: string;
-	period: string;
-	features: Array<{ text: string; available: boolean }>;
-	button: string;
-	featured: boolean;
-	elite: boolean;
-}) {
-	return (
-		<div
-			className={`relative flex flex-col gap-8 rounded-3xl p-10 ${
-				featured
-					? "overflow-hidden border-2 border-primary bg-[#191022]"
-					: elite
-						? "border border-[#D4AF37] bg-[#0a080c] transition-colors hover:bg-[#191022]"
-						: "border border-[#302839] bg-[#0a080c] transition-colors hover:border-slate-700"
-			}`}
-		>
-			{featured ? (
-				<div className='absolute top-0 right-0 rounded-bl-xl bg-primary px-6 py-2 text-[10px] font-black tracking-widest text-white uppercase'>
-					Most Popular
-				</div>
-			) : null}
-
-			<div className='flex flex-col gap-2'>
-				<h4
-					className={`text-xs font-bold tracking-widest uppercase ${elite ? "text-[#D4AF37]" : featured ? "text-primary" : "text-slate-400"}`}
-				>
-					{tier}
-				</h4>
-				<div className='flex items-baseline gap-1'>
-					<span className='text-5xl font-black text-white'>{price}</span>
-					<span className='text-lg font-medium text-slate-500'>{period}</span>
-				</div>
-			</div>
-
-			<ul className='flex flex-col gap-4'>
-				{features.map((feature) => (
-					<li
-						key={feature.text}
-						className={`flex items-center gap-3 ${feature.available ? "text-slate-300" : "text-slate-500 line-through"}`}
-					>
-						{feature.available ? (
-							<CircleCheck
-								className={`size-5 ${elite ? "text-[#D4AF37]" : "text-primary"}`}
-							/>
-						) : (
-							<CircleX className='size-5' />
-						)}
-						{feature.text}
-					</li>
-				))}
-			</ul>
-
-			<button
-				className={`h-14 w-full rounded-full text-sm font-bold tracking-widest uppercase transition-all ${
-					featured
-						? "bg-primary text-white shadow-lg shadow-primary/30 hover:scale-105"
-						: elite
-							? "bg-[#D4AF37] text-black hover:scale-105"
-							: "border border-[#302839] text-white hover:bg-white hover:text-black"
-				}`}
-			>
-				{button}
-			</button>
-		</div>
-	);
-}
+const brands = ["Gucci", "Prada", "Balenciaga", "Off-White", "Dior", "Versace", "Saint Laurent", "Fendi"];
 
 export default function Home() {
 	return (
-		<main className='flex-1 overflow-hidden'>
-			<section className='relative p-0 sm:p-6'>
-				<div
-					className='relative flex min-h-dvh flex-col items-center justify-center gap-6 overflow-hidden rounded-none bg-cover bg-center bg-no-repeat p-8 text-center sm:rounded-3xl lg:bg-top'
-					style={{
-						backgroundImage:
-							'linear-gradient(to bottom, rgba(10, 8, 12, 0.4) 0%, rgba(10, 8, 12, 0.9) 100%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuAa_oUv3dqQahWJUTzkbi6mF-6b8PG9geVvaktCHqelL0icavCd0T0bNgVZT27jpk3_m_MEZEiyuui_fg_ToogJfxujMqGvmmhP-QBomnOnxxiMHVCp3Ab3QekM2vzATNCdPUaMWpfZNQorZU2kDtVXv2XWIv1hX7aILuHUWNlnbR7ltz5bxzHt-xfL2ZgwM6yl04dRBIfBhXTL2sZxL2mJD2FAl_2doEea4oXkXXDR5g7w73rA0iEiQsEB_ys0mzlRFVqLeAv5ZXI")',
-					}}
-				>
-					<div className='pointer-events-none absolute inset-0 bg-linear-to-r from-primary/10 to-transparent' />
-					<div className='relative z-10 flex max-w-4xl flex-col gap-6'>
-						<span className='text-sm font-bold tracking-[0.3em] text-[#D4AF37] uppercase'>
-							Experience the Future of Couture
-						</span>
-						<h1 className='text-5xl leading-none font-black tracking-[-0.05em] text-white sm:text-6xl lg:text-8xl'>
-							Your Style,
-							<br />
-							<span className='italic text-primary'>Virtually</span> Perfect.
-						</h1>
-						<p className='mx-auto max-w-2xl text-lg leading-relaxed font-medium text-slate-300 sm:text-xl'>
-							Precision 3D body scanning and high-fidelity rendering for the
-							ultimate virtual fitting room experience.
-						</p>
-						<div className='mt-4 flex flex-wrap justify-center gap-4'>
-							<button className='h-14 min-w-45 rounded-full bg-primary px-8 text-base font-bold tracking-widest text-white uppercase shadow-xl shadow-primary/20 transition-transform hover:scale-105'>
-								Get Started
-							</button>
-							<button className='h-14 min-w-45 rounded-full border border-white/20 bg-white/10 px-8 text-base font-bold tracking-widest text-white uppercase backdrop-blur-md transition-all hover:bg-white/20'>
-								View Showcase
-							</button>
-						</div>
-					</div>
-					<div className='absolute bottom-12 left-1/2 -translate-x-1/2 animate-bounce'>
-						<ChevronsDown className='size-8 text-slate-400' />
-					</div>
-				</div>
-			</section>
+		<main className="flex-1">
 
-			<section className='mx-auto max-w-350 px-6 py-24'>
-				<div className='mb-16 flex flex-col items-center gap-2 text-center'>
-					<h2 className='text-sm font-bold tracking-widest text-primary uppercase'>
-						The Digital Atelier
-					</h2>
-					<h3 className='text-4xl leading-tight font-black tracking-tight text-white sm:text-5xl'>
-						Your Core Journey
-					</h3>
-					<div className='mt-4 h-1 w-20 bg-primary' />
-				</div>
-				<div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4'>
-					{journeyCards.map((card) => (
-						<JourneyCard key={card.title} {...card} />
-					))}
-				</div>
-			</section>
+        {/* Hero Section */}
+        <section className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden pt-20">
+          <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 bg-background-dark/40 z-10 hero-gradient"></div>
+            <div className="h-full w-full bg-slate-900 flex items-center justify-center">
+              <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 50% 50%, #3a1a5e 0%, #0a070d 70%)", opacity: 0.5 }}></div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className="absolute inset-0 h-full w-full object-cover opacity-60"
+                src="/HomePage/home 1.png"
+                alt="Futuristic digital character with neon accents"
+              />
+            </div>
+          </div>
 
-			<section className='bg-[#191022]/50 py-24'>
-				<div className='mx-auto max-w-350 px-6'>
-					<div className='mb-16 flex flex-col gap-4'>
-						<h3 className='text-3xl font-bold tracking-tight text-white'>
-							Luxury Access Plans
-						</h3>
-						<p className='max-w-xl text-slate-400'>
-							Choose the tier that matches your style ambitions. From digital
-							hobbyists to fashion industry elites.
-						</p>
-					</div>
-					<div className='grid grid-cols-1 gap-8 md:grid-cols-3'>
-						{plans.map((plan) => (
-							<PricingCard key={plan.tier} {...plan} />
-						))}
-					</div>
-				</div>
-			</section>
+          <div className="relative z-20 flex flex-col items-center gap-8 px-6 text-center">
+           
+            <h1 className="font-serif text-5xl font-bold leading-tight text-white md:text-7xl lg:max-w-4xl">
+              Experience the <span className="text-primary">Future</span> of Fashion
+            </h1>
+            <p className="max-w-2xl text-lg text-slate-300 md:text-xl">
+              AI-driven 3D reconstruction and cinematic try-on experiences.{" "}
+              Your digital identity, perfectly draped.
+            </p>
+            <div className="flex flex-col gap-4 sm:flex-row">
+              <Link href="/auth/signup" className="flex h-14 min-w-[200px] items-center justify-center rounded-xl bg-primary px-8 text-lg font-bold text-white transition-all hover:scale-105">
+                Launch Studio
+              </Link>
+              <a href="#features" className="flex h-14 min-w-[200px] items-center justify-center rounded-xl border border-white/20 bg-white/5 px-8 text-lg font-bold text-white backdrop-blur-md transition-all hover:bg-white/10">
+                View Showcase
+              </a>
+            </div>
+          </div>
 
-			<section className='mx-auto max-w-350 px-6 py-24'>
-				<div className='relative flex flex-col items-center justify-between gap-12 overflow-hidden rounded-[3rem] border border-primary/20 bg-primary/10 p-12 lg:flex-row lg:p-20'>
-					<div className='absolute -right-24 -bottom-24 size-96 rounded-full bg-primary/20 blur-[100px]' />
-					<div className='relative z-10 flex max-w-xl flex-col gap-6'>
-						<h2 className='text-4xl leading-none font-black tracking-tight text-white lg:text-5xl'>
-							Join the Digital Revolution
-						</h2>
-						<p className='text-lg text-slate-300'>
-							Be the first to know about new collection drops, exclusive virtual
-							events, and 3D fashion insights.
-						</p>
-						<div className='flex flex-col gap-3 sm:flex-row'>
-							<input
-								className='h-14 flex-1 rounded-full border border-[#302839] bg-[#0a080c] px-8 text-white focus:border-primary focus:ring-primary'
-								type='email'
-								placeholder='Enter your email address'
-							/>
-							<button className='h-14 rounded-full bg-primary px-10 font-bold tracking-widest text-white uppercase whitespace-nowrap'>
-								Subscribe
-							</button>
-						</div>
-					</div>
-					<div
-						className='relative z-10 size-64 rotate-6 rounded-3xl bg-cover bg-center shadow-2xl lg:size-80'
-						style={{
-							backgroundImage:
-								'url("https://lh3.googleusercontent.com/aida-public/AB6AXuBSVWfcoczu3kQr5oF-LQlIUqJD2nDhkfSlnwnkGjEk67XHSQ1vE2btBYLnrcQQKrIXPEcltUReWWGDwlARUjb-JdGitlyLHB8xZGYZR7cKZmkyX29Eq5g3pkmm-DaqmU9Oi7p1DK7ZU4Pt0xlGjYxvFrKOYnPxZmo4MfHDdkTdHa5L0SyuuzR8Z4XulIUWr_Wwujz5PFLmsV6avRXX1WD06WEaXBT4JZ9BkG8Fz08Szq2S9i6c-tMTK1_ntxF-FbHkZ7vbXWU3cV0")',
-						}}
-					/>
-				</div>
-			</section>
-		</main>
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce opacity-60 flex flex-col items-center -space-y-0.5">
+            <span className="h-3 w-3 rotate-45 border-b-2 border-r-2 border-white" aria-hidden="true"></span>
+            <span className="h-3 w-3 rotate-45 border-b-2 border-r-2 border-white" aria-hidden="true"></span>
+          </div>
+        </section>
+
+        {/* Brand Partner Ticker */}
+        <section className="py-12 bg-background-dark border-y border-primary/10 overflow-hidden">
+          <div className="container mx-auto px-6 mb-8 text-center">
+            <p className="text-xs font-bold uppercase tracking-[0.3em] text-slate-500">Trusted by Global Fashion Leaders</p>
+          </div>
+          <div className="relative flex overflow-x-hidden">
+            <div className="animate-scroll flex items-center gap-16 md:gap-24 px-4">
+              {/* Brand Set 1 */}
+              <div className="flex items-center gap-16 md:gap-24 flex-shrink-0">
+                {brands.map((brand) => (
+                  <span key={`a-${brand}`} className="text-2xl md:text-3xl font-serif font-bold text-slate-600 grayscale hover:grayscale-0 hover:text-primary transition-all cursor-default whitespace-nowrap flex-shrink-0">{brand}</span>
+                ))}
+              </div>
+              {/* Brand Set 2  duplicate for seamless loop */}
+              <div className="flex items-center gap-16 md:gap-24 flex-shrink-0">
+                {brands.map((brand) => (
+                  <span key={`b-${brand}`} className="text-2xl md:text-3xl font-serif font-bold text-slate-600 grayscale hover:grayscale-0 hover:text-primary transition-all cursor-default whitespace-nowrap flex-shrink-0">{brand}</span>
+                ))}
+              </div>
+            </div>
+            {/* Gradient fade overlays */}
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-background-dark to-transparent"></div>
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-background-dark to-transparent"></div>
+          </div>
+        </section>
+
+        {/* AI-Driven 3D Try-On Section */}
+        <section id="features" className="py-24 lg:py-32 px-6 lg:px-20 bg-background-dark">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <div className="flex flex-col gap-8">
+                <h2 className="font-serif text-4xl font-bold text-white md:text-5xl leading-tight">
+                  AI-Driven <br /><span className="text-primary italic">3D Try-On</span>
+                </h2>
+                <p className="text-xl text-slate-400 leading-relaxed">
+                  Immerse yourself in a high-fidelity virtual fitting room where garments drape perfectly on your digital twin with sub-millimeter accuracy.
+                </p>
+                <div className="grid gap-6">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20 text-primary flex-shrink-0">
+                      <span className="material-symbols-outlined">straighten</span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white">Precision Mapping</h4>
+                      <p className="text-slate-400">Sub-millimeter accuracy for every unique body type.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20 text-primary flex-shrink-0">
+                      <span className="material-symbols-outlined">waves</span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white">Real-time Physics</h4>
+                      <p className="text-slate-400">Fabric simulation powered by advanced AI vertex prediction.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative group">
+                <div className="absolute -inset-4 rounded-3xl bg-primary/20 blur-2xl transition-all group-hover:bg-primary/30"></div>
+                <div className="relative aspect-square overflow-hidden rounded-2xl border border-primary/20 bg-accent-dark">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    className="h-full w-full object-cover opacity-80"
+                    src="/HomePage/home 2.png"
+                    alt="Digital mannequin being scanned by laser lights"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Distributed Wardrobe */}
+        <section className="py-24 lg:py-32 px-6 lg:px-20 bg-accent-dark">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-16 text-center">
+              <h2 className="font-serif text-4xl font-bold text-white md:text-5xl">Distributed Wardrobe</h2>
+              <p className="mx-auto mt-4 max-w-2xl text-slate-400">Access your digital collection across any platform, game, or metaverse instantly.</p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-8">
+              {[
+                { icon: "public", title: "Universal Access", desc: "Your clothes follow you everywhere. Seamless integration with major gaming engines." },
+                { icon: "shield_lock", title: "Blockchain Secured", desc: "Ownership verified on the distributed ledger. True digital scarcity and proof of origin." },
+                { icon: "sync", title: "Cloud Syncing", desc: "Instantly update your style across all connected accounts and virtual spaces." },
+              ].map((card) => (
+                <div key={card.title} className="glass-card flex flex-col gap-6 rounded-2xl p-8 transition-transform hover:-translate-y-2">
+                  <div className="text-primary">
+                    <span className="material-symbols-outlined" style={{ fontSize: "2.25rem" }}>{card.icon}</span>
+                  </div>
+                  <h3 className="font-serif text-2xl font-bold text-white">{card.title}</h3>
+                  <p className="text-slate-400">{card.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* AI Scene Generation */}
+        <section className="py-24 lg:py-32 px-6 lg:px-20 bg-background-dark overflow-hidden">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+
+              {/* Image Grid */}
+              <div className="relative order-2 lg:order-1">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-4">
+                    <div className="aspect-[4/5] rounded-2xl overflow-hidden border border-primary/20">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img className="h-full w-full object-cover grayscale hover:grayscale-0 transition-all duration-500" src="/HomePage/home 3.png" alt="Cyberpunk city street environment" />
+                    </div>
+                    <div className="aspect-[4/5] rounded-2xl overflow-hidden border border-primary/20 translate-x-4">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img className="h-full w-full object-cover grayscale hover:grayscale-0 transition-all duration-500" src="/HomePage/home 5.png" alt="High mountain landscape environment" />
+                    </div>
+                  </div>
+                  <div className="space-y-4 pt-12">
+                    <div className="aspect-[4/5] rounded-2xl overflow-hidden border border-primary/20">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img className="h-full w-full object-cover grayscale hover:grayscale-0 transition-all duration-500" src="/HomePage/home 4.png" alt="Dense forest lighting environment" />
+                    </div>
+                    <div className="aspect-[4/5] rounded-2xl overflow-hidden border border-primary/20 -translate-x-4">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img className="h-full w-full object-cover grayscale hover:grayscale-0 transition-all duration-500" src="/HomePage/home 6.png" alt="Minimalist architectural environment" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Text */}
+              <div className="flex flex-col gap-8 order-1 lg:order-2">
+                <h2 className="font-serif text-4xl font-bold text-white md:text-5xl leading-tight">
+                  AI Scene <br /><span className="text-primary italic">Generation</span>
+                </h2>
+                <p className="text-xl text-slate-400 leading-relaxed">
+                  Transport your avatar to any environment with AI-generated cinematic backgrounds that react to your movements and clothing textures.
+                </p>
+                <div className="flex flex-col gap-6">
+                  <div className="flex gap-4">
+                    <span className="material-symbols-outlined text-primary">landscape</span>
+                    <div>
+                      <h4 className="font-bold text-white">Infinite Environments</h4>
+                      <p className="text-slate-400">From futuristic neo-Tokyo to serene natural landscapes.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <span className="material-symbols-outlined text-primary">light_mode</span>
+                    <div>
+                      <h4 className="font-bold text-white">Dynamic Lighting</h4>
+                      <p className="text-slate-400">Ray-traced lighting that reacts to your 3D model in real-time.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* For Brands Section */}
+        <section className="py-24 lg:py-32 px-6 lg:px-20 bg-background-dark border-t border-primary/10">
+          <div className="mx-auto max-w-7xl">
+            <div className="mb-16 text-center">
+              <h2 className="font-serif text-4xl font-bold text-white md:text-5xl mb-6">Elevate Your Brand with Tryora</h2>
+              <p className="mx-auto max-w-3xl text-xl text-slate-400">
+                Empower your customers with the future of digital retail. Reduce returns by up to 40% and increase engagement with hyper-realistic 3D experiences.
+              </p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-8 mb-16">
+              {[
+                { icon: "integration_instructions", title: "Seamless Integration", desc: "One-click SDK for existing e-commerce platforms like Shopify, Magento, and custom builds." },
+                { icon: "monitoring", title: "Insightful Analytics", desc: "Track virtual engagement, try-on rates, and customer body data trends in real-time." },
+                { icon: "language", title: "Global Scalability", desc: "Deploy your digital collection across web, mobile, and the metaverse with a single asset pipeline." },
+              ].map((card) => (
+                <div key={card.title} className="glass-card flex flex-col gap-6 rounded-xl p-8 transition-all hover:shadow-[0_0_30px_rgba(140,43,238,0.2)]">
+                  <div className="text-primary">
+                    <span className="material-symbols-outlined" style={{ fontSize: "2.25rem" }}>{card.icon}</span>
+                  </div>
+                  <h3 className="font-serif text-2xl font-bold text-white">{card.title}</h3>
+                  <p className="text-slate-400">{card.desc}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-center">
+              <Link href="/auth/signup" className="flex h-14 items-center px-10 rounded-xl bg-primary text-lg font-bold text-white hover:scale-105 transition-transform shadow-[0_0_20px_rgba(140,43,238,0.3)]">
+                Partner With Us
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="relative py-24 lg:py-40 bg-background-dark">
+          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(#8c2bee 1px, transparent 1px)", backgroundSize: "40px 40px" }}></div>
+          <div className="mx-auto max-w-4xl px-6 relative z-10 text-center">
+            <h2 className="font-serif text-4xl font-bold text-white md:text-6xl mb-8">
+              Ready to step into the <span className="text-primary">Future</span>?
+            </h2>
+            <p className="text-xl text-slate-300 mb-12 italic">Join thousands of creators defining the next generation of style.</p>
+            <div className="flex flex-wrap justify-center gap-6">
+              <Link href="/auth/signup" className="flex h-16 items-center px-10 rounded-2xl bg-primary text-xl font-bold text-white hover:scale-105 transition-transform shadow-[0_0_40px_rgba(140,43,238,0.3)]">
+                Create Your Avatar
+              </Link>
+            </div>
+            <p className="mt-8 text-slate-500 text-sm tracking-widest uppercase">Powered by Gemini AI Engine</p>
+          </div>
+        </section>
+
+      </main>
 	);
 }
