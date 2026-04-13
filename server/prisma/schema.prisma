@@ -94,13 +94,14 @@ model UserBodyImage {
 }
 
 model RefreshToken {
-  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String  @map("user_id") @db.Uuid
-  token     String  @unique @db.Text
-  sessionId String  @unique @map("session_id")
-  userAgent String? @db.Text
-  ipAddress String? @db.VarChar(45)
-  isActive  Boolean @default(true)
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique @db.Text
+  sessionId String   @unique @map("session_id")
+  userAgent String?  @db.Text
+  ipAddress String?  @db.VarChar(45)
+  isActive  Boolean  @default(true)
+  expiresAt DateTime
 
   createdAt DateTime @default(now())
 
@@ -211,25 +212,28 @@ enum SearchStatus {
 }
 
 model ProductSearch {
-  id     String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId String? @map("user_id") @db.Uuid
-
-  prompt String
-  geo    String
-
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String?      @map("user_id") @db.Uuid
+  prompt       String
+  intentKey    String
   parsedParams Json?
-  taskId       String       @unique
+  queries      Json?
+  geo          Json?
   status       SearchStatus @default(PENDING)
   errorMessage String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  products     Product[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  products Product[]
-  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-
+  // 🔥 IMPORTANT INDEXING STRATEGY
+  @@index([intentKey])
   @@index([userId, createdAt(sort: Desc)])
   @@index([status])
+  @@index([userId, intentKey])
   @@map("product_searches")
 }
 
