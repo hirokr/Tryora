@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "TRYORA AI Server"
-    DEBUG: bool = False
+    DEBUG: bool = True
 
     # Master API key for internal use, not exposed to clients
     MASTER_APIKEY: str = Field(
