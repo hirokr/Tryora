@@ -30,4 +30,8 @@ router.post('/change-password', changePassword);
 
 router.delete('/delete-account', deleteAccount);
 
+
+
+
+
 export default router;

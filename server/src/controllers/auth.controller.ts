@@ -19,14 +19,14 @@ import {
   saveRefreshToken,
 } from '#src/services/token.service.ts';
 import { hashing, verifyHash } from '#src/utils/auth/hash.ts';
-import { AuthRequest } from '#src/types/authRequest.type.ts';
+import { AuthRequest } from '#src/types/authRequest.js';
 import {
   invalidateCache,
   makeUserSessionCacheKey,
   setCache,
 } from '#src/utils/redis.ts';
 import z from 'zod';
-import { ReturnUserDto } from '#src/types/user.type.ts';
+import { ReturnUserDto } from '#src/types/user.js';
 import {
   sendVerificationEmail,
   sendWelcomeEmail,

@@ -1,7 +1,7 @@
 // middleware/auth.middleware.ts
 import { verifyAccessToken } from '#src/utils/jwt/tokens.ts';
 import { Response, NextFunction, Request, RequestHandler } from 'express';
-import { AuthRequest } from '#src/types/authRequest.type.ts';
+import { AuthRequest } from '#src/types/authRequest.js';
 import { getSetCache, makeUserSessionCacheKey } from '#src/utils/redis.ts';
 import { isValidSession } from '#src/services/token.service.ts';
 import { z, ZodError } from 'zod/v3';
