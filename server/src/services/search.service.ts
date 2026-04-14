@@ -1,9 +1,7 @@
 import prisma from '#src/config/database.ts';
-import { Product } from '#src/types/product.js';
+import { Product, ProductMetricAction } from '#src/types/product.js';
+import { calculateTrendingScore } from '#src/utils/search.ts';
 
-/**
- * CHECK CACHE BY INTENT KEY
- */
 export const checkIntent = async (intentKey: string) => {
   const cached = await prisma.productSearch.findFirst({
     where: { intentKey },
@@ -25,9 +23,6 @@ export const checkIntent = async (intentKey: string) => {
   };
 };
 
-/**
- * CREATE NEW SEARCH RECORD
- */
 export const createSearch = async (data: {
   prompt: string;
   intentKey: string;
@@ -50,9 +45,6 @@ export const createSearch = async (data: {
   return searchRecord;
 };
 
-/**
- * UPDATE SEARCH STATUS
- */
 export const updateSearchStatus = async (
   searchId: string,
   status: 'PENDING' | 'COMPLETED' | 'FAILED',
@@ -68,9 +60,6 @@ export const updateSearchStatus = async (
   });
 };
 
-/**
- * SAVE PRODUCTS FOR A SEARCH
- */
 export const setProducts = async (searchId: string, productData: Product[]) => {
   if (!productData.length) return { count: 0 };
 
@@ -89,9 +78,6 @@ export const setProducts = async (searchId: string, productData: Product[]) => {
   });
 };
 
-/**
- * GET SEARCH WITH PRODUCTS
- */
 export const getSearchById = async (searchId: string) => {
   return prisma.productSearch.findUnique({
     where: { id: searchId },
@@ -99,9 +85,6 @@ export const getSearchById = async (searchId: string) => {
   });
 };
 
-/**
- * GET SEARCH BY INTENT KEY
- */
 export const getSearchByIntent = async (intentKey: string) => {
   return prisma.productSearch.findFirst({
     where: { intentKey },
@@ -110,9 +93,6 @@ export const getSearchByIntent = async (intentKey: string) => {
   });
 };
 
-/**
- * GET USER SEARCH HISTORY
- */
 export const getSearchesByUserId = async (userId: string) => {
   return prisma.productSearch.findMany({
     where: { userId },
@@ -131,6 +111,13 @@ export const getProductById = async (productId: string) => {
   return prisma.product.findUnique({ where: { id: productId } });
 };
 
+export const getProducts = async (limit: number, skip: number) => {
+  return await prisma.product.findMany({
+    take: limit,
+    skip: skip,
+    orderBy: { createdAt: 'desc' },
+  });
+};
 
 export const getProductsByfilters = async (filters: {
   minPrice?: number;
@@ -154,6 +141,49 @@ export const getProductsByfilters = async (filters: {
   if (filters.color) where.color = filters.color;
 
   return prisma.product.findMany({ where });
+};
 
+export const updateTrendingScore = async (
+  productId: string,
+  action: ProductMetricAction
+) => {
+  return await prisma.$transaction(async tx => {
+    const updatedMetrics = await tx.product.update({
+      where: { id: productId },
+      data: {
+        viewCount: action === 'VIEW' ? { increment: 1 } : undefined,
+        likeCount:
+          action === 'CLICK' || action === 'LIKE'
+            ? { increment: 1 }
+            : undefined,
+      },
+      select: {
+        id: true,
+        likeCount: true,
+        viewCount: true,
+        orderCount: true,
+      },
+    });
 
+    const score = calculateTrendingScore(
+      updatedMetrics.likeCount ?? 0,
+      updatedMetrics.viewCount ?? 0,
+      updatedMetrics.orderCount ?? 0
+    );
+
+    return tx.product.update({
+      where: { id: productId },
+      data: { trendingScore: score },
+    });
+  });
+};
+
+export const getTopTrending = async (limit: number = 20, skip: number = 0) => {
+  return await prisma.product.findMany({
+    orderBy: {
+      trendingScore: 'desc',
+    },
+    take: limit,
+    skip: skip,
+  });
 };

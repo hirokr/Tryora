@@ -6,14 +6,17 @@ import {
   checkIntent,
   createSearch,
   getProductById,
+  getProductsByfilters,
   getProductsBySearchID,
   getSearchesByUserId,
+  getTopTrending,
   setProducts,
   updateSearchStatus,
+  updateTrendingScore,
 } from '#src/services/search.service.ts';
 
 import { searchSerper } from '#src/utils/serper.ts';
-import { Product } from '#src/types/product.js';
+import { Product, type ProductMetricAction } from '#src/types/product.js';
 
 export const searchProducts = async (req: AuthRequest, res: Response) => {
   let searchRecordId: string | null = null;
@@ -203,6 +206,119 @@ export const getProductsById = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     return res.status(500).json({
       message: 'failed to fetch product ',
+    });
+  }
+};
+
+// object: {filterQuery: {
+//   minPrice: 20;
+// maxPrice: 1000;
+// source: arong;
+// catogory: saree;
+// subCatogory: bangladeshi;
+// brand: arong;
+// title: saree;
+// color: red;
+// }}
+export const searchProductsByQuery = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { filterQuery } = req.body;
+    if (!filterQuery || typeof filterQuery !== 'object') {
+      return res.status(400).json({ message: 'Invalid filter query' });
+    }
+
+    const products = await getProductsByfilters(filterQuery);
+    if (!products.length) {
+      return res.status(200).json({
+        status: 'empty',
+        results: [],
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      results: products,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'failed to fetch products for this search ',
+    });
+  }
+};
+
+export const updateProductMetrics = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const { productId } = req.params;
+
+    if (!productId || typeof productId !== 'string') {
+      return res.status(400).json({ message: 'Invalid product id' });
+    }
+
+    const { action } = req.body as { action?: string };
+    const normalizedAction = action?.toUpperCase();
+
+    if (
+      !normalizedAction ||
+      !['VIEW', 'CLICK', 'LIKE'].includes(normalizedAction)
+    ) {
+      return res.status(400).json({ message: 'Invalid action type' });
+    }
+
+    const updatedProduct = await updateTrendingScore(
+      productId,
+      normalizedAction as ProductMetricAction
+    );
+
+    return res.status(200).json({
+      status: 'success',
+      data: updatedProduct,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'failed to update product metrics',
+    });
+  }
+};
+
+export const getTopTrendingProducts = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const { limit = 20, skip = 0 } = req.query;
+    const numericLimit =
+      typeof limit === 'string' && !isNaN(parseInt(limit))
+        ? parseInt(limit)
+        : 20;
+    const numericSkip =
+      typeof skip === 'string' && !isNaN(parseInt(skip)) ? parseInt(skip) : 0;
+
+    const products = await getTopTrending(numericLimit, numericSkip);
+
+    if (!products.length) {
+      return res.status(200).json({
+        status: 'empty',
+        results: [],
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      results: products,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'failed to fetch trending products',
     });
   }
 };

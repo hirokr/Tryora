@@ -253,6 +253,11 @@ model Product {
   source    String?
   rating    Float?
 
+  viewCount     Int    @default(0)
+  likeCount     Int    @default(0)
+  orderCount    Int    @default(0)
+  trendingScore Float  @default(0)
+
   createdAt DateTime @default(now())
   editedAt  DateTime @updatedAt
 
@@ -266,6 +271,7 @@ model Product {
   tryonResults TryonResult[]
 
   @@index([searchId])
+  @@index([trendingScore]) 
   @@map("products")
 }
 

@@ -1,8 +1,11 @@
 import {
   getProductsById,
   getProductsBySearchId,
+  getTopTrendingProducts,
   getUserSearchHistory,
   searchProducts,
+  searchProductsByQuery,
+  updateProductMetrics,
 } from '#src/controllers/search.controller.ts';
 import { authMiddleware } from '#src/middlewares/authenticate.middleware.ts';
 import { Router } from 'express';
@@ -658,6 +661,470 @@ router.get('/:searchId/products', getProductsBySearchId);
  *                   type: string
  *                   example: failed to fetch product
  */
-router.get('/product/:productId', getProductsById);
+router.get('/:productId', getProductsById);
+
+/**
+ * @swagger
+ * /api/search/search-by-query:
+ *   post:
+ *     summary: Search products using structured filters
+ *     description: |
+ *       Returns products that match a structured filter object.
+ *       This endpoint is useful when the client already has explicit filter values
+ *       and does not need AI intent extraction.
+ *     tags:
+ *       - Search
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - filterQuery
+ *             properties:
+ *               filterQuery:
+ *                 type: object
+ *                 description: Product filter criteria.
+ *                 properties:
+ *                   minPrice:
+ *                     type: number
+ *                     nullable: true
+ *                     example: 20
+ *                   maxPrice:
+ *                     type: number
+ *                     nullable: true
+ *                     example: 1000
+ *                   source:
+ *                     type: string
+ *                     nullable: true
+ *                     example: Zara
+ *                   catogory:
+ *                     type: string
+ *                     nullable: true
+ *                     description: Category filter key used by current API contract.
+ *                     example: Dresses
+ *                   subCatogory:
+ *                     type: string
+ *                     nullable: true
+ *                     description: Sub-category filter key used by current API contract.
+ *                     example: Cocktail
+ *                   brand:
+ *                     type: string
+ *                     nullable: true
+ *                     example: Mango
+ *                   title:
+ *                     type: string
+ *                     nullable: true
+ *                     example: satin dress
+ *                   color:
+ *                     type: string
+ *                     nullable: true
+ *                     example: black
+ *           examples:
+ *             basicFilter:
+ *               summary: Filter by price, category, and color
+ *               value:
+ *                 filterQuery:
+ *                   minPrice: 30
+ *                   maxPrice: 200
+ *                   catogory: Dresses
+ *                   color: black
+ *     responses:
+ *       200:
+ *         description: Filtered products returned successfully (or no matching products)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - type: object
+ *                   required:
+ *                     - status
+ *                     - results
+ *                   properties:
+ *                     status:
+ *                       type: string
+ *                       enum: [success]
+ *                     results:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             format: uuid
+ *                           searchId:
+ *                             type: string
+ *                             format: uuid
+ *                             nullable: true
+ *                           userId:
+ *                             type: string
+ *                             format: uuid
+ *                             nullable: true
+ *                           title:
+ *                             type: string
+ *                           price:
+ *                             type: number
+ *                             nullable: true
+ *                           currency:
+ *                             type: string
+ *                             nullable: true
+ *                           image:
+ *                             type: string
+ *                             format: uri
+ *                           category:
+ *                             type: string
+ *                             nullable: true
+ *                           subCategory:
+ *                             type: string
+ *                             nullable: true
+ *                           color:
+ *                             type: string
+ *                             nullable: true
+ *                           brand:
+ *                             type: string
+ *                             nullable: true
+ *                           source:
+ *                             type: string
+ *                             nullable: true
+ *                           rating:
+ *                             type: number
+ *                             nullable: true
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                           editedAt:
+ *                             type: string
+ *                             format: date-time
+ *                             nullable: true
+ *                 - type: object
+ *                   required:
+ *                     - status
+ *                     - results
+ *                   properties:
+ *                     status:
+ *                       type: string
+ *                       enum: [empty]
+ *                     results:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                       example: []
+ *             examples:
+ *               success:
+ *                 summary: Matching products found
+ *                 value:
+ *                   status: success
+ *                   results:
+ *                     - id: 5a18e4f6-df8b-4a8f-ab0f-7ac0be9f4f3f
+ *                       title: Satin Midi Cocktail Dress
+ *                       price: 129.99
+ *                       currency: USD
+ *                       source: Zara
+ *               empty:
+ *                 summary: No matching products
+ *                 value:
+ *                   status: empty
+ *                   results: []
+ *       400:
+ *         description: Invalid request payload
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Invalid filter query
+ *       401:
+ *         description: Missing or invalid authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Unauthorized
+ *       500:
+ *         description: Failed to fetch products by query
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: failed to fetch products for this search
+ */
+router.post('/search-by-query', searchProductsByQuery);
+
+/**
+ * @swagger
+ * /api/search/trending:
+ *   get:
+ *     summary: Get top trending products
+ *     description: |
+ *       Returns products ordered by descending trending score.
+ *       Supports pagination with `limit` and `skip` query parameters.
+ *     tags:
+ *       - Search
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 20
+ *         description: Maximum number of products to return.
+ *       - in: query
+ *         name: skip
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *           default: 0
+ *         description: Number of products to skip.
+ *     responses:
+ *       200:
+ *         description: Trending products retrieved (or empty list)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - type: object
+ *                   required:
+ *                     - status
+ *                     - results
+ *                   properties:
+ *                     status:
+ *                       type: string
+ *                       enum: [success]
+ *                     results:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             format: uuid
+ *                           title:
+ *                             type: string
+ *                           price:
+ *                             type: number
+ *                             nullable: true
+ *                           currency:
+ *                             type: string
+ *                             nullable: true
+ *                           image:
+ *                             type: string
+ *                             format: uri
+ *                           category:
+ *                             type: string
+ *                             nullable: true
+ *                           subCategory:
+ *                             type: string
+ *                             nullable: true
+ *                           color:
+ *                             type: string
+ *                             nullable: true
+ *                           brand:
+ *                             type: string
+ *                             nullable: true
+ *                           source:
+ *                             type: string
+ *                             nullable: true
+ *                           rating:
+ *                             type: number
+ *                             nullable: true
+ *                           trendingScore:
+ *                             type: number
+ *                             nullable: true
+ *                           likeCount:
+ *                             type: integer
+ *                             nullable: true
+ *                           viewCount:
+ *                             type: integer
+ *                             nullable: true
+ *                           orderCount:
+ *                             type: integer
+ *                             nullable: true
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                           editedAt:
+ *                             type: string
+ *                             format: date-time
+ *                             nullable: true
+ *                 - type: object
+ *                   required:
+ *                     - status
+ *                     - results
+ *                   properties:
+ *                     status:
+ *                       type: string
+ *                       enum: [empty]
+ *                     results:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                       example: []
+ *             examples:
+ *               success:
+ *                 summary: Trending products found
+ *                 value:
+ *                   status: success
+ *                   results:
+ *                     - id: 5a18e4f6-df8b-4a8f-ab0f-7ac0be9f4f3f
+ *                       title: Satin Midi Cocktail Dress
+ *                       price: 129.99
+ *                       currency: USD
+ *                       source: Zara
+ *                       trendingScore: 86.5
+ *               empty:
+ *                 summary: No trending products available
+ *                 value:
+ *                   status: empty
+ *                   results: []
+ *       401:
+ *         description: Missing or invalid authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Unauthorized
+ *       500:
+ *         description: Failed to fetch trending products
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: failed to fetch trending products
+ */
+router.get('/trending', getTopTrendingProducts);
+
+/**
+ * @swagger
+ * /api/search/product-metric/{productId}:
+ *   post:
+ *     summary: Update a product's engagement metric
+ *     description: |
+ *       Updates product interaction counters and recalculates trending score.
+ *       Accepted action values are `VIEW`, `CLICK`, and `LIKE` (case-insensitive).
+ *     tags:
+ *       - Search
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Product ID to update.
+ *         example: 5a18e4f6-df8b-4a8f-ab0f-7ac0be9f4f3f
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - action
+ *             properties:
+ *               action:
+ *                 type: string
+ *                 enum: [VIEW, CLICK, LIKE]
+ *                 description: Interaction type to record.
+ *                 example: VIEW
+ *     responses:
+ *       200:
+ *         description: Product metrics updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - status
+ *                 - data
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   enum: [success]
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                     title:
+ *                       type: string
+ *                     likeCount:
+ *                       type: integer
+ *                       nullable: true
+ *                     viewCount:
+ *                       type: integer
+ *                       nullable: true
+ *                     orderCount:
+ *                       type: integer
+ *                       nullable: true
+ *                     trendingScore:
+ *                       type: number
+ *                       nullable: true
+ *             examples:
+ *               success:
+ *                 summary: Metric updated
+ *                 value:
+ *                   status: success
+ *                   data:
+ *                     id: 5a18e4f6-df8b-4a8f-ab0f-7ac0be9f4f3f
+ *                     likeCount: 12
+ *                     viewCount: 84
+ *                     orderCount: 3
+ *                     trendingScore: 91.3
+ *       400:
+ *         description: Invalid product ID or action type
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Invalid action type
+ *       401:
+ *         description: Missing or invalid authentication
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Unauthorized
+ *       500:
+ *         description: Failed to update product metrics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: failed to update product metrics
+ */
+router.post('/product-metric/:productId', updateProductMetrics);
 
 export default router;
