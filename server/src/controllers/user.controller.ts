@@ -1,4 +1,4 @@
-import { AuthRequest } from '#src/types/authRequest.type.ts';
+import { AuthRequest } from '#src/types/authRequest.js';
 import { Request, Response } from 'express';
 import {
   findUserByEmail,
@@ -48,7 +48,7 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const updateProfile = async (req: AuthRequest, res: Response) => {
+export const updateUserProfileData = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.userId) {
       return res.status(401).json({ message: 'User not authenticated' });
@@ -149,7 +149,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
       verificationLink: '',
       expiryMinutes: 60,
     });
-
   } catch (error) {
     // console.error('Error in forgot password:', error);
     return res
@@ -265,7 +264,6 @@ export const resendVerificationEmail = async (
   }
 };
 
-
 export const deleteAccount = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.userId) {
@@ -320,5 +318,3 @@ export const deleteAccount = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Failed to delete account' });
   }
 };
-
-
