@@ -5,6 +5,9 @@ import { extractSearchData } from '#src/utils/groq.ts';
 import {
   checkIntent,
   createSearch,
+  getProductById,
+  getProductsBySearchID,
+  getSearchesByUserId,
   setProducts,
   updateSearchStatus,
 } from '#src/services/search.service.ts';
@@ -111,6 +114,95 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
 
     return res.status(500).json({
       message: 'Internal server error',
+    });
+  }
+};
+
+export const getUserSearchHistory = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const products = await getSearchesByUserId(req.userId);
+
+    if (!products.length) {
+      return res.status(200).json({
+        status: 'empty',
+        results: [],
+      });
+    }
+
+    res.status(200).json({
+      status: 'cached',
+      results: products,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'failed to fetch search history ',
+    });
+  }
+};
+
+export const getProductsBySearchId = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const rawSearchId = req.params.searchId;
+    const searchId = Array.isArray(rawSearchId) ? rawSearchId[0] : rawSearchId;
+
+    if (!searchId || typeof searchId !== 'string') {
+      return res.status(400).json({ message: 'Invalid search id' });
+    }
+
+    const products = await getProductsBySearchID(searchId, req.userId);
+
+    if (!products.length) {
+      return res.status(200).json({
+        status: 'empty',
+        results: [],
+      });
+    }
+
+    res.status(200).json({
+      status: 'cached',
+      results: products,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'failed to fetch products for this search ',
+    });
+  }
+};
+
+export const getProductsById = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const { productId } = req.params;
+
+    if (!productId || typeof productId !== 'string') {
+      return res.status(400).json({ message: 'Invalid product id' });
+    }
+    const product = await getProductById(productId);
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.status(200).json({
+      status: 'cached',
+      data: product,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'failed to fetch product ',
     });
   }
 };

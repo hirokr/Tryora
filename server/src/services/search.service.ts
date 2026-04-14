@@ -117,8 +117,16 @@ export const getSearchesByUserId = async (userId: string) => {
   return prisma.productSearch.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
-    include: {
-      products: true,
-    },
   });
+};
+
+export const getProductsBySearchID = async (
+  searchId: string,
+  userId: string
+) => {
+  return prisma.product.findMany({ where: { searchId, userId } });
+};
+
+export const getProductById = async (productId: string) => {
+  return prisma.product.findUnique({ where: { id: productId } });
 };
