@@ -15,7 +15,7 @@
 - [x] get three images or link of the images, handle three images
 - [x] get user preferences
 - [x] generate 3d model of the base images
-- [ ] store the model in the in a storage
+- [x] store the model in the in a storage
 - [x] dress search api, search dresses in real time as a fallback, mainly search in the loal databse and then searchs the other sites for the real time search capabilities
 - [x] get the dresses filter with api and frontend
 - [x] create trending api to get the tending clothes. uses a separate table to store the tendings
