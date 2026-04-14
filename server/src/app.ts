@@ -15,6 +15,7 @@ import { swaggerOptions } from './docs/swagger/index.ts';
 
 import authRoutes from './routes/auth.route.ts';
 import usersRoutes from './routes/user.route.ts';
+import model3DRoutes from './routes/3dmodel.route.ts';
 
 const app = express();
 app.use(helmet());
@@ -65,6 +66,7 @@ app.get('/api', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', usersRoutes);
+app.use('/api', model3DRoutes);
 
 const openapiSpecification = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));

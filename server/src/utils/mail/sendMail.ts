@@ -1,9 +1,6 @@
 import nodemailer from 'nodemailer';
 import nodemailerTransporter from '#src/config/nodemailer.config.ts';
-import {
-  VerificationEmailProps,
-  WelcomeEmailProps,
-} from '#src/types/email.type.ts';
+import { VerificationEmailProps, WelcomeEmailProps } from '#src/types/email.js';
 import {
   generateVerificationEmail,
   generateWelcomeEmail,

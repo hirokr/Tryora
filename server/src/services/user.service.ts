@@ -3,7 +3,7 @@ import {
   CreateUserDto,
   ReturnUserDto,
   UpdateUserProfileDto,
-} from '#src/types/user.type.ts';
+} from '#src/types/user.js';
 
 export async function findUserByEmail(email: string) {
   try {
