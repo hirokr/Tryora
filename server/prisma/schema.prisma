@@ -7,12 +7,42 @@ datasource db {
   provider = "postgresql"
 }
 
+//////////////////////////////////////////////////////
+// ENUMS
+//////////////////////////////////////////////////////
+
+enum JobType {
+  TRYON_GENERATION
+  MODEL_3D_GENERATION
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum SearchStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+//////////////////////////////////////////////////////
+// USER
+//////////////////////////////////////////////////////
+
 model User {
-  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email             String  @unique @db.VarChar(255)
-  passwordHash      String? @map("password_hash") @db.VarChar(255)
-  name              String  @db.VarChar(255)
-  avatarUrl         String? @map("avatar_url") @db.Text
+  id           String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email        String  @unique @db.VarChar(255)
+  passwordHash String? @map("password_hash") @db.VarChar(255)
+
+  name      String  @db.VarChar(255)
+  avatarUrl String? @map("avatar_url") @db.Text
+
   verificationToken String? @map("verification_token") @db.VarChar(255)
   emailVerified     Boolean @default(false) @map("email_verified")
   isActive          Boolean @default(true) @map("is_active")
@@ -24,12 +54,10 @@ model User {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  // Relations
   profile           UserProfile?
   bodyImages        UserBodyImage[]
-  products          Product[]
+  products          Product[]           @relation("UploadedProducts")
   tryonResults      TryonResult[]
-  processingJobs    ProcessingJob[]
   recommendationLog RecommendationLog[]
   refreshTokens     RefreshToken[]
   productSearches   ProductSearch[]
@@ -37,8 +65,14 @@ model User {
 
   @@unique([oauthProvider, oauthId])
   @@index([email])
+  @@index([deletedAt])
   @@map("users")
 }
+
+//////////////////////////////////////////////////////
+// USER PROFILE
+// NOTE: deletedAt removed — User.deletedAt + cascade handles cleanup
+//////////////////////////////////////////////////////
 
 model UserProfile {
   id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -50,26 +84,30 @@ model UserProfile {
   measHips      Float?
   measShoulders Float?
 
-  age       Int
+  age       Int?
   bodyLabel String? @db.VarChar(50)
-  ethnicity String  @db.VarChar(100)
-  gender    String  @db.VarChar(50)
-  location  String  @db.VarChar(255)
+  ethnicity String? @db.VarChar(100)
+  gender    String? @db.VarChar(50)
+  location  String? @db.VarChar(255)
 
   preferredColors String[]
   styleTags       String[]
-  sizeProfile     Json?
+
+  sizeProfile Json?
 
   notificationPrefs Boolean @default(true)
 
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")
 }
+
+//////////////////////////////////////////////////////
+// BODY IMAGES
+//////////////////////////////////////////////////////
 
 model UserBodyImage {
   id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -82,28 +120,36 @@ model UserBodyImage {
   isDefault Boolean @default(false)
   metadata  Json?
 
-  createdAt DateTime  @default(now())
-  deletedAt DateTime?
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
 
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   tryonResults TryonResult[]
 
   @@index([userId, isDefault])
   @@index([userId, createdAt(sort: Desc)])
+  @@index([deletedAt])
   @@map("user_body_images")
 }
 
-model RefreshToken {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  token     String   @unique @db.Text
-  sessionId String   @unique @map("session_id")
-  userAgent String?  @db.Text
-  ipAddress String?  @db.VarChar(45)
-  isActive  Boolean  @default(true)
-  expiresAt DateTime
+//////////////////////////////////////////////////////
+// AUTH TOKENS
+//////////////////////////////////////////////////////
 
-  createdAt DateTime @default(now())
+model RefreshToken {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @map("user_id") @db.Uuid
+
+  token     String @unique @db.Text
+  sessionId String @unique @map("session_id")
+
+  userAgent String? @db.Text
+  ipAddress String? @db.VarChar(45)
+
+  isActive  Boolean  @default(true)
+  expiresAt DateTime @map("expires_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -111,92 +157,130 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
+//////////////////////////////////////////////////////
+// TRY-ON RESULTS
+//////////////////////////////////////////////////////
+
 model TryonResult {
   id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId      String  @map("user_id") @db.Uuid
   bodyImageId String  @map("body_image_id") @db.Uuid
   productId   String? @map("product_id") @db.Uuid
 
+  // FIX: @unique required for Prisma one-to-one relation enforcement
+  jobId    String? @unique @map("job_id") @db.Uuid
+  glbJobId String? @unique @map("glb_job_id") @db.Uuid
+
   resultImageUrl String  @db.Text
-  resultVideoUrl String? @db.Text
-  thumbnailUrl   String? @db.Text
+  thumbnailUrl   String? @map("thumbnail_url") @db.Text
 
-  generationParams Json?
-  processingTimeMs Int?
-  modelVersion     String?
+  // Populated after MODEL_3D_GENERATION job completes
+  glbUrl String? @map("glb_url") @db.Text
 
-  isFavorite Boolean @default(false)
-  isPublic   Boolean @default(false)
-  viewCount  Int     @default(0)
+  generationParams Json?   @map("generation_params")
+  processingTimeMs Int?    @map("processing_time_ms")
+  modelVersion     String? @map("model_version") @db.VarChar(50)
 
-  createdAt DateTime  @default(now())
-  deletedAt DateTime?
+  isFavorite Boolean @default(false) @map("is_favorite")
+  isPublic   Boolean @default(false) @map("is_public")
+  viewCount  Int     @default(0) @map("view_count")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
 
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   bodyImage UserBodyImage @relation(fields: [bodyImageId], references: [id], onDelete: Cascade)
   product   Product?      @relation(fields: [productId], references: [id], onDelete: SetNull)
 
+  // The TRYON_GENERATION job that produced this result
+  job    GenerationJob? @relation("TryonJob", fields: [jobId], references: [id])
+  // The MODEL_3D_GENERATION job that produced glbUrl
+  glbJob GenerationJob? @relation("GlbJob", fields: [glbJobId], references: [id])
+
   @@index([userId, createdAt(sort: Desc)])
   @@index([userId, isFavorite])
-  @@index([userId, isPublic])
+  @@index([productId])
+  @@index([jobId]) // FIX: added — polling resolves job → result constantly
+  @@index([glbJobId]) // FIX: added
+  @@index([deletedAt])
   @@map("tryon_results")
 }
 
-enum JobStatus {
-  QUEUED
-  PROCESSING
-  COMPLETED
-  FAILED
-  CANCELLED
-}
+//////////////////////////////////////////////////////
+// JOB SYSTEM
+//
+// Data flow:
+//   User clicks dress
+//     → INSERT GenerationJob (TRYON_GENERATION, QUEUED)
+//     → job completes → INSERT TryonResult { jobId }
+//
+//   User triggers 3D
+//     → INSERT GenerationJob (MODEL_3D_GENERATION, QUEUED)
+//     → frontend polls GET /jobs/:id
+//       → backend checks thirdPartyTaskId status (Tripo3D / Meshy)
+//     → job completes → UPDATE TryonResult SET glbUrl, glbJobId
+//////////////////////////////////////////////////////
 
-enum JobType {
-  TRYON_GENERATION
-  POSE_ESTIMATION
-  BACKGROUND_REMOVAL
-  IMAGE_PROCESSING
-  GARMENT_SEGMENTATION
-  MODEL_3D_GENERATION
-  RECOMMENDATION_GENERATION
-}
+model GenerationJob {
+  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String @map("user_id") @db.Uuid
 
-model ProcessingJob {
-  id      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId  String?   @map("user_id") @db.Uuid
   jobType JobType
   status  JobStatus @default(QUEUED)
 
-  inputData    Json
-  resultData   Json?
-  errorMessage String?
+  progress     Int     @default(0)
+  currentStage String? @map("current_stage") @db.VarChar(100)
 
-  retryCount Int @default(0)
-  maxRetries Int @default(3)
+  // ID returned by third-party service (Tripo3D, Meshy, etc.) for polling
+  thirdPartyTaskId String? @map("third_party_task_id") @db.VarChar(255)
 
-  createdAt   DateTime  @default(now())
-  startedAt   DateTime?
-  completedAt DateTime?
+  inputData  Json  @map("input_data")
+  resultData Json? @map("result_data")
+
+  // Populated on completion
+  outputImageUrl String? @map("output_image_url") @db.Text // for TRYON_GENERATION
+  outputGlbUrl   String? @map("output_glb_url") @db.Text // for MODEL_3D_GENERATION
+
+  errorMessage String? @map("error_message") @db.Text
+  retryCount   Int     @default(0) @map("retry_count")
+  maxRetries   Int     @default(3) @map("max_retries")
 
   priority Int @default(0)
 
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Back-relations to TryonResult
+  tryonResult    TryonResult? @relation("TryonJob")
+  glbTryonResult TryonResult? @relation("GlbJob")
 
   @@index([status, createdAt])
   @@index([userId, status])
+  @@index([userId, createdAt(sort: Desc)]) // FIX: added — job history queries
   @@index([jobType, status])
-  @@map("processing_jobs")
+  @@index([thirdPartyTaskId]) // FIX: added — polling loop hits this constantly
+  @@map("generation_jobs")
 }
+
+//////////////////////////////////////////////////////
+// RECOMMENDATION LOG
+// NOTE: recommendedProductIds is a JSON array of UUIDs with no FK enforcement.
+// Stale IDs must be cleaned up at the application layer when products are deleted.
+//////////////////////////////////////////////////////
 
 model RecommendationLog {
   id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId String @map("user_id") @db.Uuid
 
-  recommendedProductIds Json   @default("[]")
-  algorithmVersion      String
-  algorithmParams       Json?
-  feedbackScore         Float?
+  recommendedProductIds Json   @default("[]") @map("recommended_product_ids")
+  algorithmVersion      String @map("algorithm_version") @db.VarChar(50)
+  algorithmParams       Json?  @map("algorithm_params")
+  feedbackScore         Float? @map("feedback_score")
 
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -204,32 +288,33 @@ model RecommendationLog {
   @@map("recommendation_logs")
 }
 
-enum SearchStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-}
+//////////////////////////////////////////////////////
+// PRODUCT SEARCH
+//////////////////////////////////////////////////////
 
 model ProductSearch {
-  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId       String?      @map("user_id") @db.Uuid
-  prompt       String
-  intentKey    String
-  parsedParams Json?
+  id     String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId String? @map("user_id") @db.Uuid
+
+  prompt       String @db.Text
+  intentKey    String @map("intent_key") @db.VarChar(100)
+  parsedParams Json?  @map("parsed_params")
   queries      Json?
   geo          Json?
+
   status       SearchStatus @default(PENDING)
-  errorMessage String?
-  startedAt    DateTime?
-  completedAt  DateTime?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  products     Product[]
+  errorMessage String?      @map("error_message") @db.Text
+
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  products Product[]
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  // 🔥 IMPORTANT INDEXING STRATEGY
   @@index([intentKey])
   @@index([userId, createdAt(sort: Desc)])
   @@index([status])
@@ -237,78 +322,70 @@ model ProductSearch {
   @@map("product_searches")
 }
 
+//////////////////////////////////////////////////////
+// PRODUCT
+//////////////////////////////////////////////////////
+
 model Product {
-  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  searchId String @map("search_id") @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  // FIX: nullable — user-uploaded products have no searchId
+  searchId String? @map("search_id") @db.Uuid
 
   title    String  @db.VarChar(500)
   price    Float?
   currency String? @db.VarChar(10)
 
-  image    String  @db.Text
-  category String?
+  image      String  @db.Text
+  // FIX: added — frontend needs the actual buy link, not just source name
+  productUrl String? @map("product_url") @db.Text
+  category   String? @db.VarChar(100)
 
   colorTags Json?
-  brand     String?
-  source    String?
+  brand     String? @db.VarChar(100)
+  source    String? @db.VarChar(100) // platform name e.g. "daraz", "shajgoj"
   rating    Float?
 
-  viewCount     Int    @default(0)
-  likeCount     Int    @default(0)
-  orderCount    Int    @default(0)
-  trendingScore Float  @default(0)
+  rank Int?
 
-  createdAt DateTime @default(now())
-  editedAt  DateTime @updatedAt
+  viewCount     Int   @default(0) @map("view_count")
+  likeCount     Int   @default(0) @map("like_count")
+  orderCount    Int   @default(0) @map("order_count")
+  trendingScore Float @default(0) @map("trending_score")
 
-  processedImageUrl String?
-  mesh3dModelUrl    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  // FIX: renamed from editedAt — consistent with rest of schema
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  search       ProductSearch  @relation(fields: [searchId], references: [id], onDelete: Cascade)
-  user         User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-  userId       String?        @db.Uuid
+  processedImageUrl String? @map("processed_image_url") @db.Text
+  mesh3dModelUrl    String? @map("mesh_3d_model_url") @db.Text
+
+  // FIX: nullable relation to match nullable searchId
+  search ProductSearch? @relation(fields: [searchId], references: [id], onDelete: Cascade)
+
+  uploadedById String? @map("uploaded_by_id") @db.Uuid
+  uploadedBy   User?   @relation("UploadedProducts", fields: [uploadedById], references: [id], onDelete: SetNull)
+
   images       ProductImage[]
   tryonResults TryonResult[]
 
   @@index([searchId])
-  @@index([trendingScore]) 
+  @@index([trendingScore])
+  @@index([uploadedById])
   @@map("products")
 }
 
+//////////////////////////////////////////////////////
+// PRODUCT IMAGES
+//////////////////////////////////////////////////////
+
 model ProductImage {
   id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productId String @db.Uuid
+  productId String @map("product_id") @db.Uuid
   url       String @db.Text
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
   @@map("product_images")
-}
-
-model GenerationJob {
-  id     String @id @default(cuid())
-  userId String @db.Uuid
-
-  jobType String
-  status  String @default("PENDING")
-
-  progress     Int     @default(0)
-  currentStage String?
-
-  thirdPartyTaskId String?
-
-  inputS3Key     String?
-  outputGlbS3Key String?
-
-  errorMessage String?
-
-  createdAt   DateTime  @default(now())
-  completedAt DateTime?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([status])
-  @@map("generation_jobs")
 }
