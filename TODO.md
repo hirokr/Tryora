@@ -3,8 +3,8 @@
 ## General Tasks
 
 - [x] User authentication
-- [ ] User profile create
-- [ ] User password recovary and rest
+- [x] User profile create
+- [x] User password recovary and rest
 
 ## Mandatory tasks
 
