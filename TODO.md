@@ -14,18 +14,15 @@
 
 - [x] get three images or link of the images, handle three images
 - [x] get user preferences
-- [ ] generate make the model in less clothes
-- [ ] generate 3d model of the base images
+- [x] generate 3d model of the base images
 - [ ] store the model in the in a storage
 - [x] dress search api, search dresses in real time as a fallback, mainly search in the loal databse and then searchs the other sites for the real time search capabilities
 - [x] get the dresses filter with api and frontend
-- [ ] create trending api to get the tending clothes. uses a separate table to store the tendings
+- [x] create trending api to get the tending clothes. uses a separate table to store the tendings
 
 ## Module - 2
 
-- [ ] generate 3d mesh from each dress and store them in the database and the cache and the show and put color and patter on them
-- [ ] use the mediaPipe library to get understand the body size of the user.
-- [ ] natural language based dress and accesories search
+- [x] generate 3d mesh from each dress and store them in the database and the cache and the show and put color and patter on them
 - [ ] change color and patter on the dress image
 
 ## Moduel - 3
