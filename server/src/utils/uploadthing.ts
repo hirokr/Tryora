@@ -9,11 +9,13 @@ export const uploadRouter: FileRouter = {
       maxFileCount: 1,
     },
   })
+    .onUploadError(() => {
+      throw new Error(
+        `Upload failed. Please ensure your file is an image and less than 4MB in size.`
+      );
+    })
     .onUploadComplete(data => {
       console.log('upload completed', data);
-    })
-    .onUploadError(error => {
-      throw new Error(`Upload failed: ${error.message}`);
     }),
 };
 
