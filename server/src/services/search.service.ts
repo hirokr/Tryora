@@ -130,3 +130,30 @@ export const getProductsBySearchID = async (
 export const getProductById = async (productId: string) => {
   return prisma.product.findUnique({ where: { id: productId } });
 };
+
+
+export const getProductsByfilters = async (filters: {
+  minPrice?: number;
+  maxPrice?: number;
+  source?: string;
+  catogory?: string;
+  subCatogory?: string;
+  brand?: string;
+  title?: string;
+  color?: string;
+}) => {
+  const where: any = {};
+  if (filters.minPrice !== undefined) where.price = { gte: filters.minPrice };
+  if (filters.maxPrice !== undefined)
+    where.price = { ...where.price, lte: filters.maxPrice };
+  if (filters.source) where.source = filters.source;
+  if (filters.catogory) where.category = filters.catogory;
+  if (filters.subCatogory) where.subCategory = filters.subCatogory;
+  if (filters.brand) where.brand = filters.brand;
+  if (filters.title) where.title = filters.title;
+  if (filters.color) where.color = filters.color;
+
+  return prisma.product.findMany({ where });
+
+
+};

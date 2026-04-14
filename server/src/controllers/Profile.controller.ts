@@ -6,7 +6,6 @@ import {
 } from '#src/services/profile.service.ts';
 import { AuthRequest } from '#src/types/authRequest.js';
 import { Response } from 'express';
-import { updateProfile } from './user.controller.ts';
 
 // object data = {images: [{poser: 'front', imageUrl: 'http://example.com/image1.jpg'}, {poser: 'side', imageUrl: 'http://example.com/image2.jpg'}]}
 export const uploadBodyImages = async (req: AuthRequest, res: Response) => {

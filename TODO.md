@@ -17,7 +17,7 @@
 - [ ] generate make the model in less clothes
 - [ ] generate 3d model of the base images
 - [ ] store the model in the in a storage
-- [ ] dress search api, search dresses in real time as a fallback, mainly search in the loal databse and then searchs the other sites for the real time search capabilities
+- [x] dress search api, search dresses in real time as a fallback, mainly search in the loal databse and then searchs the other sites for the real time search capabilities
 - [ ] get the dresses filter with api and frontend
 - [ ] create trending api to get the tending clothes. uses a separate table to store the tendings
 

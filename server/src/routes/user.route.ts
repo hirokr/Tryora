@@ -5,7 +5,7 @@ import {
   getProfile,
   resendVerificationEmail,
   resetPassword,
-  updateProfile,
+  updateUserProfileData,
   verifyEmail,
 } from '#src/controllers/user.controller.ts';
 import { authMiddleware } from '#src/middlewares/authenticate.middleware.ts';
@@ -24,14 +24,10 @@ router.post('/resend-verification-email', resendVerificationEmail);
 router.use(authMiddleware);
 
 router.get('/profile', getProfile);
-router.patch('/profile', updateProfile);
+router.patch('/profile', updateUserProfileData);
 
 router.post('/change-password', changePassword);
 
 router.delete('/delete-account', deleteAccount);
-
-
-
-
 
 export default router;
