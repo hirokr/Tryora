@@ -1,52 +1,53 @@
-interface Hunyuan3DResponse {
-  task_id: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  model_urls?: {
-    glb?: string;
-    obj?: string;
-  };
-  error?: string;
-}
-const PIXAZO_API_KEY = process.env.PIXAZO_API_KEY;
-if (!PIXAZO_API_KEY) {
-  throw new Error('Missing PIXAZO_API_KEY in environment variables');
-}
-const RESOLVED_PIXAZO_API_KEY: string = PIXAZO_API_KEY;
+import type { HunyuanStartRequestPayload } from '#src/types/3d.js';
 
-export async function startHunyuan3DGeneration(
-  imageUri: string,
-  prompt: string,
-): Promise<Hunyuan3DResponse> {
-  const url =
-    'https://gateway.pixazo.ai/hunyuan3d-3-0-api-294/v1/hunyuan3d-3-0-api-request';
+const PIXAZO_BASE_URL = 'https://gateway.pixazo.ai/hunyuan3d-3-0-api-294/v1';
+const DEFAULT_FACE_COUNT = 500000;
+const HUNYUAN_PROMPT_SUFFIX =
+  'high-resolution 3D mesh, detailed geometry, complete 360-degree view.';
 
-  const payload = {
-    input_image_url: imageUri,
-    prompt: prompt,
-    face_count: 500000,
-  };
+export const getPixazoBaseUrl = () => PIXAZO_BASE_URL;
 
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache',
-        'Ocp-Apim-Subscription-Key': RESOLVED_PIXAZO_API_KEY,
-      },
-      body: JSON.stringify(payload),
-    });
+export const getPixazoApiKey = () => {
+  const apiKey = process.env.PIXAZO_API_KEY;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API Error ${response.status}: ${errorText}`);
-    }
-
-    const result: Hunyuan3DResponse = await response.json();
-    console.log('Generation started. Task ID:', result.task_id);
-    return result;
-  } catch (error) {
-    console.error('Failed to trigger 3D generation:', error);
-    throw error;
+  if (!apiKey) {
+    throw new Error('Missing PIXAZO_API_KEY in environment variables');
   }
-}
+
+  return apiKey;
+};
+
+export const buildHunyuanPrompt = (prompt: string = '') => {
+  const normalizedPrompt = prompt.trim();
+
+  if (!normalizedPrompt) {
+    return HUNYUAN_PROMPT_SUFFIX;
+  }
+
+  return `${normalizedPrompt} ${HUNYUAN_PROMPT_SUFFIX}`;
+};
+
+export const buildHunyuanStartPayload = (
+  imageUri: string,
+  prompt: string = ''
+): HunyuanStartRequestPayload => ({
+  input_image_url: imageUri,
+  prompt: buildHunyuanPrompt(prompt),
+  face_count: DEFAULT_FACE_COUNT,
+});
+
+export const buildPixazoHeaders = (withJsonContentType: boolean = false) => {
+  const headers: Record<string, string> = {
+    'Ocp-Apim-Subscription-Key': getPixazoApiKey(),
+  };
+
+  if (withJsonContentType) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  return headers;
+};
+
+export const sleep = async (ms: number) => {
+  await new Promise(resolve => setTimeout(resolve, ms));
+};

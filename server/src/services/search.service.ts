@@ -104,7 +104,7 @@ export const getProductsBySearchID = async (
   searchId: string,
   userId: string
 ) => {
-  return prisma.product.findMany({ where: { searchId, userId } });
+  return prisma.product.findMany({ where: { searchId} });
 };
 
 export const getProductById = async (productId: string) => {
