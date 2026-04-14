@@ -17,12 +17,13 @@ import {
   startHunyuan3DGeneration,
 } from '#src/client/hunyuan3d.client.ts';
 import { sleep } from '#src/utils/generate3D.ts';
+import { mirror3DModelToOwnedStorage } from '#src/services/modelStorage.service.ts';
 
 const POLL_INTERVAL_MS = 5000;
 const POLL_TIMEOUT_MS = 5 * 60 * 1000;
 
 const process3DModelJob = async (job: Job<Generate3DModelJobData>) => {
-  const { generationJobId, tryonResultId, imageUri, prompt } = job.data;
+  const { generationJobId, tryonResultId, imageUri, prompt, userId } = job.data;
 
   await mark3DJobAsProcessing(generationJobId, job.attemptsMade);
 
@@ -44,17 +45,26 @@ const process3DModelJob = async (job: Job<Generate3DModelJobData>) => {
         throw new Error('Generation succeeded but model_url is missing');
       }
 
+      await update3DJobProgress(generationJobId, 96, 'uploading_to_storage');
+
+      const mirroredModel = await mirror3DModelToOwnedStorage({
+        sourceUrl: modelUrl,
+        userId,
+        tryonResultId,
+        generationJobId,
+      });
+
       await complete3DGenerationJob(
         generationJobId,
         tryonResultId,
-        modelUrl,
+        mirroredModel.url,
         status.output?.preview_url || null
       );
 
       return {
         generationJobId,
         thirdPartyTaskId,
-        modelUrl,
+        modelUrl: mirroredModel.url,
       };
     }
 
