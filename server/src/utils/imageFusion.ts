@@ -1,6 +1,7 @@
 import fs from 'fs';
 import fetch from 'node-fetch';
 import FormData from 'form-data';
+import { mirrorGeneratedImageToOwnedStorage } from '#src/services/imageStorage.service.ts';
 
 const CLAID_API_KEY = process.env.CLAID_API_KEY;
 
@@ -48,7 +49,16 @@ export async function generateTryOnImage({
       throw new Error(`API Error: ${errText}`);
     }
 
-    return (await response.json()) as ClaidResponse;
+    const claidResponse = (await response.json()) as ClaidResponse;
+    const storedImage = await mirrorGeneratedImageToOwnedStorage({
+      sourceUrl: claidResponse.data.output_url,
+    });
+
+    return {
+      data: {
+        output_url: storedImage.url,
+      },
+    };
   } catch (error) {
     console.error('Try-on generation failed:', error);
     throw error;
