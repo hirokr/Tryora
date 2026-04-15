@@ -28,7 +28,7 @@
 ## Moduel - 3
 
 - [ ] select a body part to make them ware a accesories
-- [ ] generate images of the user waring the dresses
+- [x] generate images of the user waring the dresses
 - [ ] Save the outfit waring localy and make wishlist
 - [ ] comaprison screen of the saved/ wishlist items
 - [ ] outfit sharing link
