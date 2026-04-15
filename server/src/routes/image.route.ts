@@ -13,18 +13,18 @@ router.use(authMiddleware);
 /**
  * @swagger
  * tags:
- *   - name: TryOn Images
- *     description: Generate try-on images from user pose image and selected products.
+ *   - name: TryOn Image
+ *     description: Generate one try-on image from a user pose image and selected products.
  */
 
 /**
  * @swagger
  * /api/images/try-on:
  *   post:
- *     summary: Generate try-on images for selected products
- *     description: Uses the authenticated user's body image (or a direct pose image URL) and product IDs to generate try-on results. Generated image URLs are saved as try-on results.
+ *     summary: Generate one try-on image for selected products
+ *     description: Uses the authenticated user's body image (or a direct pose image URL) and selected product IDs to generate a single try-on image. The generated image is mirrored to owned blob storage, saved as a try-on result, and returned to the frontend.
  *     tags:
- *       - TryOn Images
+ *       - TryOn Image
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -36,14 +36,16 @@ router.use(authMiddleware);
  *             properties:
  *               productIds:
  *                 type: array
- *                 description: Product IDs to generate try-on images for.
+ *                 description: Product IDs used as garment references for one generated try-on image.
  *                 items:
  *                   type: string
+ *                 minItems: 1
  *               productIdeas:
  *                 type: array
  *                 description: Alias of productIds supported for frontend compatibility.
  *                 items:
  *                   type: string
+ *                 minItems: 1
  *               bodyImageId:
  *                 type: string
  *                 description: Existing body image ID.
@@ -59,9 +61,12 @@ router.use(authMiddleware);
  *                 type: string
  *                 enum: [tops, bottoms, full_body]
  *                 description: Garment category.
+ *             anyOf:
+ *               - required: [productIds]
+ *               - required: [productIdeas]
  *     responses:
  *       201:
- *         description: Try-on images generated successfully
+ *         description: Try-on image generated successfully
  *         content:
  *           application/json:
  *             schema:
@@ -75,8 +80,11 @@ router.use(authMiddleware);
  *                 imageUrl:
  *                   type: string
  *                   format: uri
+ *                   nullable: true
  *                 images:
  *                   type: array
+ *                   minItems: 1
+ *                   maxItems: 1
  *                   items:
  *                     type: object
  *                     properties:

@@ -7,7 +7,7 @@ const CLAID_OUTPUT_DESTINATION = process.env.CLAID_OUTPUT_DESTINATION;
 
 interface TryOnRequest {
   personImagePath: string;
-  garmentImagePath: string;
+  garmentImagePaths: string[];
   category?: 'tops' | 'bottoms' | 'full_body';
   poser?: 'front' | 'side' | 'back';
 }
@@ -43,13 +43,17 @@ const poserPoseMap: Record<NonNullable<TryOnRequest['poser']>, string> = {
 
 export async function generateTryOnImage({
   personImagePath,
-  garmentImagePath,
+  garmentImagePaths,
   category = 'tops',
   poser = 'front',
 }: TryOnRequest): Promise<ClaidResponse> {
   try {
     if (!CLAID_API_KEY) {
       throw new Error('CLAID_API_KEY is not configured.');
+    }
+
+    if (!garmentImagePaths.length) {
+      throw new Error('At least one garment image path is required.');
     }
 
     const response = await fetch(
@@ -70,12 +74,12 @@ export async function generateTryOnImage({
           },
           input: {
             model: personImagePath,
-            clothing: [garmentImagePath],
+            clothing: garmentImagePaths,
           },
           options: {
             pose: `${categoryPoseMap[category]}, ${poserPoseMap[poser]}`,
             background: 'minimalistic studio background',
-            aspect_ratio: '1:1',
+            aspect_ratio: '9:16',
           },
         }),
       }

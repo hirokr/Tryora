@@ -223,31 +223,31 @@ export const createTryOnImagesForProducts = async (
   );
 
   const products = await getProductsForTryOn(input.productIds);
-  const images: TryOnImageItem[] = [];
+  const primaryProduct = products[0];
 
-  for (const product of products) {
-    const generated = await generateTryOnImage({
-      personImagePath: bodyImage.imageUrl,
-      garmentImagePath: product.image,
-      category,
-      poser,
-    });
+  const generated = await generateTryOnImage({
+    personImagePath: bodyImage.imageUrl,
+    garmentImagePaths: products.map(product => product.image),
+    category,
+    poser,
+  });
 
-    const tryOnResult = await createTryOnResultRecord(
-      input.userId,
-      bodyImage.id,
-      product.id,
-      generated.data.output_url,
-      category,
-      poser
-    );
+  const tryOnResult = await createTryOnResultRecord(
+    input.userId,
+    bodyImage.id,
+    primaryProduct.id,
+    generated.data.output_url,
+    category,
+    poser
+  );
 
-    images.push({
+  const images: TryOnImageItem[] = [
+    {
       tryonResultId: tryOnResult.id,
-      productId: tryOnResult.productId || product.id,
+      productId: tryOnResult.productId || primaryProduct.id,
       imageUrl: tryOnResult.resultImageUrl,
-    });
-  }
+    },
+  ];
 
   logger.info(
     `[TryOn] Generated ${images.length} try-on image(s) for user ${input.userId}`
