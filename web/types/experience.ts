@@ -14,10 +14,15 @@ export interface AestheticTag {
 export type StylingCategory = "Avant-Garde" | "Cyberpunk" | "Minimalist" | "High-Fashion";
 
 export interface StylingProduct {
+  id?: string;
   name: string;
   sub: string;
   price: string;
   img: string;
+  source?: string;
+  currency?: string;
+  priceValue?: number;
+  productUrl?: string;
   badge?: string;
 }
 

@@ -7,6 +7,10 @@ import {
   UpdatePicsFooter,
   UploadCard,
 } from "@/components/utility/experience/UpdatePicsWorkspace";
+import {
+  AVATAR_UPLOADS_STORAGE_KEY,
+  MODEL_3D_STATE_STORAGE_KEY,
+} from "@/constants/flow";
 
 import { UPDATE_PICS_REFERENCE_IMAGES } from "@/constants/experience";
 
@@ -18,9 +22,6 @@ type UploadedPhoto = {
   url: string;
   status: string;
 };
-
-const AVATAR_UPLOADS_STORAGE_KEY = "tryora.avatar.uploadedPhotos";
-const MODEL_3D_STATE_STORAGE_KEY = "tryora.avatar.model3d.state";
 
 type Model3DState = {
   tryonResultId: string;
@@ -90,62 +91,38 @@ export default function UpdatePicsPage() {
 
     setUploadError("");
 
-    const tryonResultId = resolveTryonResultId();
-    if (!tryonResultId) {
-      setUploadError("Could not find tryonResultId. Open this page from a completed try-on result and try again.");
-      return;
-    }
-
     setIsSyncing(true);
     localStorage.setItem(AVATAR_UPLOADS_STORAGE_KEY, JSON.stringify(uploadedPhotos));
 
     try {
-      const response = await fetch("/api/3d/generate", {
+      const images = (Object.keys(uploadedPhotos) as ViewType[]).map((poser) => ({
+        poser,
+        imageUrl: uploadedPhotos[poser].url,
+      }));
+
+      const response = await fetch("/api/profile/body-images", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          tryonResultId,
+          images,
         }),
       });
 
       const payload = (await response.json().catch(() => ({}))) as {
         message?: string;
-        jobId?: string;
-        status?: "QUEUED" | "PROCESSING";
-        glbUrl?: string;
       };
 
-      if (response.status === 202 && payload.jobId) {
-        const next3DState: Model3DState = {
-          tryonResultId,
-          jobId: payload.jobId,
-          status: payload.status || "QUEUED",
-          progress: 0,
-          currentStage: "queued",
-          updatedAt: new Date().toISOString(),
-        };
-        localStorage.setItem(MODEL_3D_STATE_STORAGE_KEY, JSON.stringify(next3DState));
-        router.push("/ai_result");
+      if (response.ok) {
+        localStorage.removeItem(MODEL_3D_STATE_STORAGE_KEY);
+        router.push("/style-discovery");
         return;
       }
 
-      if (response.status === 409 && payload.glbUrl) {
-        const next3DState: Model3DState = {
-          tryonResultId,
-          status: "COMPLETED",
-          glbUrl: payload.glbUrl,
-          updatedAt: new Date().toISOString(),
-        };
-        localStorage.setItem(MODEL_3D_STATE_STORAGE_KEY, JSON.stringify(next3DState));
-        router.push("/ai_result");
-        return;
-      }
-
-      setUploadError(payload.message || "Failed to start 3D generation. Please try again.");
+      setUploadError(payload.message || "Failed to upload body images. Please try again.");
     } catch {
-      setUploadError("Failed to connect to 3D generation service. Please try again.");
+      setUploadError("Failed to connect to profile service. Please try again.");
     } finally {
       setIsSyncing(false);
     }

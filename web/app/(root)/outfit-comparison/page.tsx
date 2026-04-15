@@ -2,7 +2,6 @@
 
 import { useActiveTab } from "@/hooks";
 
-import { OutfitComparisonSidebar } from "@/components/utility/avatar/outfit-comparison/OutfitComparisonSidebar";
 import { OutfitComparisonSplit } from "@/components/utility/avatar/outfit-comparison/OutfitComparisonSplit";
 
 export default function OutfitComparisonPage() {
@@ -11,7 +10,6 @@ export default function OutfitComparisonPage() {
 
   return (
     <div className="flex min-h-screen w-full overflow-hidden pt-20 font-display text-slate-100" style={{ backgroundColor: "#191022" }}>
-      <OutfitComparisonSidebar />
       <OutfitComparisonSplit
         syncMode={activeTab === "sync"}
         syncCamera={syncCamera}

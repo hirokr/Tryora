@@ -14,9 +14,9 @@ const Header = async () => {
             <h2 className="font-serif text-2xl font-bold tracking-tight text-white italic">Tryora</h2>
           </div>
           <nav className="hidden md:flex items-center gap-10">
-            <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Platform</a>
-            <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Solutions</a>
-            <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Developers</a>
+            <Link href="/dashboard" className="text-slate-300 hover:text-primary transition-colors text-sm font-medium">Platform</Link>
+            <Link href="/search" className="text-slate-300 hover:text-primary transition-colors text-sm font-medium">Search</Link>
+            <Link href="/style-discovery" className="text-slate-300 hover:text-primary transition-colors text-sm font-medium">Style Discovery</Link>
           </nav>
           <div className="flex items-center gap-4">
       {isAuthenticated ? (

@@ -18,6 +18,7 @@ function Hotspot({ top, left, label }: { top: string; left: string; label: strin
 type StylingAvatarPanelProps = {
   avatarSrc: string;
   showHotspots: boolean;
+  generatedTryOnImageUrl?: string | null;
 };
 
 type StylingRecommendationsProps = {
@@ -25,9 +26,22 @@ type StylingRecommendationsProps = {
   categories: string[];
   activeCategory: string;
   onSelectCategory: (category: string) => void;
+  selectedProductIds: string[];
+  onToggleProduct: (productId: string) => void;
+  onViewDetails: (productId: string) => void;
+  onGenerateTryOn: () => void;
+  isGenerating: boolean;
+  isLoadingProducts: boolean;
+  productsError: string | null;
+  generateError: string | null;
 };
 
-export function StylingEventPanel() {
+type StylingEventPanelProps = {
+  prompt: string;
+  onPromptChange: (value: string) => void;
+};
+
+export function StylingEventPanel({ prompt, onPromptChange }: StylingEventPanelProps) {
   return (
     <section className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
       <div className="mb-3 flex items-center gap-2 text-primary">
@@ -36,23 +50,31 @@ export function StylingEventPanel() {
       </div>
       <div className="relative">
         <textarea
+          value={prompt}
+          onChange={(event) => onPromptChange(event.target.value)}
           className="min-h-24 w-full resize-none rounded-xl border border-primary/20 bg-background-dark px-3 py-3 text-sm text-slate-100 outline-none focus:border-primary"
           placeholder="Describe your event... e.g., Summer Wedding in Sylhet"
         />
-        <button className="absolute bottom-3 right-3 rounded-lg bg-primary px-4 py-1.5 text-xs font-bold text-white hover:bg-primary/90">
-          Get Recommendations
-        </button>
       </div>
     </section>
   );
 }
 
-export function StylingAvatarPanel({ avatarSrc, showHotspots }: StylingAvatarPanelProps) {
+export function StylingAvatarPanel({
+  avatarSrc,
+  showHotspots,
+  generatedTryOnImageUrl,
+}: StylingAvatarPanelProps) {
   return (
     <section className="relative overflow-hidden rounded-2xl border border-primary/20 bg-background-dark">
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/5" />
       <div className="relative mx-auto flex h-[320px] w-full max-w-md items-center justify-center sm:h-[420px]">
-        <Image src={avatarSrc} alt="Styling avatar" fill className="object-contain p-4" />
+        <Image
+          src={generatedTryOnImageUrl || avatarSrc}
+          alt="Styling avatar"
+          fill
+          className="object-contain p-4"
+        />
 
         {showHotspots && (
           <>
@@ -71,6 +93,14 @@ export function StylingRecommendationsPanel({
   categories,
   activeCategory,
   onSelectCategory,
+  selectedProductIds,
+  onToggleProduct,
+  onViewDetails,
+  onGenerateTryOn,
+  isGenerating,
+  isLoadingProducts,
+  productsError,
+  generateError,
 }: StylingRecommendationsProps) {
   return (
     <section className="rounded-2xl border border-primary/20 bg-white/5 p-4 backdrop-blur-md">
@@ -82,7 +112,16 @@ export function StylingRecommendationsPanel({
             {products.length} Items Found
           </span>
         </div>
+        <button
+          onClick={onGenerateTryOn}
+          disabled={isGenerating || selectedProductIds.length === 0}
+          className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isGenerating ? "Generating..." : "Generate"}
+        </button>
       </div>
+      {productsError ? <p className="mb-3 text-sm text-red-300">{productsError}</p> : null}
+      {generateError ? <p className="mb-3 text-sm text-red-300">{generateError}</p> : null}
 
       <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
         {categories.map((cat) => (
@@ -100,11 +139,17 @@ export function StylingRecommendationsPanel({
         ))}
       </div>
 
+      {isLoadingProducts ? <p className="mb-4 text-sm text-slate-300">Loading products...</p> : null}
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => (
           <article
-            key={product.name}
-            className="overflow-hidden rounded-xl border border-primary/10 bg-background-dark transition-all hover:border-primary/40"
+            key={`${product.id || product.name}`}
+            className={`overflow-hidden rounded-xl border transition-all ${
+              product.id && selectedProductIds.includes(product.id)
+                ? "border-primary/70 bg-primary/10"
+                : "border-primary/10 bg-background-dark hover:border-primary/40"
+            }`}
           >
             <div className="relative h-48 w-full">
               <Image src={product.img} alt={product.name} fill className="object-cover" />
@@ -119,9 +164,24 @@ export function StylingRecommendationsPanel({
               <p className="text-xs text-slate-500">{product.sub}</p>
               <div className="flex items-center justify-between pt-1">
                 <span className="text-sm font-bold text-primary">{product.price}</span>
-                <button className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-primary/90">
-                  Try On
-                </button>
+                <div className="flex items-center gap-2">
+                  {product.id ? (
+                    <button
+                      onClick={() => onViewDetails(product.id as string)}
+                      className="rounded-lg border border-primary/40 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/10"
+                    >
+                      Details
+                    </button>
+                  ) : null}
+                  {product.id ? (
+                    <button
+                      onClick={() => onToggleProduct(product.id as string)}
+                      className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white hover:bg-primary/90"
+                    >
+                      {selectedProductIds.includes(product.id) ? "Selected" : "Select"}
+                    </button>
+                  ) : null}
+                </div>
               </div>
             </div>
           </article>

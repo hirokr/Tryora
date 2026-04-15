@@ -5,6 +5,7 @@ import { FinalCtaSection } from "./_components/home/FinalCtaSection";
 import { ForBrandsSection } from "./_components/home/ForBrandsSection";
 import { HeroSection } from "./_components/home/HeroSection";
 import { TryOnSection } from "./_components/home/TryOnSection";
+import { getSession } from "@/lib/auth/session";
 
 const brands = ["Gucci", "Prada", "Balenciaga", "Off-White", "Dior", "Versace", "Saint Laurent", "Fendi"];
 
@@ -20,7 +21,10 @@ const forBrandsCards = [
   { icon: "language", title: "Global Scalability", desc: "Deploy your digital collection across web, mobile, and the metaverse with a single asset pipeline." },
 ];
 
-export default function Home() {
+export default async function Home() {
+	const session = await getSession();
+	const createAvatarHref = session?.user ? "/update-pics" : "/auth/signup";
+
 	return (
 		<main className="flex-1">
   <HeroSection />
@@ -29,7 +33,7 @@ export default function Home() {
   <DistributedWardrobeSection cards={distributedWardrobeCards} />
   <AiSceneGenerationSection />
   <ForBrandsSection cards={forBrandsCards} />
-  <FinalCtaSection />
+  <FinalCtaSection createAvatarHref={createAvatarHref} />
 
       </main>
 	);

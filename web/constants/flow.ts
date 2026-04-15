@@ -1,0 +1,8 @@
+export const AVATAR_UPLOADS_STORAGE_KEY = "tryora.avatar.uploadedPhotos";
+export const MODEL_3D_STATE_STORAGE_KEY = "tryora.avatar.model3d.state";
+export const STYLE_DISCOVERY_PROMPT_STORAGE_KEY = "tryora.styleDiscovery.prompt";
+export const STYLE_DISCOVERY_AESTHETIC_STORAGE_KEY = "tryora.styleDiscovery.aesthetic";
+export const SEARCH_RECOMMENDATIONS_STORAGE_KEY = "tryora.search.recommendations";
+export const TRYON_RESULT_STORAGE_KEY = "tryora.tryonResultId";
+export const TRYON_RESULT_STORAGE_KEY_ALT = "tryora.tryon.resultId";
+export const TRYON_RESULT_STORAGE_KEY_AVATAR = "tryora.avatar.tryonResultId";
