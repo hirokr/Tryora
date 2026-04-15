@@ -1,4 +1,34 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+type UploadedPhotoState = {
+  front?: {
+    url: string;
+    status: string;
+  };
+};
+
+const AVATAR_UPLOADS_STORAGE_KEY = "tryora.avatar.uploadedPhotos";
+
 export function AvatarResultCanvas() {
+  const [avatarPreviewSrc, setAvatarPreviewSrc] = useState("/avatar/avatar_result1.png");
+
+  useEffect(() => {
+    const rawValue = localStorage.getItem(AVATAR_UPLOADS_STORAGE_KEY);
+    if (!rawValue) return;
+
+    try {
+      const parsed = JSON.parse(rawValue) as UploadedPhotoState;
+      const frontUrl = parsed?.front?.url;
+      if (frontUrl) {
+        setAvatarPreviewSrc(frontUrl);
+      }
+    } catch {
+      // Ignore malformed local storage payload.
+    }
+  }, []);
+
   return (
     <div className="lg:col-span-7 xl:col-span-8">
       <div
@@ -10,7 +40,7 @@ export function AvatarResultCanvas() {
         <img
           alt="3D Avatar Preview"
           className="h-full w-full object-cover"
-          src="/avatar/avatar_result1.png"
+          src={avatarPreviewSrc}
         />
 
         <div className="absolute bottom-6 left-6 right-6 z-20 flex items-center justify-between">

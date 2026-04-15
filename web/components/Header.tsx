@@ -1,12 +1,11 @@
-"use client";
 import Link from "next/link";
 
-import { Search, ShoppingBag } from "lucide-react";
+import { getSession } from "@/lib/auth/session";
 
-import { Logo } from "./Logo";
-// import { ThemeToggle } from "./theme/toggle-theme";
+const Header = async () => {
+  const session = await getSession();
+  const isAuthenticated = Boolean(session?.user);
 
-const Header = () => {
 	return (
 		<header className="fixed top-0 z-50 w-full border-b border-primary/10 bg-background-dark/80 backdrop-blur-md px-6 lg:px-20 py-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
@@ -20,9 +19,18 @@ const Header = () => {
             <a className="text-slate-300 hover:text-primary transition-colors text-sm font-medium" href="#">Developers</a>
           </nav>
           <div className="flex items-center gap-4">
-            <Link href="/auth/signup" className="rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(140,43,238,0.4)]">
-              Sign up
-            </Link>
+      {isAuthenticated ? (
+        <a
+          href="/api/signout"
+          className="rounded-xl border border-primary/40 bg-primary/10 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-primary/20"
+        >
+          Sign out
+        </a>
+      ) : (
+        <Link href="/auth/signup" className="rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(140,43,238,0.4)]">
+          Sign up
+        </Link>
+      )}
           </div>
         </div>
       </header>

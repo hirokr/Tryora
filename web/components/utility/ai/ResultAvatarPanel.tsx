@@ -1,6 +1,24 @@
 import { AI_RESULT_AVATAR_IMAGE } from "@/constants/ai";
 
-export const ResultAvatarPanel = () => {
+type StatusTone = "success" | "processing" | "error";
+
+const STATUS_CLASSES: Record<StatusTone, string> = {
+	success: "border-green-500/30 bg-green-500/20 text-green-400",
+	processing: "border-amber-500/30 bg-amber-500/20 text-amber-300",
+	error: "border-red-500/30 bg-red-500/20 text-red-300",
+};
+
+type ResultAvatarPanelProps = {
+	imageSrc?: string;
+	statusLabel?: string;
+	statusTone?: StatusTone;
+};
+
+export const ResultAvatarPanel = ({
+	imageSrc = AI_RESULT_AVATAR_IMAGE,
+	statusLabel = "Sync Complete",
+	statusTone = "success",
+}: ResultAvatarPanelProps) => {
 	return (
 		<div className="relative mx-auto mb-12 w-full max-w-md aspect-[4/5] md:aspect-square">
 			<div className="absolute inset-0 rounded-full bg-primary/20 opacity-50 blur-[100px]" />
@@ -16,14 +34,12 @@ export const ResultAvatarPanel = () => {
 				{/* eslint-disable-next-line @next/next/no-img-element */}
 				<img
 					alt="3D Avatar Reconstruction"
-					src={AI_RESULT_AVATAR_IMAGE}
+					src={imageSrc}
 					className="h-full w-full object-cover"
 				/>
-				<div className="absolute top-6 right-6 flex items-center gap-2 rounded-full border border-green-500/30 bg-green-500/20 px-4 py-2 backdrop-blur-md">
-					<span className="material-symbols-outlined text-sm text-green-400">verified</span>
-					<span className="text-xs font-bold uppercase tracking-wider text-green-400">
-						Sync Complete
-					</span>
+				<div className={`absolute top-6 right-6 flex items-center gap-2 rounded-full border px-4 py-2 backdrop-blur-md ${STATUS_CLASSES[statusTone]}`}>
+					<span className="material-symbols-outlined text-sm">verified</span>
+					<span className="text-xs font-bold uppercase tracking-wider">{statusLabel}</span>
 				</div>
 			</div>
 		</div>
