@@ -1,1 +1,0 @@
-"""Dress search repository placeholder for the normalized backend layout."""

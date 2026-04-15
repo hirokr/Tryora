@@ -7,6 +7,7 @@ export type Product = {
   image: string;
   category?: string | null;
   colorTags?: any;
+  patternTags?: any;
   brand?: string | null;
   source?: string | null;
   rating?: number | null;

@@ -341,10 +341,11 @@ model Product {
   productUrl String? @map("product_url") @db.Text
   category   String? @db.VarChar(100)
 
-  colorTags Json?
-  brand     String? @db.VarChar(100)
-  source    String? @db.VarChar(100) // platform name e.g. "daraz", "shajgoj"
-  rating    Float?
+  colorTags   Json?
+  patternTags Json?
+  brand       String? @db.VarChar(100)
+  source      String? @db.VarChar(100) // platform name e.g. "daraz", "shajgoj"
+  rating      Float?
 
   rank Int?
 
