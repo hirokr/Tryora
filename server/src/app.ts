@@ -75,7 +75,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));
 
 // Redis session store setup (commented out for now)
 export const redisClient = redis.createClient({
-  url: process.env.REDIS_URL,
+  username: 'default',
+  password: process.env.REDIS_PASSWORD,
   socket: {
     host: process.env.REDIS_HOST,
     port: Number(process.env.REDIS_PORT),

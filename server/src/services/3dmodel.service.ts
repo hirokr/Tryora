@@ -1,4 +1,5 @@
 import prisma from '#src/config/database.ts';
+import { JobStatus, JobType } from '#src/generated/enums.ts';
 import { enqueue3DModelJob } from '#src/queues/3dmodel.queue.ts';
 import type {
   Generate3DModelOptions,
@@ -6,7 +7,8 @@ import type {
   GenerationJobStatusResponse,
   TryonResult3DRecord,
 } from '#src/types/3d.js';
-import { JobStatus, JobType } from '@prisma/client';
+// import { JobStatus, JobType } from '@prisma/client';
+
 
 const MAX_RETRIES = 3;
 
