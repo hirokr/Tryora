@@ -18,7 +18,8 @@ export async function uploadBodyImagesService(
     const imagesToCreate = newImageUrls.map(url => ({
       userId,
       imageUrl: url.imageUrl,
-      pose: url.poser,
+      poseData: { poser: url.poser },
+      metadata: { poser: url.poser },
     }));
 
     if (imagesToCreate.length > 0) {
