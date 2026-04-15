@@ -28,11 +28,10 @@ export default function RootLayout({
 	return (
 		<html lang='en' suppressHydrationWarning>
 			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+				className={`${geistSans.variable} 
+				${geistMono.variable} antialiased dark`}
 			>
-				<MainProvider>
-					{children}
-				</MainProvider>
+				<MainProvider>{children}</MainProvider>
 			</body>
 		</html>
 	);
