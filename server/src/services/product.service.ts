@@ -6,6 +6,20 @@ export const findProductById = async (productId: string) => {
   });
 };
 
+export const getProductDetailsById = async (productId: string) => {
+  return prisma.product.findUnique({
+    where: { id: productId },
+    include: {
+      images: {
+        select: {
+          id: true,
+          url: true,
+        },
+      },
+    },
+  });
+};
+
 export const updateProductAppearance = async (
   productId: string,
   appearance: {
