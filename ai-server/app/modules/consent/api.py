@@ -1,1 +1,0 @@
-"""Consent API placeholder for the normalized backend layout."""

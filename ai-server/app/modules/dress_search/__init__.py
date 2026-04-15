@@ -1,1 +1,0 @@
-"""Dress-search module."""
