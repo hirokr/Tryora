@@ -21,7 +21,9 @@ export const authFetch = async (
 	});
 
 	if (response.status === 401) {
-		if (!session?.refreshToken) throw new Error("refresh token not found!");
+		if (!session?.refreshToken) {
+			return response;
+		}
 
 		const newAccessToken = await refreshToken(session.refreshToken);
 

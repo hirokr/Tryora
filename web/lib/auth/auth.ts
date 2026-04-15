@@ -92,6 +92,10 @@ export async function signIn(
 
 export const refreshToken = async (oldRefreshToken: string) => {
 	try {
+		if (!oldRefreshToken) {
+			return null;
+		}
+
 		const response = await fetch(`${BACKEND_URL}/api/auth/refresh`, {
 			method: "POST",
 			headers: {
@@ -103,7 +107,8 @@ export const refreshToken = async (oldRefreshToken: string) => {
 		});
 
 		if (!response.ok) {
-			throw new Error("Failed to refresh token" + response.statusText);
+			console.warn("Refresh token request failed", response.status, response.statusText);
+			return null;
 		}
 
 		const { accessToken, refreshToken } = await response.json();
@@ -113,16 +118,22 @@ export const refreshToken = async (oldRefreshToken: string) => {
 
 		const updateRes = await fetch(`${FRONTEND_URL}/api/auth/update`, {
 			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
 			body: JSON.stringify({
 				accessToken,
 				refreshToken,
 			}),
 		});
-		if (!updateRes.ok) throw new Error("Failed to update the tokens");
+		if (!updateRes.ok) {
+			console.warn("Failed to update refreshed tokens", updateRes.status, updateRes.statusText);
+			return null;
+		}
 
 		return accessToken;
 	} catch (err) {
-		console.error("Refresh Token failed:", err);
+		console.warn("Refresh token flow failed", err instanceof Error ? err.message : err);
 		return null;
 	}
 };
