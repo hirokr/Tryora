@@ -1,12 +1,14 @@
 import logger from '#src/config/logger.ts';
 import {
   createTryOnImagesForProducts,
+  getUserTryOnImageById,
   getUserTryOnImages,
   ImageTryOnError,
 } from '#src/services/image.service.ts';
 import { AuthRequest } from '#src/types/authRequest.js';
 import {
   CreateTryOnImagesInput,
+  getUserTryOnImageByIdParamsSchema,
   getUserTryOnImagesQuerySchema,
 } from '#src/validations/image.validation.ts';
 import { Response } from 'express';
@@ -91,6 +93,53 @@ export const getUserTryOnImagesPaginated = async (
 
     return res.status(500).json({
       message: 'Failed to fetch try-on images',
+    });
+  }
+};
+
+export const getUserTryOnImageByIdHandler = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { tryonResultId } = await getUserTryOnImageByIdParamsSchema.parseAsync(
+      req.params
+    );
+
+    const image = await getUserTryOnImageById({
+      userId: req.userId,
+      tryonResultId,
+    });
+
+    return res.status(200).json({
+      message: 'Try-on image fetched successfully',
+      image,
+    });
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        message: error.errors[0]?.message || 'Validation error',
+        errors: error.flatten().fieldErrors,
+      });
+    }
+
+    if (error instanceof ImageTryOnError) {
+      return res.status(error.statusCode).json({
+        message: error.message,
+        details: error.details,
+      });
+    }
+
+    logger.error('[TryOn] Failed to fetch try-on image by id', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    return res.status(500).json({
+      message: 'Failed to fetch try-on image',
     });
   }
 };

@@ -32,6 +32,11 @@ export type GetUserTryOnImagesInput = {
   skip: number;
 };
 
+export type GetUserTryOnImageByIdInput = {
+  userId: string;
+  tryonResultId: string;
+};
+
 export type UserTryOnImageListItem = {
   tryonResultId: string;
   bodyImageId: string;
@@ -69,6 +74,8 @@ export type GetUserTryOnImagesResult = {
     hasPreviousPage: boolean;
   };
 };
+
+export type GetUserTryOnImageByIdResult = UserTryOnImageListItem;
 
 export class ImageTryOnError extends Error {
   statusCode: number;
@@ -380,5 +387,65 @@ export const getUserTryOnImages = async (
       hasNextPage: input.page < totalPages,
       hasPreviousPage: input.page > 1 && totalItems > 0,
     },
+  };
+};
+
+export const getUserTryOnImageById = async (
+  input: GetUserTryOnImageByIdInput
+): Promise<GetUserTryOnImageByIdResult> => {
+  const tryOnResult = await prisma.tryonResult.findFirst({
+    where: {
+      id: input.tryonResultId,
+      userId: input.userId,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      bodyImageId: true,
+      productId: true,
+      resultImageUrl: true,
+      thumbnailUrl: true,
+      isFavorite: true,
+      isPublic: true,
+      viewCount: true,
+      glbUrl: true,
+      createdAt: true,
+      product: {
+        select: {
+          id: true,
+          title: true,
+          image: true,
+          price: true,
+          currency: true,
+        },
+      },
+      bodyImage: {
+        select: {
+          id: true,
+          imageUrl: true,
+          poseData: true,
+          metadata: true,
+        },
+      },
+    },
+  });
+
+  if (!tryOnResult) {
+    throw new ImageTryOnError('Try-on image not found', 404);
+  }
+
+  return {
+    tryonResultId: tryOnResult.id,
+    bodyImageId: tryOnResult.bodyImageId,
+    productId: tryOnResult.productId,
+    imageUrl: tryOnResult.resultImageUrl,
+    thumbnailUrl: tryOnResult.thumbnailUrl,
+    isFavorite: tryOnResult.isFavorite,
+    isPublic: tryOnResult.isPublic,
+    viewCount: tryOnResult.viewCount,
+    glbUrl: tryOnResult.glbUrl,
+    createdAt: tryOnResult.createdAt,
+    product: tryOnResult.product,
+    bodyImage: tryOnResult.bodyImage,
   };
 };

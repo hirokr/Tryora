@@ -64,3 +64,14 @@ export const getUserTryOnImagesQuerySchema = z
 export type GetUserTryOnImagesQueryInput = z.infer<
   typeof getUserTryOnImagesQuerySchema
 >;
+
+export const getUserTryOnImageByIdParamsSchema = z.object({
+  tryonResultId: z
+    .string()
+    .trim()
+    .uuid('tryonResultId must be a valid UUID'),
+});
+
+export type GetUserTryOnImageByIdParamsInput = z.infer<
+  typeof getUserTryOnImageByIdParamsSchema
+>;

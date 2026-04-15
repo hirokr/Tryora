@@ -5,6 +5,7 @@ import {
 } from '#src/middlewares/authenticate.middleware.ts';
 import {
   createTryOnFromProducts,
+  getUserTryOnImageByIdHandler,
   getUserTryOnImagesPaginated,
 } from '#src/controllers/image.controller.ts';
 import { createTryOnImagesSchema } from '../validations/image.validation.ts';
@@ -115,6 +116,78 @@ router.use(authMiddleware);
  */
 router.get('/images/previous-try-ons', getUserTryOnImagesPaginated);
 
+/**
+ * @swagger
+ * /api/images/previous-try-ons/{tryonResultId}:
+ *   get:
+ *     summary: Get one try-on image by id for the authenticated user
+ *     description: Returns a single try-on image record by id if it belongs to the authenticated user.
+ *     tags:
+ *       - TryOn Image
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: tryonResultId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Try-on result ID.
+ *     responses:
+ *       200:
+ *         description: Try-on image fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Try-on image fetched successfully
+ *                 image:
+ *                   type: object
+ *                   properties:
+ *                     tryonResultId:
+ *                       type: string
+ *                     bodyImageId:
+ *                       type: string
+ *                     productId:
+ *                       type: string
+ *                       nullable: true
+ *                     imageUrl:
+ *                       type: string
+ *                       format: uri
+ *                     thumbnailUrl:
+ *                       type: string
+ *                       format: uri
+ *                       nullable: true
+ *                     isFavorite:
+ *                       type: boolean
+ *                     isPublic:
+ *                       type: boolean
+ *                     viewCount:
+ *                       type: integer
+ *                     glbUrl:
+ *                       type: string
+ *                       format: uri
+ *                       nullable: true
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Invalid try-on result ID
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Try-on image not found
+ *       500:
+ *         description: Failed to fetch try-on image
+ */
+router.get(
+  '/images/previous-try-ons/:tryonResultId',
+  getUserTryOnImageByIdHandler
+)
 
 /**
  * @swagger
