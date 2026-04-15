@@ -50,7 +50,7 @@ export function AvatarStudioSidebar() {
         })}
 
         <Link
-          href="/avatar_result"
+          href="/avatar-result"
           className="mt-2 inline-flex rounded-lg bg-primary/20 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/30"
         >
           View Result

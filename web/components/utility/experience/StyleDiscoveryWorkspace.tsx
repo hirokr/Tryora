@@ -50,7 +50,7 @@ export function StyleDiscoveryContent({ selectedAesthetic, setSelectedAesthetic 
 
       <div className="flex flex-col items-center gap-5 pt-2">
         <Link
-          href="/styling_session"
+          href="/styling-session"
           className="inline-flex min-w-72 items-center justify-center gap-2 rounded-full bg-primary px-9 py-4 text-base font-bold text-white transition-all hover:bg-primary/90"
         >
           <span>Generate Recommendations</span>

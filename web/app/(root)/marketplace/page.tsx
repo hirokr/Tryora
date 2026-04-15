@@ -3,11 +3,10 @@
 import { useMemo, useState } from "react";
 
 import { MarketplaceHero } from "./_components/MarketplaceHero";
-import { MarketplaceSidebar } from "./_components/MarketplaceSidebar";
 import { MarketplaceToast } from "./_components/MarketplaceToast";
 import { MarketplaceTopBar } from "./_components/MarketplaceTopBar";
 import { ProductGrid } from "./_components/ProductGrid";
-import type { FilterType, NavItem, Product } from "../../../types/producttypes";
+import type { FilterType, Product } from "../../../types/producttypes";
 
 const PRODUCTS: Product[] = [
   {
@@ -78,13 +77,6 @@ const PRODUCTS: Product[] = [
 
 const ACCESSORIES_CATEGORIES = new Set(["Footwear", "Jewelry", "Artisan"]);
 
-const NAV_ITEMS: NavItem[] = [
-  { icon: "home", label: "Home", active: false },
-  { icon: "explore", label: "Discover", active: true },
-  { icon: "trending_up", label: "Trends", active: false },
-  { icon: "bookmark", label: "Saved", active: false },
-];
-
 export default function MarketplacePage() {
   const [activeFilter, setActiveFilter] = useState<FilterType>("All");
   const [toastVisible, setToastVisible] = useState(true);
@@ -102,10 +94,7 @@ export default function MarketplacePage() {
   }, [activeFilter]);
 
   return (
-    <div className="flex min-h-screen overflow-hidden bg-background-light dark:bg-background-dark pt-24">
-      <MarketplaceSidebar navItems={NAV_ITEMS} />
-
-      <main className="flex-1 flex flex-col overflow-hidden bg-background-light dark:bg-background-dark">
+      <main className="flex min-h-screen flex-col overflow-hidden bg-background-light pt-24 dark:bg-background-dark">
         <MarketplaceTopBar />
 
         <div className="flex-1 overflow-y-auto p-4 md:p-8 relative">
@@ -117,6 +106,5 @@ export default function MarketplacePage() {
           {toastVisible && <MarketplaceToast onClose={() => setToastVisible(false)} />}
         </div>
       </main>
-    </div>
   );
 }

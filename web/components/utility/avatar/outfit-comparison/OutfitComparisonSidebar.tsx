@@ -15,11 +15,11 @@ export function OutfitComparisonSidebar() {
           <span className="material-symbols-outlined">home</span>
           <span className="text-sm font-medium">Home</span>
         </Link>
-        <Link href="/outfit_comparison" className="flex items-center gap-3 rounded-lg bg-primary px-4 py-3 text-white">
+        <Link href="/outfit-comparison" className="flex items-center gap-3 rounded-lg bg-primary px-4 py-3 text-white">
           <span className="material-symbols-outlined">compare_arrows</span>
           <span className="text-sm font-medium">Outfit Comparison</span>
         </Link>
-        <Link href="/recently_worn" className="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-400 transition-colors hover:bg-primary/10 hover:text-white">
+        <Link href="/recently-worn" className="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-400 transition-colors hover:bg-primary/10 hover:text-white">
           <span className="material-symbols-outlined">history</span>
           <span className="text-sm font-medium">Recently Worn</span>
         </Link>
