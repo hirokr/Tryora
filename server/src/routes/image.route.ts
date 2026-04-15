@@ -113,8 +113,8 @@ router.use(authMiddleware);
  *       500:
  *         description: Failed to fetch try-on images
  */
-
 router.get('/images/previous-try-ons', getUserTryOnImagesPaginated);
+
 
 /**
  * @swagger
@@ -203,7 +203,6 @@ router.get('/images/previous-try-ons', getUserTryOnImagesPaginated);
  *       500:
  *         description: Failed to generate try-on images
  */
-
 router.post(
   '/images/try-on',
   validateRequest(createTryOnImagesSchema),
