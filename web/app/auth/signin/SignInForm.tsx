@@ -1,45 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
-import { useActionState } from "react";
+import type { RefObject } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import SubmitButton from "@/components/ui/submitButton";
-import { signIn } from "@/lib/auth/auth";
 import { BACKEND_URL } from "@/constants/constants";
 
-const SignInForm = () => {
-	const [state, action] = useActionState(signIn, undefined);
-	const [showPassword, setShowPassword] = useState(false);
-	const emailInputRef = useRef<HTMLInputElement | null>(null);
+type SignInFormProps = {
+	state: any;
+	action: (formData: FormData) => void;
+	showPassword: boolean;
+	onTogglePassword: () => void;
+	emailInputRef: RefObject<HTMLInputElement | null>;
+	onPersistEmail: () => void;
+};
+
+const SignInForm = ({
+	state,
+	action,
+	showPassword,
+	onTogglePassword,
+	emailInputRef,
+	onPersistEmail,
+}: SignInFormProps) => {
 
 	return (
-		<div
-			className='min-h-[86vh] flex flex-col rounded-3xl overflow-hidden'
-			style={{
-				background:
-					"radial-gradient(1200px 600px at 20% 0%, #22103a 0%, #140b24 45%, #0d0b18 100%)",
-			}}
-		>
-			<header className='flex items-center justify-between px-6 md:px-14 py-4'>
-				<Link href='/' className='flex items-center gap-2'>
-					<div
-						className='h-8 w-8 rounded-lg flex items-center justify-center'
-						style={{ background: "linear-gradient(145deg, #8b3cf7, #6d28d9)" }}
-					>
-						<svg width='18' height='18' viewBox='0 0 28 28' fill='none' xmlns='http://www.w3.org/2000/svg'>
-							<path d='M14 2L16.5 10.5L25 8L18.5 14L25 20L16.5 17.5L14 26L11.5 17.5L3 20L9.5 14L3 8L11.5 10.5L14 2Z' fill='white' />
-						</svg>
-					</div>
-					<span className='text-white font-semibold text-xl tracking-tight'>Tryora</span>
-				</Link>
-				<button type='button' className='text-sm text-slate-400 hover:text-slate-200 transition-colors'>
-					Help
-				</button>
-			</header>
-
-			<main className='flex-1 flex flex-col items-center justify-center px-20 pb-2'>
+		<main className='flex min-h-full flex-col items-center justify-center px-4 py-6'>
 				<div
 					className='w-full max-w-[340px] rounded-3xl p-5'
 					style={{
@@ -54,12 +41,7 @@ const SignInForm = () => {
 					<form
 						className='space-y-5'
 						action={action}
-						onSubmit={() => {
-							const emailValue = emailInputRef.current?.value?.trim();
-							if (emailValue) {
-								sessionStorage.setItem("authEmail", emailValue);
-							}
-						}}
+						onSubmit={onPersistEmail}
 					>
 						{state?.message && (
 							<p className='text-sm text-red-400'>{state.message}</p>
@@ -87,9 +69,9 @@ const SignInForm = () => {
 								<Label htmlFor='password' className='block text-sm text-white'>
 									Password
 								</Label>
-								<button type='button' className='text-xs text-purple-400 hover:text-purple-300 transition-colors'>
+								<Link href='/auth/forgot_pass' className='text-xs text-purple-400 transition-colors hover:text-purple-300'>
 									Forgot Password?
-								</button>
+								</Link>
 							</div>
 							<div className='relative'>
 								<Input
@@ -102,7 +84,7 @@ const SignInForm = () => {
 								/>
 								<button
 									type='button'
-									onClick={() => setShowPassword((prev) => !prev)}
+									onClick={onTogglePassword}
 									className='absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors'
 								>
 									<svg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'>
@@ -148,11 +130,6 @@ const SignInForm = () => {
 					Secure Authentication
 				</div>
 			</main>
-
-			<footer className='py-3 text-center'>
-				<p className='text-[11px] tracking-[0.42em] uppercase text-slate-500'>Powered by Gemini</p>
-			</footer>
-		</div>
 	);
 };
 
