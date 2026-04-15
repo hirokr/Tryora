@@ -3,7 +3,10 @@ import {
   authMiddleware,
   validateRequest,
 } from '#src/middlewares/authenticate.middleware.ts';
-import { createTryOnFromProducts } from '#src/controllers/image.controller.ts';
+import {
+  createTryOnFromProducts,
+  getUserTryOnImagesPaginated,
+} from '#src/controllers/image.controller.ts';
 import { createTryOnImagesSchema } from '../validations/image.validation.ts';
 
 const router = Router();
@@ -16,6 +19,102 @@ router.use(authMiddleware);
  *   - name: TryOn Image
  *     description: Generate one try-on image from a user pose image and selected products.
  */
+
+/**
+ * @swagger
+ * /api/images/previous-try-ons:
+ *   get:
+ *     summary: Get previous try-on images for the authenticated user
+ *     description: Returns the authenticated user's try-on image history with pagination.
+ *     tags:
+ *       - TryOn Image
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number to fetch.
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 50
+ *           default: 10
+ *         description: Number of items per page.
+ *     responses:
+ *       200:
+ *         description: Try-on images fetched successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Try-on images fetched successfully
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     totalItems:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                     hasNextPage:
+ *                       type: boolean
+ *                     hasPreviousPage:
+ *                       type: boolean
+ *                 images:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       tryonResultId:
+ *                         type: string
+ *                       bodyImageId:
+ *                         type: string
+ *                       productId:
+ *                         type: string
+ *                         nullable: true
+ *                       imageUrl:
+ *                         type: string
+ *                         format: uri
+ *                       thumbnailUrl:
+ *                         type: string
+ *                         format: uri
+ *                         nullable: true
+ *                       isFavorite:
+ *                         type: boolean
+ *                       isPublic:
+ *                         type: boolean
+ *                       viewCount:
+ *                         type: integer
+ *                       glbUrl:
+ *                         type: string
+ *                         format: uri
+ *                         nullable: true
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Failed to fetch try-on images
+ */
+
+router.get('/images/previous-try-ons', getUserTryOnImagesPaginated);
 
 /**
  * @swagger
