@@ -18,11 +18,7 @@ const processProductImageEditJob = async (
   const { generationJobId } = job.data;
 
   await markProductImageEditJobAsProcessing(generationJobId, job.attemptsMade);
-  await updateProductImageEditJobProgress(
-    generationJobId,
-    20,
-    'calling_gemini'
-  );
+  await updateProductImageEditJobProgress(generationJobId, 20, 'calling_claid');
 
   const result = await processQueuedProductImageEditJob(job.data);
 
