@@ -21,7 +21,7 @@ const Header = async () => {
           <div className="flex items-center gap-4">
       {isAuthenticated ? (
         <a
-          href="/api/signout"
+          href="/api/auth/signout"
           className="rounded-xl border border-primary/40 bg-primary/10 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-primary/20"
         >
           Sign out

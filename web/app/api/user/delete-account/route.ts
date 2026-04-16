@@ -2,11 +2,11 @@ import { BACKEND_URL } from "@/constants/constants";
 import { authFetch } from "@/lib/auth/authFetch";
 import { NextRequest } from "next/server";
 
-async function proxyPreferences(req: NextRequest, method: "POST" | "PATCH") {
+export async function DELETE(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
 
-  const response = await authFetch(`${BACKEND_URL}/api/profile/preferences`, {
-    method,
+  const response = await authFetch(`${BACKEND_URL}/api/user/delete-account`, {
+    method: "DELETE",
     headers: {
       "Content-Type": "application/json",
     },
@@ -21,12 +21,4 @@ async function proxyPreferences(req: NextRequest, method: "POST" | "PATCH") {
       "Content-Type": response.headers.get("content-type") || "application/json",
     },
   });
-}
-
-export async function POST(req: NextRequest) {
-  return proxyPreferences(req, "POST");
-}
-
-export async function PATCH(req: NextRequest) {
-  return proxyPreferences(req, "PATCH");
 }

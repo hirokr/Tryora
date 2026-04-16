@@ -6,7 +6,7 @@ import { authFetch } from "./authFetch";
 
 export const getProfile = async () => {
 
-	const response = await authFetch(`${BACKEND_URL}/auth/protected`);
+	const response = await authFetch(`${BACKEND_URL}/api/user/profile`);
 
 	const result = await response.json();
 	return result;

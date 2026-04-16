@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 
-import { proxyWithFallback } from "../../_utils";
+import { proxySearchRequest } from "../../_utils";
 
 export async function GET(
   _req: NextRequest,
@@ -8,11 +8,7 @@ export async function GET(
 ) {
   const { productId } = await params;
 
-  return proxyWithFallback(
-    `/api/search/product/${productId}`,
-    `/api/search/${productId}`,
-    {
-      method: "GET",
-    },
-  );
+  return proxySearchRequest(`/api/search/product/${productId}`, {
+    method: "GET",
+  });
 }

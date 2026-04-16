@@ -4,8 +4,9 @@ import { redirect } from "next/navigation";
 import { LoginFormSchema, SignupFormSchema } from "@/validation/auth.valid";
 
 import { createSession } from "./session";
-import { BACKEND_URL } from "@/constants/constants";
 import { FormState } from "@/types/auth";
+
+const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost:3000";
 
 export async function signUp(
 	state: FormState,
@@ -22,9 +23,8 @@ export async function signUp(
 			error: validationFields.error.flatten().fieldErrors,
 		};
 	}
-	console.log(`${BACKEND_URL}/api/auth/signup`);
 
-	const response = await fetch(`${BACKEND_URL}/api/auth/signup`, {
+	const response = await fetch(`${FRONTEND_URL}/api/auth/signup`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -58,7 +58,7 @@ export async function signIn(
 		};
 	}
 
-	const response = await fetch(`${BACKEND_URL}/api/auth/signin`, {
+	const response = await fetch(`${FRONTEND_URL}/api/auth/signin`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -96,14 +96,8 @@ export const refreshToken = async (oldRefreshToken: string) => {
 			return null;
 		}
 
-		const response = await fetch(`${BACKEND_URL}/api/auth/refresh`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				refresh: oldRefreshToken,
-			}),
+		const response = await fetch(`${FRONTEND_URL}/api/auth/refresh`, {
+			method: "GET",
 		});
 
 		if (!response.ok) {
@@ -111,27 +105,8 @@ export const refreshToken = async (oldRefreshToken: string) => {
 			return null;
 		}
 
-		const { accessToken, refreshToken } = await response.json();
-		// update session with new tokens
-		const FRONTEND_URL =
-			process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost:3000";
-
-		const updateRes = await fetch(`${FRONTEND_URL}/api/auth/update`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				accessToken,
-				refreshToken,
-			}),
-		});
-		if (!updateRes.ok) {
-			console.warn("Failed to update refreshed tokens", updateRes.status, updateRes.statusText);
-			return null;
-		}
-
-		return accessToken;
+		const data = await response.json().catch(() => null);
+		return data?.accessToken ?? null;
 	} catch (err) {
 		console.warn("Refresh token flow failed", err instanceof Error ? err.message : err);
 		return null;
