@@ -5,7 +5,13 @@ import { AvatarStudioWorkspace } from "@/components/utility/avatar/studio/Avatar
 import { useAvatarStudioNotification } from "@/hooks/useAvatarStudioNotification";
 
 export default function AvatarStudioPage() {
-  const { notification, clearNotification, showProgress } = useAvatarStudioNotification();
+  const {
+    notification,
+    clearNotification,
+    showProgress,
+    showError,
+    showSuccess,
+  } = useAvatarStudioNotification();
 
   return (
     <div className="flex min-h-screen w-full overflow-hidden pt-20 font-display text-slate-100" style={{ backgroundColor: "#191022" }}>
@@ -15,6 +21,8 @@ export default function AvatarStudioPage() {
             notification={notification}
             onClearNotification={clearNotification}
             onRetry={showProgress}
+            onAvatarLoadError={showError}
+            onAvatarLoadSuccess={showSuccess}
           />
           <AvatarStudioRightPanel />
         </div>

@@ -9,10 +9,10 @@ const Header = async () => {
 	return (
 		<header className="fixed top-0 z-50 w-full border-b border-primary/10 bg-background-dark/80 backdrop-blur-md px-6 lg:px-20 py-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div className="flex items-center" style={{ gap: "7px" }}>
+          <Link href="/" className="flex items-center" style={{ gap: "7px" }}>
             <img src="/icon0.svg" alt="Tryora Icon" style={{ width: "2rem", height: "2rem" }} />
             <h2 className="font-serif text-2xl font-bold tracking-tight text-white italic">Tryora</h2>
-          </div>
+          </Link>
           <nav className="hidden md:flex items-center gap-10">
             <Link href="/dashboard" className="text-slate-300 hover:text-primary transition-colors text-sm font-medium">Platform</Link>
             <Link href="/search" className="text-slate-300 hover:text-primary transition-colors text-sm font-medium">Search</Link>
