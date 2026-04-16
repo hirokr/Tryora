@@ -1,22 +1,33 @@
+export type ClaidAiEditAspectRatio =
+  | '1:1'
+  | '2:3'
+  | '3:2'
+  | '3:4'
+  | '4:3'
+  | '9:16'
+  | '16:9'
+  | '9:21'
+  | '21:9';
+
 export type ProductAppearanceEditInput = {
   color: string;
   pattern?: string;
   prompt?: string;
-  model?: string;
-  aspectRatio?: string;
+  model?: 'v1' | 'v2';
+  aspectRatio?: ClaidAiEditAspectRatio;
   inferenceSteps?: number;
   guidanceScale?: number;
-  format?: 'png' | 'jpeg' | 'webp';
+  format?: 'png' | 'jpeg';
 };
 
 export type ProductAppearanceEditApiRequest = {
   inputImage: string;
   prompt: string;
-  model: string;
-  aspectRatio?: string;
-  inferenceSteps: number;
-  guidanceScale: number;
-  format: 'png' | 'jpeg' | 'webp';
+  model: 'v1' | 'v2';
+  aspectRatio?: ClaidAiEditAspectRatio;
+  inferenceSteps?: number;
+  guidanceScale?: number;
+  format: 'png' | 'jpeg';
 };
 
 export type ProductAppearanceEditApiResult = {

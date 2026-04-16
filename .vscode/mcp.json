@@ -1,0 +1,9 @@
+{
+	"servers": {
+		"Claid.ai & LetsEnhance.io API Documentation": {
+			"url": "https://docs.claid.ai/~gitbook/mcp",
+			"type": "http"
+		}
+	},
+	"inputs": []
+}

@@ -151,21 +151,25 @@ router.patch(
  *                 example: Change only the outfit to matte black with subtle thin stripes.
  *               model:
  *                 type: string
+ *                 enum: [v1, v2]
  *                 example: v2
  *               aspectRatio:
  *                 type: string
+ *                 enum: [1:1, 2:3, 3:2, 3:4, 4:3, 9:16, 16:9, 9:21, 21:9]
  *                 example: 1:1
  *               inferenceSteps:
  *                 type: integer
  *                 minimum: 1
+ *                 maximum: 50
  *                 example: 30
  *               guidanceScale:
  *                 type: number
  *                 minimum: 1
+ *                 maximum: 10
  *                 example: 7
  *               format:
  *                 type: string
- *                 enum: [png, jpeg, webp]
+ *                 enum: [png, jpeg]
  *                 example: png
  *     responses:
  *       202:

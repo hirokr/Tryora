@@ -15,7 +15,7 @@ import {
 import { editProductImageWithAi } from '#src/utils/image/productAppearanceEdit.ts';
 import { buildProductAppearancePrompt } from '#src/utils/productAppearancePrompt.ts';
 
-const DEFAULT_EDIT_MODEL = 'v2';
+const DEFAULT_EDIT_MODEL: 'v1' | 'v2' = 'v2';
 const DEFAULT_INFERENCE_STEPS = 30;
 const DEFAULT_GUIDANCE_SCALE = 7;
 const DEFAULT_FORMAT: 'png' = 'png';
@@ -323,13 +323,21 @@ export const editProductAppearanceAndSaveImage = async (
   let editedExternalImageUrl: string;
 
   try {
+    const selectedModel = input.model || DEFAULT_EDIT_MODEL;
+
     const aiEdited = await editProductImageWithAi({
       inputImage: aiInputImage,
       prompt,
-      model: input.model || DEFAULT_EDIT_MODEL,
-      aspectRatio: input.aspectRatio,
-      inferenceSteps: input.inferenceSteps || DEFAULT_INFERENCE_STEPS,
-      guidanceScale: input.guidanceScale || DEFAULT_GUIDANCE_SCALE,
+      model: selectedModel,
+      aspectRatio: selectedModel === 'v1' ? input.aspectRatio : undefined,
+      inferenceSteps:
+        selectedModel === 'v1'
+          ? (input.inferenceSteps ?? DEFAULT_INFERENCE_STEPS)
+          : undefined,
+      guidanceScale:
+        selectedModel === 'v1'
+          ? (input.guidanceScale ?? DEFAULT_GUIDANCE_SCALE)
+          : undefined,
       format: input.format || DEFAULT_FORMAT,
     });
 

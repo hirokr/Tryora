@@ -124,25 +124,44 @@ const shouldRetryWithoutAspectRatio = (errorPayloadText: string) => {
 const buildEditRequestBody = (
   input: ProductAppearanceEditApiRequest,
   includeAspectRatio: boolean
-) => ({
-  output: {
-    number_of_images: 1,
-    format: input.format,
-    ...(CLAID_OUTPUT_DESTINATION
-      ? { destination: CLAID_OUTPUT_DESTINATION }
-      : {}),
-  },
-  input: input.inputImage,
-  options: {
+) => {
+  const options: {
+    model: ProductAppearanceEditApiRequest['model'];
+    prompt: string;
+    aspect_ratio?: string;
+    inference_steps?: number;
+    guidance_scale?: number;
+  } = {
     model: input.model,
     prompt: input.prompt,
-    ...(includeAspectRatio && input.aspectRatio
-      ? { aspect_ratio: input.aspectRatio }
-      : {}),
-    inference_steps: input.inferenceSteps,
-    guidance_scale: input.guidanceScale,
-  },
-});
+  };
+
+  if (input.model === 'v1') {
+    if (includeAspectRatio && input.aspectRatio) {
+      options.aspect_ratio = input.aspectRatio;
+    }
+
+    if (input.inferenceSteps !== undefined) {
+      options.inference_steps = input.inferenceSteps;
+    }
+
+    if (input.guidanceScale !== undefined) {
+      options.guidance_scale = input.guidanceScale;
+    }
+  }
+
+  return {
+    output: {
+      number_of_images: 1,
+      format: input.format,
+      ...(CLAID_OUTPUT_DESTINATION
+        ? { destination: CLAID_OUTPUT_DESTINATION }
+        : {}),
+    },
+    input: input.inputImage,
+    options,
+  };
+};
 
 const buildAiEditStatusUrl = (payload: ClaidEditApiResponse) => {
   const resultUrl = payload.data?.result_url;
