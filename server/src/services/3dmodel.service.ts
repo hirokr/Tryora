@@ -9,8 +9,16 @@ import type {
 } from '#src/types/3d.js';
 // import { JobStatus, JobType } from '@prisma/client';
 
-
 const MAX_RETRIES = 3;
+
+const readStringFromJson = (payload: unknown, key: string): string | null => {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const value = (payload as Record<string, unknown>)[key];
+  return typeof value === 'string' ? value : null;
+};
 
 export const findTryonResult3DRecord = async (
   userId: string,
@@ -96,11 +104,14 @@ export const getGenerationJobStatusForUser = async (
       progress: true,
       currentStage: true,
       outputGlbUrl: true,
+      outputImageUrl: true,
       errorMessage: true,
       createdAt: true,
       startedAt: true,
       completedAt: true,
       retryCount: true,
+      inputData: true,
+      resultData: true,
     },
   });
 
@@ -108,14 +119,19 @@ export const getGenerationJobStatusForUser = async (
     return null;
   }
 
+  const { inputData, resultData, ...jobStatus } = generationJob;
+
   let tryonResultId: string | null = null;
+  const productIdFromResult = readStringFromJson(resultData, 'productId');
+  const productIdFromInput = readStringFromJson(inputData, 'productId');
+  const productId = productIdFromResult || productIdFromInput;
 
   if (
-    generationJob.status === JobStatus.COMPLETED &&
-    generationJob.jobType === JobType.MODEL_3D_GENERATION
+    jobStatus.status === JobStatus.COMPLETED &&
+    jobStatus.jobType === JobType.MODEL_3D_GENERATION
   ) {
     const tryonResult = await prisma.tryonResult.findFirst({
-      where: { glbJobId: generationJob.id },
+      where: { glbJobId: jobStatus.id },
       select: { id: true },
     });
 
@@ -123,8 +139,9 @@ export const getGenerationJobStatusForUser = async (
   }
 
   return {
-    ...generationJob,
+    ...jobStatus,
     tryonResultId,
+    productId,
   };
 };
 

@@ -219,6 +219,12 @@ router.post(`${MODEL_ROUTE_BASE}/generate`, request3DModelGeneration);
  *                   nullable: true
  *                   description: Final generated GLB asset URL (only present on completion).
  *                   example: https://cdn.tryora.ai/3d/8af2c672.glb
+ *                 outputImageUrl:
+ *                   type: string
+ *                   format: uri
+ *                   nullable: true
+ *                   description: Final generated image URL for image-edit style jobs.
+ *                   example: https://cdn.tryora.ai/images/edited-product.png
  *                 errorMessage:
  *                   type: string
  *                   nullable: true
@@ -249,6 +255,12 @@ router.post(`${MODEL_ROUTE_BASE}/generate`, request3DModelGeneration);
  *                   nullable: true
  *                   description: Associated try-on result once completion relation is available.
  *                   example: 8af2c672-6c59-4dbf-9a62-f45454ad46ad
+ *                 productId:
+ *                   type: string
+ *                   format: uuid
+ *                   nullable: true
+ *                   description: Associated product identifier for product image edit jobs.
+ *                   example: 5d3dc830-6a2f-4389-b13f-2030fa1d65a9
  *             examples:
  *               processing:
  *                 summary: Job in progress

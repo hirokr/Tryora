@@ -2,7 +2,7 @@ import logger from '#src/config/logger.ts';
 import { AuthRequest } from '#src/types/authRequest.js';
 import { ProductAppearanceEditInput } from '#src/types/productImageEdit.js';
 import {
-  editProductAppearanceAndSaveImage,
+  createProductAppearanceEditJob,
   ProductImageEditError,
 } from '#src/services/productImageEdit.service.ts';
 import { Response } from 'express';
@@ -23,9 +23,13 @@ export const editProductImageAppearance = async (
     }
 
     const body = req.body as ProductAppearanceEditInput;
-    const result = await editProductAppearanceAndSaveImage(productId, body);
+    const result = await createProductAppearanceEditJob(
+      req.userId,
+      productId,
+      body
+    );
 
-    return res.status(200).json(result);
+    return res.status(202).json(result);
   } catch (error) {
     if (error instanceof ProductImageEditError) {
       return res.status(error.statusCode).json({

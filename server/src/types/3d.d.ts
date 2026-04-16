@@ -28,6 +28,7 @@ export interface GenerationJobStatusRecord {
   progress: number;
   currentStage: string | null;
   outputGlbUrl: string | null;
+  outputImageUrl: string | null;
   errorMessage: string | null;
   createdAt: Date;
   startedAt: Date | null;
@@ -37,6 +38,7 @@ export interface GenerationJobStatusRecord {
 
 export interface GenerationJobStatusResponse extends GenerationJobStatusRecord {
   tryonResultId: string | null;
+  productId: string | null;
 }
 
 export interface GenerationJobProgressRecord {

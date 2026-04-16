@@ -13,7 +13,7 @@ export type ProductAppearanceEditApiRequest = {
   inputImage: string;
   prompt: string;
   model: string;
-  aspectRatio: string;
+  aspectRatio?: string;
   inferenceSteps: number;
   guidanceScale: number;
   format: 'png' | 'jpeg' | 'webp';

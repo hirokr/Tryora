@@ -115,11 +115,10 @@ router.patch(
  * @swagger
  * /api/products/{productId}/appearance/ai-edit:
  *   post:
- *     summary: Generate an edited product image from color and pattern
+ *     summary: Queue an edited product image generation job
  *     description: |
- *       Uses AI image editing to update a product image based on requested color and pattern,
- *       mirrors the generated image to owned blob storage, saves the URL in product images,
- *       and sets the new image as the product default image URL.
+ *       Creates an asynchronous generation job for product AI-edit.
+ *       Use `GET /api/jobs/{jobId}` to poll progress and final output image URL.
  *     tags:
  *       - Products
  *     security:
@@ -169,16 +168,28 @@ router.patch(
  *                 enum: [png, jpeg, webp]
  *                 example: png
  *     responses:
- *       200:
- *         description: Product image updated successfully
+ *       202:
+ *         description: Product image edit job accepted and queued
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - jobId
+ *                 - status
+ *               properties:
+ *                 jobId:
+ *                   type: string
+ *                   format: uuid
+ *                 status:
+ *                   type: string
+ *                   enum: [QUEUED, PROCESSING, COMPLETED, FAILED, CANCELLED]
  *       400:
  *         description: Invalid product id or invalid payload
  *       401:
  *         description: Unauthorized
  *       404:
  *         description: Product not found
- *       502:
- *         description: Failed to generate edited image from AI provider
  *       500:
  *         description: Failed to update product image
  */
