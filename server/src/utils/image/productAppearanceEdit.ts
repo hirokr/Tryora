@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+import logger from '#src/config/logger.ts';
 import {
   ProductAppearanceEditApiRequest,
   ProductAppearanceEditApiResult,
@@ -213,6 +214,10 @@ const pollAiEditResultUrl = async (statusUrl: string): Promise<string> => {
   let pollCount = 0;
   let rateLimitRetryCount = 0;
 
+  logger.info('[Product Ai Edit] Polling Claid result URL', {
+    statusUrl,
+  });
+
   while (pollCount < CLAID_AI_EDIT_MAX_POLL_CHECKS) {
     const response = await fetch(statusUrl, {
       method: 'GET',
@@ -232,6 +237,13 @@ const pollAiEditResultUrl = async (statusUrl: string): Promise<string> => {
           rateLimitRetryCount
         );
 
+        logger.warn('[Product Ai Edit] Claid poll rate-limited, retrying', {
+          status: response.status,
+          retryDelayMs,
+          retryCount: rateLimitRetryCount + 1,
+          claidRequestId: response.headers.get('x-request-id') || null,
+        });
+
         rateLimitRetryCount += 1;
         await sleep(retryDelayMs);
         continue;
@@ -248,6 +260,7 @@ const pollAiEditResultUrl = async (statusUrl: string): Promise<string> => {
     const outputUrl = readOutputUrl(payload);
 
     if (outputUrl) {
+      logger.info('[Product Ai Edit] Claid returned output URL from polling');
       return outputUrl;
     }
 
@@ -290,6 +303,13 @@ export const editProductImageWithAi = async (
   let rateLimitRetryCount = 0;
 
   while (true) {
+    logger.info('[Product Ai Edit] Calling Claid AI Edit API', {
+      endpoint: `${CLAID_API_BASE_URL}/v1/image/ai-edit`,
+      model: input.model,
+      format: input.format,
+      hasAspectRatio: includeAspectRatio && Boolean(input.aspectRatio),
+    });
+
     const response = await fetch(`${CLAID_API_BASE_URL}/v1/image/ai-edit`, {
       method: 'POST',
       headers: {
@@ -310,6 +330,13 @@ export const editProductImageWithAi = async (
           rateLimitRetryCount
         );
 
+        logger.warn('[Product Ai Edit] Claid request rate-limited, retrying', {
+          status: response.status,
+          retryDelayMs,
+          retryCount: rateLimitRetryCount + 1,
+          claidRequestId: response.headers.get('x-request-id') || null,
+        });
+
         rateLimitRetryCount += 1;
         await sleep(retryDelayMs);
         continue;
@@ -326,7 +353,7 @@ export const editProductImageWithAi = async (
       }
 
       throw new Error(
-        `Product ai-edit failed (status ${response.status}): ${errorPayload}`
+        `Product ai-edit failed (status ${response.status}, request-id ${response.headers.get('x-request-id') || 'n/a'}): ${errorPayload}`
       );
     }
 

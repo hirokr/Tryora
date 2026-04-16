@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "npx nodemon",
     "worker:dev": "tsx src/worker.ts",
+    "dev:all": "bash ./scripts/dev-all.sh",
     "build": "tsc",
     "start": "node dist/index.js",
     "lint": "eslint .",
