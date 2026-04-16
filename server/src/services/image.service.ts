@@ -25,6 +25,58 @@ export type CreateTryOnImagesForProductsResult = {
   images: TryOnImageItem[];
 };
 
+export type GetUserTryOnImagesInput = {
+  userId: string;
+  page: number;
+  limit: number;
+  skip: number;
+};
+
+export type GetUserTryOnImageByIdInput = {
+  userId: string;
+  tryonResultId: string;
+};
+
+export type UserTryOnImageListItem = {
+  tryonResultId: string;
+  bodyImageId: string;
+  productId: string | null;
+  imageUrl: string;
+  thumbnailUrl: string | null;
+  isFavorite: boolean;
+  isPublic: boolean;
+  viewCount: number;
+  glbUrl: string | null;
+  createdAt: Date;
+  product: {
+    id: string;
+    title: string;
+    image: string;
+    price: number | null;
+    currency: string | null;
+  } | null;
+  bodyImage: {
+    id: string;
+    imageUrl: string;
+    poseData: unknown;
+    metadata: unknown;
+  };
+};
+
+export type GetUserTryOnImagesResult = {
+  images: UserTryOnImageListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+};
+
+export type GetUserTryOnImageByIdResult = UserTryOnImageListItem;
+
 export class ImageTryOnError extends Error {
   statusCode: number;
   details?: unknown;
@@ -256,5 +308,144 @@ export const createTryOnImagesForProducts = async (
   return {
     bodyImageId: bodyImage.id,
     images,
+  };
+};
+
+export const getUserTryOnImages = async (
+  input: GetUserTryOnImagesInput
+): Promise<GetUserTryOnImagesResult> => {
+  const whereClause = {
+    userId: input.userId,
+    deletedAt: null,
+  };
+
+  const [totalItems, tryOnResults] = await prisma.$transaction([
+    prisma.tryonResult.count({
+      where: whereClause,
+    }),
+    prisma.tryonResult.findMany({
+      where: whereClause,
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip: input.skip,
+      take: input.limit,
+      select: {
+        id: true,
+        bodyImageId: true,
+        productId: true,
+        resultImageUrl: true,
+        thumbnailUrl: true,
+        isFavorite: true,
+        isPublic: true,
+        viewCount: true,
+        glbUrl: true,
+        createdAt: true,
+        product: {
+          select: {
+            id: true,
+            title: true,
+            image: true,
+            price: true,
+            currency: true,
+          },
+        },
+        bodyImage: {
+          select: {
+            id: true,
+            imageUrl: true,
+            poseData: true,
+            metadata: true,
+          },
+        },
+      },
+    }),
+  ]);
+
+  const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / input.limit);
+
+  return {
+    images: tryOnResults.map(tryOnResult => ({
+      tryonResultId: tryOnResult.id,
+      bodyImageId: tryOnResult.bodyImageId,
+      productId: tryOnResult.productId,
+      imageUrl: tryOnResult.resultImageUrl,
+      thumbnailUrl: tryOnResult.thumbnailUrl,
+      isFavorite: tryOnResult.isFavorite,
+      isPublic: tryOnResult.isPublic,
+      viewCount: tryOnResult.viewCount,
+      glbUrl: tryOnResult.glbUrl,
+      createdAt: tryOnResult.createdAt,
+      product: tryOnResult.product,
+      bodyImage: tryOnResult.bodyImage,
+    })),
+    pagination: {
+      page: input.page,
+      limit: input.limit,
+      totalItems,
+      totalPages,
+      hasNextPage: input.page < totalPages,
+      hasPreviousPage: input.page > 1 && totalItems > 0,
+    },
+  };
+};
+
+export const getUserTryOnImageById = async (
+  input: GetUserTryOnImageByIdInput
+): Promise<GetUserTryOnImageByIdResult> => {
+  const tryOnResult = await prisma.tryonResult.findFirst({
+    where: {
+      id: input.tryonResultId,
+      userId: input.userId,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      bodyImageId: true,
+      productId: true,
+      resultImageUrl: true,
+      thumbnailUrl: true,
+      isFavorite: true,
+      isPublic: true,
+      viewCount: true,
+      glbUrl: true,
+      createdAt: true,
+      product: {
+        select: {
+          id: true,
+          title: true,
+          image: true,
+          price: true,
+          currency: true,
+        },
+      },
+      bodyImage: {
+        select: {
+          id: true,
+          imageUrl: true,
+          poseData: true,
+          metadata: true,
+        },
+      },
+    },
+  });
+
+  if (!tryOnResult) {
+    throw new ImageTryOnError('Try-on image not found', 404);
+  }
+
+  return {
+    tryonResultId: tryOnResult.id,
+    bodyImageId: tryOnResult.bodyImageId,
+    productId: tryOnResult.productId,
+    imageUrl: tryOnResult.resultImageUrl,
+    thumbnailUrl: tryOnResult.thumbnailUrl,
+    isFavorite: tryOnResult.isFavorite,
+    isPublic: tryOnResult.isPublic,
+    viewCount: tryOnResult.viewCount,
+    glbUrl: tryOnResult.glbUrl,
+    createdAt: tryOnResult.createdAt,
+    product: tryOnResult.product,
+    bodyImage: tryOnResult.bodyImage,
   };
 };
