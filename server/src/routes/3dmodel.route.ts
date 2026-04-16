@@ -29,7 +29,7 @@ router.use(authMiddleware);
  *       3. Retrieve generated asset using `GET /api/3d/{tryonResultId}`.
  *       4. Remove generated model using `DELETE /api/3d/{tryonResultId}` if needed.
  */
-// HI
+
 /**
  * @swagger
  * /api/3d/generate:
