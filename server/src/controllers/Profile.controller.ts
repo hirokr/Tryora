@@ -122,12 +122,12 @@ export const uploadBodyImages = async (req: AuthRequest, res: Response) => {
 
     const processedImages: BodyImageInput[] = [];
 
-    for (const image of images) {
-      const processedImage = await processAndUploadImage(req.userId, image);
-      processedImages.push(processedImage);
-    }
+    // for (const image of images) {
+    //   const processedImage = await processAndUploadImage(req.userId, image);
+    //   processedImages.push(processedImage);
+    // }
 
-    await uploadBodyImagesService(req.userId, processedImages);
+    await uploadBodyImagesService(req.userId, images);
     return res.status(200).json({
       message: 'Body images uploaded successfully',
       images: processedImages,

@@ -19,6 +19,7 @@ import usersRoutes from './routes/user.route.ts';
 import model3DRoutes from './routes/3dmodel.route.ts';
 import imageRoutes from './routes/image.route.ts';
 import searchRoutes from './routes/search.route.ts';
+import profileRoutes from './routes/profile.route.ts';
 
 const app = express();
 app.use(helmet());
@@ -71,6 +72,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', usersRoutes);
 app.use('/api', model3DRoutes);
 app.use('/api', imageRoutes);
+app.use('/api/profile', profileRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/products', productRoutes);
 
