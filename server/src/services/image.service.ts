@@ -1,9 +1,16 @@
 import prisma from '#src/config/database.ts';
 import logger from '#src/config/logger.ts';
+import { JobStatus, JobType } from '#src/generated/enums.ts';
+import { enqueueTryOnImageGenerationJob } from '#src/queues/tryOnImage.queue.ts';
+import type {
+  Poser,
+  TryOnCategory,
+  TryOnImageGenerationJobData,
+  TryOnImageGenerationQueueResponse,
+} from '#src/types/tryOnJob.js';
 import { generateTryOnImage } from '#src/utils/image/imageFusion.ts';
 
-type TryOnCategory = 'tops' | 'bottoms' | 'full_body';
-type Poser = 'front' | 'side' | 'back';
+const MAX_RETRIES = 3;
 
 export type CreateTryOnImagesForProductsInput = {
   userId: string;
@@ -238,20 +245,24 @@ const createTryOnResultRecord = async (
   productId: string,
   imageUrl: string,
   category: TryOnCategory,
-  poser: Poser
+  poser: Poser,
+  generationJobId?: string
 ) => {
   return prisma.tryonResult.create({
     data: {
       userId,
       bodyImageId,
       productId,
+      ...(generationJobId ? { jobId: generationJobId } : {}),
       resultImageUrl: imageUrl,
       generationParams: {
         category,
         poser,
         productId,
       },
-      modelVersion: 'claid-ai-fashion-models',
+      modelVersion:
+        process.env.GEMINI_IMAGE_MODEL_TRYON?.trim() ||
+        'gemini-3.1-flash-image-preview',
     },
     select: {
       id: true,
@@ -262,7 +273,8 @@ const createTryOnResultRecord = async (
 };
 
 export const createTryOnImagesForProducts = async (
-  input: CreateTryOnImagesForProductsInput
+  input: CreateTryOnImagesForProductsInput,
+  generationJobId?: string
 ): Promise<CreateTryOnImagesForProductsResult> => {
   const poser = input.poser || DEFAULT_POSER;
   const category = input.category || DEFAULT_CATEGORY;
@@ -290,7 +302,8 @@ export const createTryOnImagesForProducts = async (
     primaryProduct.id,
     generated.data.output_url,
     category,
-    poser
+    poser,
+    generationJobId
   );
 
   const images: TryOnImageItem[] = [
@@ -309,6 +322,175 @@ export const createTryOnImagesForProducts = async (
     bodyImageId: bodyImage.id,
     images,
   };
+};
+
+export const createTryOnImageGenerationJob = async (
+  input: CreateTryOnImagesForProductsInput
+): Promise<TryOnImageGenerationQueueResponse> => {
+  const poser = input.poser || DEFAULT_POSER;
+  const category = input.category || DEFAULT_CATEGORY;
+
+  const bodyImage = await resolveBodyImage(
+    input.userId,
+    input.bodyImageId,
+    input.poseImageUrl,
+    poser
+  );
+
+  const products = await getProductsForTryOn(input.productIds);
+
+  const generationJob = await prisma.generationJob.create({
+    data: {
+      userId: input.userId,
+      jobType: JobType.TRYON_GENERATION,
+      status: JobStatus.QUEUED,
+      inputData: {
+        source: 'TRYON_IMAGE',
+        bodyImageId: bodyImage.id,
+        productIds: products.map(product => product.id),
+        poser,
+        category,
+      },
+      maxRetries: MAX_RETRIES,
+    },
+  });
+
+  try {
+    await enqueueTryOnImageGenerationJob(
+      {
+        generationJobId: generationJob.id,
+        userId: input.userId,
+        bodyImageId: bodyImage.id,
+        productIds: products.map(product => product.id),
+        poser,
+        category,
+      },
+      generationJob.maxRetries
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    await prisma.generationJob.update({
+      where: { id: generationJob.id },
+      data: {
+        status: JobStatus.FAILED,
+        completedAt: new Date(),
+        errorMessage: `Failed to enqueue BullMQ job: ${message}`,
+      },
+    });
+
+    throw new ImageTryOnError('Failed to enqueue try-on image job', 500);
+  }
+
+  return {
+    jobId: generationJob.id,
+    status: generationJob.status,
+  };
+};
+
+export const markTryOnGenerationJobAsProcessing = async (
+  generationJobId: string,
+  retryCount: number
+) => {
+  await prisma.generationJob.update({
+    where: { id: generationJobId },
+    data: {
+      status: JobStatus.PROCESSING,
+      startedAt: new Date(),
+      currentStage: 'generating',
+      progress: 10,
+      retryCount,
+      errorMessage: null,
+    },
+  });
+};
+
+export const updateTryOnGenerationJobProgress = async (
+  generationJobId: string,
+  progress: number,
+  currentStage: string
+) => {
+  await prisma.generationJob.update({
+    where: { id: generationJobId },
+    data: {
+      progress,
+      currentStage,
+    },
+  });
+};
+
+export const completeTryOnGenerationJob = async (
+  generationJobId: string,
+  result: CreateTryOnImagesForProductsResult
+) => {
+  const firstImage = result.images[0];
+
+  await prisma.generationJob.update({
+    where: { id: generationJobId },
+    data: {
+      status: JobStatus.COMPLETED,
+      progress: 100,
+      currentStage: 'done',
+      completedAt: new Date(),
+      outputImageUrl: firstImage?.imageUrl || null,
+      resultData: {
+        source: 'TRYON_IMAGE',
+        bodyImageId: result.bodyImageId,
+        tryonResultId: firstImage?.tryonResultId || null,
+        productId: firstImage?.productId || null,
+        imageUrl: firstImage?.imageUrl || null,
+      },
+    },
+  });
+};
+
+export const markTryOnGenerationJobFailedState = async (
+  generationJobId: string,
+  hasRetryLeft: boolean,
+  retryCount: number,
+  errorMessage: string
+) => {
+  await prisma.generationJob.update({
+    where: { id: generationJobId },
+    data: {
+      status: hasRetryLeft ? JobStatus.QUEUED : JobStatus.FAILED,
+      retryCount,
+      errorMessage,
+      completedAt: hasRetryLeft ? null : new Date(),
+      currentStage: hasRetryLeft ? 'retrying' : 'failed',
+    },
+  });
+};
+
+export const processQueuedTryOnImageGenerationJob = async (
+  input: TryOnImageGenerationJobData
+) => {
+  await updateTryOnGenerationJobProgress(
+    input.generationJobId,
+    30,
+    'calling_gemini'
+  );
+
+  const result = await createTryOnImagesForProducts(
+    {
+      userId: input.userId,
+      productIds: input.productIds,
+      bodyImageId: input.bodyImageId,
+      poser: input.poser,
+      category: input.category,
+    },
+    input.generationJobId
+  );
+
+  await updateTryOnGenerationJobProgress(
+    input.generationJobId,
+    90,
+    'persisting_result'
+  );
+
+  await completeTryOnGenerationJob(input.generationJobId, result);
+
+  return result;
 };
 
 export const getUserTryOnImages = async (

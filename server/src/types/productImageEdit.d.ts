@@ -1,4 +1,4 @@
-export type ClaidAiEditAspectRatio =
+export type ImageAiEditAspectRatio =
   | '1:1'
   | '2:3'
   | '3:2'
@@ -9,12 +9,14 @@ export type ClaidAiEditAspectRatio =
   | '9:21'
   | '21:9';
 
+export type ClaidAiEditAspectRatio = ImageAiEditAspectRatio;
+
 export type ProductAppearanceEditInput = {
   color: string;
   pattern?: string;
   prompt?: string;
   model?: 'v1' | 'v2';
-  aspectRatio?: ClaidAiEditAspectRatio;
+  aspectRatio?: ImageAiEditAspectRatio;
   inferenceSteps?: number;
   guidanceScale?: number;
   format?: 'png' | 'jpeg';
@@ -24,7 +26,7 @@ export type ProductAppearanceEditApiRequest = {
   inputImage: string;
   prompt: string;
   model: 'v1' | 'v2';
-  aspectRatio?: ClaidAiEditAspectRatio;
+  aspectRatio?: ImageAiEditAspectRatio;
   inferenceSteps?: number;
   guidanceScale?: number;
   format: 'png' | 'jpeg';

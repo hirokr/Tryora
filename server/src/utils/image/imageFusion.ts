@@ -1,9 +1,6 @@
-import fetch from 'node-fetch';
+import { generateGeminiImage } from '#src/client/geminiImage.client.ts';
 import logger from '#src/config/logger.ts';
-import { mirrorGeneratedImageToOwnedStorage } from '#src/services/imageStorage.service.ts';
-
-const CLAID_API_KEY = process.env.CLAID_API_KEY;
-const CLAID_OUTPUT_DESTINATION = process.env.CLAID_OUTPUT_DESTINATION;
+import { storeGeneratedImageBytesToOwnedStorage } from '#src/services/imageStorage.service.ts';
 
 interface TryOnRequest {
   personImagePath: string;
@@ -12,20 +9,9 @@ interface TryOnRequest {
   poser?: 'front' | 'side' | 'back';
 }
 
-interface ClaidResponse {
+interface TryOnResponse {
   data: {
     output_url: string;
-  };
-}
-
-interface ClaidApiResponse {
-  data?: {
-    output_url?: string;
-  };
-  output?: {
-    images?: Array<{
-      url?: string;
-    }>;
   };
 }
 
@@ -41,65 +27,55 @@ const poserPoseMap: Record<NonNullable<TryOnRequest['poser']>, string> = {
   back: 'back view',
 };
 
+const buildTryOnPrompt = (input: {
+  category: NonNullable<TryOnRequest['category']>;
+  poser: NonNullable<TryOnRequest['poser']>;
+  clothingRefs: string[];
+}) => {
+  const clothingRefText = input.clothingRefs.join(', ');
+
+  return [
+    'Generate a realistic virtual try-on image.',
+    'Use @Image1 as the person reference and keep identity, body proportions, and pose consistent.',
+    `Use ${clothingRefText} as the clothing references and blend garments naturally on the person.`,
+    `Pose guidance: ${categoryPoseMap[input.category]}, ${poserPoseMap[input.poser]}.`,
+    'Use a minimalistic studio background and keep image quality commercial-grade.',
+  ].join(' ');
+};
+
 export async function generateTryOnImage({
   personImagePath,
   garmentImagePaths,
   category = 'tops',
   poser = 'front',
-}: TryOnRequest): Promise<ClaidResponse> {
+}: TryOnRequest): Promise<TryOnResponse> {
   try {
-    if (!CLAID_API_KEY) {
-      throw new Error('CLAID_API_KEY is not configured.');
-    }
-
     if (!garmentImagePaths.length) {
       throw new Error('At least one garment image path is required.');
     }
 
-    const response = await fetch(
-      'https://api.claid.ai/v1/image/ai-fashion-models',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${CLAID_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          output: {
-            number_of_images: 1,
-            format: 'png',
-            ...(CLAID_OUTPUT_DESTINATION
-              ? { destination: CLAID_OUTPUT_DESTINATION }
-              : {}),
-          },
-          input: {
-            model: personImagePath,
-            clothing: garmentImagePaths,
-          },
-          options: {
-            pose: `${categoryPoseMap[category]}, ${poserPoseMap[poser]}`,
-            background: 'minimalistic studio background',
-            aspect_ratio: '9:16',
-          },
-        }),
-      }
+    const allImageUrls = [personImagePath, ...garmentImagePaths];
+    const clothingRefs = garmentImagePaths.map(
+      (_, index) => `@Image${index + 2}`
     );
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`API Error: ${errText}`);
-    }
+    const generated = await generateGeminiImage({
+      prompt: buildTryOnPrompt({
+        category,
+        poser,
+        clothingRefs,
+      }),
+      imageUrls: allImageUrls,
+      model:
+        process.env.GEMINI_IMAGE_MODEL_TRYON?.trim() ||
+        'gemini-3.1-flash-image-preview',
+      requestLabel: 'Try-on generation',
+    });
 
-    const claidResponse = (await response.json()) as ClaidApiResponse;
-    const outputUrl =
-      claidResponse.data?.output_url ?? claidResponse.output?.images?.[0]?.url;
-
-    if (!outputUrl) {
-      throw new Error('CLAID response did not include an output image URL.');
-    }
-
-    const storedImage = await mirrorGeneratedImageToOwnedStorage({
-      sourceUrl: outputUrl,
+    const storedImage = await storeGeneratedImageBytesToOwnedStorage({
+      bytes: generated.outputImageBytes,
+      contentType: generated.outputMimeType,
+      sourceLabel: 'tryon',
     });
 
     return {

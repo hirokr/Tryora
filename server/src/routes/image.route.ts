@@ -194,7 +194,7 @@ router.get(
  * /api/images/try-on:
  *   post:
  *     summary: Generate one try-on image for selected products
- *     description: Uses the authenticated user's body image (or a direct pose image URL) and selected product IDs to generate a single try-on image. The generated image is mirrored to owned blob storage, saved as a try-on result, and returned to the frontend.
+ *     description: Uses the authenticated user's body image (or a direct pose image URL) and selected product IDs to queue a try-on generation job. Poll `GET /api/jobs/{jobId}` for progress and final output URL.
  *     tags:
  *       - TryOn Image
  *     security:
@@ -237,36 +237,22 @@ router.get(
  *               - required: [productIds]
  *               - required: [productIdeas]
  *     responses:
- *       201:
- *         description: Try-on image generated successfully
+ *       202:
+ *         description: Try-on image generation job accepted and queued
  *         content:
  *           application/json:
  *             schema:
  *               type: object
+ *               required:
+ *                 - jobId
+ *                 - status
  *               properties:
- *                 message:
+ *                 jobId:
  *                   type: string
- *                   example: Try-on image generated successfully
- *                 bodyImageId:
+ *                   format: uuid
+ *                 status:
  *                   type: string
- *                 imageUrl:
- *                   type: string
- *                   format: uri
- *                   nullable: true
- *                 images:
- *                   type: array
- *                   minItems: 1
- *                   maxItems: 1
- *                   items:
- *                     type: object
- *                     properties:
- *                       tryonResultId:
- *                         type: string
- *                       productId:
- *                         type: string
- *                       imageUrl:
- *                         type: string
- *                         format: uri
+ *                   enum: [QUEUED, PROCESSING, COMPLETED, FAILED, CANCELLED]
  *       400:
  *         description: Validation error
  *       401:

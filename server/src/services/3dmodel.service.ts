@@ -126,16 +126,24 @@ export const getGenerationJobStatusForUser = async (
   const productIdFromInput = readStringFromJson(inputData, 'productId');
   const productId = productIdFromResult || productIdFromInput;
 
-  if (
-    jobStatus.status === JobStatus.COMPLETED &&
-    jobStatus.jobType === JobType.MODEL_3D_GENERATION
-  ) {
-    const tryonResult = await prisma.tryonResult.findFirst({
-      where: { glbJobId: jobStatus.id },
-      select: { id: true },
-    });
+  if (jobStatus.status === JobStatus.COMPLETED) {
+    if (jobStatus.jobType === JobType.MODEL_3D_GENERATION) {
+      const tryonResult = await prisma.tryonResult.findFirst({
+        where: { glbJobId: jobStatus.id },
+        select: { id: true },
+      });
 
-    tryonResultId = tryonResult?.id || null;
+      tryonResultId = tryonResult?.id || null;
+    }
+
+    if (jobStatus.jobType === JobType.TRYON_GENERATION) {
+      const tryonResult = await prisma.tryonResult.findFirst({
+        where: { jobId: jobStatus.id },
+        select: { id: true },
+      });
+
+      tryonResultId = tryonResult?.id || null;
+    }
   }
 
   return {

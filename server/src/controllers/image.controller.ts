@@ -1,6 +1,6 @@
 import logger from '#src/config/logger.ts';
 import {
-  createTryOnImagesForProducts,
+  createTryOnImageGenerationJob,
   getUserTryOnImageById,
   getUserTryOnImages,
   ImageTryOnError,
@@ -24,7 +24,7 @@ export const createTryOnFromProducts = async (
     }
 
     const body = req.body as CreateTryOnImagesInput;
-    const result = await createTryOnImagesForProducts({
+    const result = await createTryOnImageGenerationJob({
       userId: req.userId,
       productIds: body.productIds,
       bodyImageId: body.bodyImageId,
@@ -33,12 +33,7 @@ export const createTryOnFromProducts = async (
       category: body.category,
     });
 
-    return res.status(201).json({
-      message: 'Try-on image generated successfully',
-      bodyImageId: result.bodyImageId,
-      imageUrl: result.images[0]?.imageUrl || null,
-      images: result.images,
-    });
+    return res.status(202).json(result);
   } catch (error) {
     if (error instanceof ImageTryOnError) {
       return res.status(error.statusCode).json({

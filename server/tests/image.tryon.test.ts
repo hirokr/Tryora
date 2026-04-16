@@ -5,7 +5,9 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 const mockVerifyAccessToken = jest.fn<any>();
 const mockGetSetCache = jest.fn<any>();
 const mockIsValidSession = jest.fn<any>();
-const mockCreateTryOnImagesForProducts = jest.fn<any>();
+const mockCreateTryOnImageGenerationJob = jest.fn<any>();
+const mockGetUserTryOnImages = jest.fn<any>();
+const mockGetUserTryOnImageById = jest.fn<any>();
 
 class MockImageTryOnError extends Error {
   statusCode: number;
@@ -34,7 +36,9 @@ jest.unstable_mockModule('#src/services/token.service.ts', () => ({
 }));
 
 jest.unstable_mockModule('#src/services/image.service.ts', () => ({
-  createTryOnImagesForProducts: mockCreateTryOnImagesForProducts,
+  createTryOnImageGenerationJob: mockCreateTryOnImageGenerationJob,
+  getUserTryOnImages: mockGetUserTryOnImages,
+  getUserTryOnImageById: mockGetUserTryOnImageById,
   ImageTryOnError: MockImageTryOnError,
 }));
 
@@ -63,16 +67,13 @@ describe('Try-on image route', () => {
 
     mockIsValidSession.mockResolvedValue(true);
 
-    mockCreateTryOnImagesForProducts.mockResolvedValue({
-      bodyImageId: 'body-1',
-      images: [
-        {
-          tryonResultId: 'tryon-1',
-          productId: 'product-1',
-          imageUrl: 'https://cdn.example.com/tryon-1.png',
-        },
-      ],
+    mockCreateTryOnImageGenerationJob.mockResolvedValue({
+      jobId: 'job-1',
+      status: 'QUEUED',
     });
+
+    mockGetUserTryOnImages.mockResolvedValue({ images: [], pagination: {} });
+    mockGetUserTryOnImageById.mockResolvedValue(null);
   });
 
   it('returns 401 when authorization header is missing', async () => {
@@ -103,7 +104,7 @@ describe('Try-on image route', () => {
     );
   });
 
-  it('returns 201 with generated try-on images on success', async () => {
+  it('returns 202 with queued try-on generation job on success', async () => {
     const response = await request(app)
       .post('/api/images/try-on')
       .set('Authorization', authHeader)
@@ -112,19 +113,13 @@ describe('Try-on image route', () => {
         poseImageUrl: 'https://cdn.example.com/front.png',
       });
 
-    expect(response.status).toBe(201);
-    expect(response.body).toHaveProperty(
-      'message',
-      'Try-on image generated successfully'
-    );
-    expect(response.body).toHaveProperty('bodyImageId', 'body-1');
-    expect(response.body).toHaveProperty(
-      'imageUrl',
-      'https://cdn.example.com/tryon-1.png'
-    );
-    expect(response.body.images).toHaveLength(1);
+    expect(response.status).toBe(202);
+    expect(response.body).toEqual({
+      jobId: 'job-1',
+      status: 'QUEUED',
+    });
 
-    expect(mockCreateTryOnImagesForProducts).toHaveBeenCalledWith({
+    expect(mockCreateTryOnImageGenerationJob).toHaveBeenCalledWith({
       userId: 'user-1',
       productIds: ['product-1', 'product-2'],
       bodyImageId: undefined,
@@ -135,7 +130,7 @@ describe('Try-on image route', () => {
   });
 
   it('returns mapped status code for known try-on errors', async () => {
-    mockCreateTryOnImagesForProducts.mockRejectedValue(
+    mockCreateTryOnImageGenerationJob.mockRejectedValue(
       new MockImageTryOnError('Body image not found', 404, {
         bodyImageId: 'missing-body',
       })
@@ -159,7 +154,9 @@ describe('Try-on image route', () => {
   });
 
   it('returns 500 for unexpected server errors', async () => {
-    mockCreateTryOnImagesForProducts.mockRejectedValue(new Error('unexpected'));
+    mockCreateTryOnImageGenerationJob.mockRejectedValue(
+      new Error('unexpected')
+    );
 
     const response = await request(app)
       .post('/api/images/try-on')

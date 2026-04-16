@@ -1,7 +1,7 @@
 import { z } from 'zod/v3';
 
-const CLAID_AI_EDIT_MODELS = ['v1', 'v2'] as const;
-const CLAID_AI_EDIT_ASPECT_RATIOS = [
+const IMAGE_AI_EDIT_MODELS = ['v1', 'v2'] as const;
+const IMAGE_AI_EDIT_ASPECT_RATIOS = [
   '1:1',
   '2:3',
   '3:2',
@@ -36,8 +36,8 @@ export const editProductImageAppearanceSchema = z
     color: z.string().trim().min(1, 'Color is required'),
     pattern: z.string().trim().min(1, 'Pattern cannot be empty').optional(),
     prompt: z.string().trim().min(1, 'Prompt cannot be empty').optional(),
-    model: z.enum(CLAID_AI_EDIT_MODELS).optional(),
-    aspectRatio: z.enum(CLAID_AI_EDIT_ASPECT_RATIOS).optional(),
+    model: z.enum(IMAGE_AI_EDIT_MODELS).optional(),
+    aspectRatio: z.enum(IMAGE_AI_EDIT_ASPECT_RATIOS).optional(),
     inferenceSteps: z
       .number()
       .int('inferenceSteps must be an integer')

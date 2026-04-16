@@ -12,14 +12,17 @@ import {
   ProductImageEditJobData,
   ProductImageEditQueueResponse,
 } from '#src/types/productImageEditJob.js';
-import { editProductImageWithAi } from '#src/utils/image/productAppearanceEdit.ts';
+import {
+  editProductImageWithAi,
+  ProductAppearanceEditAiHooks,
+} from '#src/utils/image/productAppearanceEdit.ts';
 import { buildProductAppearancePrompt } from '#src/utils/productAppearancePrompt.ts';
 
 const DEFAULT_EDIT_MODEL: 'v1' | 'v2' = 'v2';
 const DEFAULT_INFERENCE_STEPS = 30;
 const DEFAULT_GUIDANCE_SCALE = 7;
 const DEFAULT_FORMAT: 'png' = 'png';
-const CLAID_MAX_INPUT_LENGTH = 4096;
+const AI_PROVIDER_MAX_INPUT_LENGTH = 4096;
 const MAX_RETRIES = 3;
 
 export class ProductImageEditError extends Error {
@@ -96,8 +99,8 @@ const toProductResponse = (product: {
   };
 };
 
-const isWithinClaidInputLimit = (value: string) =>
-  value.length <= CLAID_MAX_INPUT_LENGTH;
+const isWithinAiProviderInputLimit = (value: string) =>
+  value.length <= AI_PROVIDER_MAX_INPUT_LENGTH;
 
 const resolveAiEditInputImage = async (input: {
   image: string;
@@ -108,7 +111,7 @@ const resolveAiEditInputImage = async (input: {
     (value): value is string => typeof value === 'string' && value.length > 0
   );
 
-  const directCandidate = directCandidates.find(isWithinClaidInputLimit);
+  const directCandidate = directCandidates.find(isWithinAiProviderInputLimit);
   if (directCandidate) {
     return directCandidate;
   }
@@ -118,15 +121,18 @@ const resolveAiEditInputImage = async (input: {
     throw new ProductImageEditError('Product image source is missing', 400);
   }
 
-  logger.info('[Product Ai Edit] Input image exceeds CLAID limit, mirroring', {
-    productId: input.productId,
-  });
+  logger.info(
+    '[Product Ai Edit] Input image exceeds provider limit, mirroring',
+    {
+      productId: input.productId,
+    }
+  );
 
   const mirroredInput = await mirrorGeneratedImageToOwnedStorage({
     sourceUrl: sourceToMirror,
   });
 
-  if (!isWithinClaidInputLimit(mirroredInput.url)) {
+  if (!isWithinAiProviderInputLimit(mirroredInput.url)) {
     throw new ProductImageEditError(
       'Source product image is too long for AI edit provider input limit',
       502
@@ -273,13 +279,14 @@ export const processQueuedProductImageEditJob = async (
 ) => {
   await updateProductImageEditJobProgress(
     input.generationJobId,
-    40,
-    'updating_product'
+    35,
+    'preparing_input'
   );
 
   const result = await editProductAppearanceAndSaveImage(
     input.productId,
-    input.input
+    input.input,
+    input.generationJobId
   );
 
   await completeProductImageEditJob(input.generationJobId, result);
@@ -289,7 +296,8 @@ export const processQueuedProductImageEditJob = async (
 
 export const editProductAppearanceAndSaveImage = async (
   productId: string,
-  input: ProductAppearanceEditInput
+  input: ProductAppearanceEditInput,
+  generationJobId?: string
 ): Promise<ProductAppearanceEditResult> => {
   const product = await prisma.product.findUnique({
     where: { id: productId },
@@ -320,28 +328,66 @@ export const editProductAppearanceAndSaveImage = async (
     productId,
   });
 
-  let editedExternalImageUrl: string;
+  let editedImageUrl: string;
 
   try {
     const selectedModel = input.model || DEFAULT_EDIT_MODEL;
+    let lastPersistedProgress = 50;
 
-    const aiEdited = await editProductImageWithAi({
-      inputImage: aiInputImage,
-      prompt,
-      model: selectedModel,
-      aspectRatio: selectedModel === 'v1' ? input.aspectRatio : undefined,
-      inferenceSteps:
-        selectedModel === 'v1'
-          ? (input.inferenceSteps ?? DEFAULT_INFERENCE_STEPS)
-          : undefined,
-      guidanceScale:
-        selectedModel === 'v1'
-          ? (input.guidanceScale ?? DEFAULT_GUIDANCE_SCALE)
-          : undefined,
-      format: input.format || DEFAULT_FORMAT,
-    });
+    const aiHooks: ProductAppearanceEditAiHooks | undefined = generationJobId
+      ? {
+          onRequestAccepted: async () => {
+            await updateProductImageEditJobProgress(
+              generationJobId,
+              50,
+              'polling_provider_status'
+            );
+          },
+          onPollingUpdate: async pollingUpdate => {
+            const nextProgress =
+              50 +
+              Math.min(
+                35,
+                Math.round(
+                  (pollingUpdate.pollCount / pollingUpdate.maxPollChecks) * 35
+                )
+              );
 
-    editedExternalImageUrl = aiEdited.outputUrl;
+            if (nextProgress <= lastPersistedProgress) {
+              return;
+            }
+
+            lastPersistedProgress = nextProgress;
+
+            await updateProductImageEditJobProgress(
+              generationJobId,
+              nextProgress,
+              `polling_provider_status_${pollingUpdate.status.toLowerCase()}`
+            );
+          },
+        }
+      : undefined;
+
+    const aiEdited = await editProductImageWithAi(
+      {
+        inputImage: aiInputImage,
+        prompt,
+        model: selectedModel,
+        aspectRatio: selectedModel === 'v1' ? input.aspectRatio : undefined,
+        inferenceSteps:
+          selectedModel === 'v1'
+            ? (input.inferenceSteps ?? DEFAULT_INFERENCE_STEPS)
+            : undefined,
+        guidanceScale:
+          selectedModel === 'v1'
+            ? (input.guidanceScale ?? DEFAULT_GUIDANCE_SCALE)
+            : undefined,
+        format: input.format || DEFAULT_FORMAT,
+      },
+      aiHooks
+    );
+
+    editedImageUrl = aiEdited.outputUrl;
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     const isRateLimitFailure =
@@ -356,10 +402,6 @@ export const editProductAppearanceAndSaveImage = async (
     );
   }
 
-  const mirroredImage = await mirrorGeneratedImageToOwnedStorage({
-    sourceUrl: editedExternalImageUrl,
-  });
-
   const nextColorTags = mergeTags(product.colorTags, input.color);
   const nextPatternTags = input.pattern
     ? mergeTags(product.patternTags, input.pattern)
@@ -371,8 +413,8 @@ export const editProductAppearanceAndSaveImage = async (
     colorTags: string[];
     patternTags?: string[];
   } = {
-    image: mirroredImage.url,
-    processedImageUrl: mirroredImage.url,
+    image: editedImageUrl,
+    processedImageUrl: editedImageUrl,
     colorTags: nextColorTags,
   };
 
@@ -384,7 +426,7 @@ export const editProductAppearanceAndSaveImage = async (
     await tx.productImage.create({
       data: {
         productId,
-        url: mirroredImage.url,
+        url: editedImageUrl,
       },
     });
 
@@ -412,14 +454,22 @@ export const editProductAppearanceAndSaveImage = async (
     });
   });
 
+  if (generationJobId) {
+    await updateProductImageEditJobProgress(
+      generationJobId,
+      95,
+      'updating_product'
+    );
+  }
+
   logger.info('[Product Ai Edit] Product image updated successfully', {
     productId,
-    defaultImageUrl: mirroredImage.url,
+    defaultImageUrl: editedImageUrl,
   });
 
   return {
     message: 'Product image updated successfully',
-    defaultImageUrl: mirroredImage.url,
+    defaultImageUrl: editedImageUrl,
     product: toProductResponse(updatedProduct),
   };
 };
