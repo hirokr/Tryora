@@ -18,6 +18,7 @@ import productRoutes from './routes/product.route.ts';
 import usersRoutes from './routes/user.route.ts';
 import model3DRoutes from './routes/3dmodel.route.ts';
 import imageRoutes from './routes/image.route.ts';
+import searchRoutes from './routes/search.route.ts';
 
 const app = express();
 app.use(helmet());
@@ -70,6 +71,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/user', usersRoutes);
 app.use('/api', model3DRoutes);
 app.use('/api', imageRoutes);
+app.use('/api/search', searchRoutes);
 app.use('/api/products', productRoutes);
 
 const openapiSpecification = swaggerJsdoc(swaggerOptions);

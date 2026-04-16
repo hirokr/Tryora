@@ -661,7 +661,7 @@ router.get('/:searchId/products', getProductsBySearchId);
  *                   type: string
  *                   example: failed to fetch product
  */
-router.get('/:productId', getProductsById);
+router.get('/product/:productId', getProductsById);
 
 /**
  * @swagger

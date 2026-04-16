@@ -28,16 +28,20 @@ export const getSetRedis = (key: string, cb: any) => {
   });
 };
 
-type cacheEntry = {
-  userId: string;
-  sessionId: string;
+const parseUserIdFromSessionCacheKey = (key: string): string | null => {
+  const [prefix, userId] = key.split(':');
+  if (prefix !== 'user-session' || !userId) {
+    return null;
+  }
+
+  return userId;
 };
 
 // DONE: Create a utility function to get and set cache with expiration
-export const getSetCache = async <Boolean>(
+export const getSetCache = async <T>(
   key: string,
-  cb: () => Promise<any>
-): Promise<any> => {
+  cb: () => Promise<T>
+): Promise<T | null> => {
   const data = await redisClient.get(key);
 
   if (data !== null) {
@@ -46,11 +50,19 @@ export const getSetCache = async <Boolean>(
 
   const freshData = await cb();
   if (freshData === null || freshData === undefined) {
-    return null as any;
+    return null;
   }
-  _addKeyAndIndex(key, freshData.userId, freshData.sessionId);
 
-  return true;
+  const userId = parseUserIdFromSessionCacheKey(key);
+  if (userId) {
+    await _addKeyAndIndex(key, userId, freshData);
+  } else {
+    await redisClient.set(key, JSON.stringify(freshData), {
+      EX: DEFAULT_EXPIRATION,
+    });
+  }
+
+  return freshData;
 };
 
 // DONE: invalidate cache by key
@@ -76,7 +88,7 @@ export const setCache = async (
   value: any,
   expiration?: number
 ) => {
-  _addKeyAndIndex(key, userId, value, expiration);
+  await _addKeyAndIndex(key, userId, value, expiration);
 };
 
 // DONE: Create a utility function to generate cache key for user sessions

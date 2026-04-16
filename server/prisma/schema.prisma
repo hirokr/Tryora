@@ -346,6 +346,7 @@ model Product {
   brand       String? @db.VarChar(100)
   source      String? @db.VarChar(100) // platform name e.g. "daraz", "shajgoj"
   rating      Float?
+  link        String? @db.Text
 
   rank Int?
 
