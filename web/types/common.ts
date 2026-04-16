@@ -57,6 +57,6 @@ export interface MeasurementItem {
   value: string;
 }
 
-export type NotificationState = "none" | "progress" | "error";
+export type NotificationState = "none" | "progress" | "error" | "success";
 
 export type TabType = "sync" | "free";

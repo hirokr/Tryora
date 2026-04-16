@@ -8,7 +8,8 @@ export async function GET(req: NextRequest) {
 	const userId = searchParams.get("id");
 	const name = searchParams.get("name");
 	const email = searchParams.get("email");
-	const avatarUrl = searchParams.get("avatarUrl") || undefined;
+	const avatarUrl =
+		searchParams.get("avatarUrl") || searchParams.get("avatar") || undefined;
 	const emailVerified = searchParams.get("emailVerified");
 	const isActive = searchParams.get("isActive");
 

@@ -5,7 +5,6 @@ import type { RefObject } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import SubmitButton from "@/components/ui/submitButton";
-import { BACKEND_URL } from "@/constants/constants";
 
 type SignInFormProps = {
 	state: any;
@@ -103,7 +102,7 @@ const SignInForm = ({
 						</SubmitButton>
 
 						<a
-							href={`${BACKEND_URL}/api/auth/google`}
+							href='/api/auth/google'
 							className='w-full h-10 mt-2 rounded-2xl border border-[#6b5a86] text-slate-100 text-sm font-semibold flex items-center justify-center gap-2 transition-colors duration-300 hover:bg-white hover:text-black'
 						>
 							Continue with Google

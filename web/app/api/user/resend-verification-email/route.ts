@@ -1,8 +1,11 @@
 import { BACKEND_URL } from "@/constants/constants";
-import { authFetch, type FetchOptions } from "@/lib/auth/authFetch";
+import { authFetch } from "@/lib/auth/authFetch";
 
-export async function proxySearchRequest(pathname: string, options: FetchOptions = {}) {
-  const response = await authFetch(`${BACKEND_URL}${pathname}`, options);
+export async function POST() {
+  const response = await authFetch(`${BACKEND_URL}/api/user/resend-verification-email`, {
+    method: "POST",
+  });
+
   const payload = await response.text();
 
   return new Response(payload, {

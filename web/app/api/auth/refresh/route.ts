@@ -1,8 +1,10 @@
 import { BACKEND_URL } from "@/constants/constants";
-import { authFetch, type FetchOptions } from "@/lib/auth/authFetch";
 
-export async function proxySearchRequest(pathname: string, options: FetchOptions = {}) {
-  const response = await authFetch(`${BACKEND_URL}${pathname}`, options);
+export async function GET() {
+  const response = await fetch(`${BACKEND_URL}/api/auth/refresh`, {
+    method: "GET",
+  });
+
   const payload = await response.text();
 
   return new Response(payload, {

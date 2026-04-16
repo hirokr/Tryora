@@ -56,8 +56,7 @@ export function AvatarStudioNotifications({
           </div>
           <div className="space-y-4">
             <p className="text-xs leading-relaxed text-slate-400">
-              We encountered a low confidence landmark error. Please ensure your lighting is
-              optimal and try again.
+              Avatar preview could not be loaded. Please retry the render and try again.
             </p>
             <div className="flex flex-col gap-2 pt-2">
               <button
@@ -80,6 +79,23 @@ export function AvatarStudioNotifications({
               <p className="text-[9px] font-bold uppercase tracking-tighter text-primary">Powered by Gemini</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {notification === "success" && (
+        <div className="absolute bottom-24 right-8 z-50 w-80 rounded-xl border border-emerald-500/40 bg-[#1f1328]/90 p-5 shadow-[0_0_20px_rgba(16,185,129,0.2)] backdrop-blur-xl">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-emerald-400">check_circle</span>
+              <h3 className="text-sm font-bold tracking-wide text-slate-100">VTON Rendering Success</h3>
+            </div>
+            <button onClick={onClear}>
+              <span className="material-symbols-outlined cursor-pointer text-xs text-slate-500 hover:text-white">close</span>
+            </button>
+          </div>
+          <p className="text-xs leading-relaxed text-slate-300">
+            Avatar preview loaded successfully.
+          </p>
         </div>
       )}
     </>
