@@ -69,6 +69,22 @@ export async function getTryOnById(id: string) {
   });
 }
 
+export async function getTryOnByJobId(jobId: string) {
+  return await prisma.tryon.findUnique({
+    where: { jobId },
+    select: {
+      id: true,
+      userId: true,
+      jobId: true,
+      resultUrl: true,
+      productIds: true,
+      tryonType: true,
+      provider: true,
+      createdAt: true,
+    },
+  });
+}
+
 export async function getTryOnsByUserId(userId: string) {
   return await prisma.tryon.findMany({
     where: { userId },
