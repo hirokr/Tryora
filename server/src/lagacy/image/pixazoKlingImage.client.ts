@@ -1,5 +1,5 @@
 import logger from '#src/config/logger.ts';
-import { buildPixazoHeaders, sleep } from '#src/utils/generate3D.ts';
+import { buildPixazoHeaders, sleep } from '#src/utils/generateModel.ts';
 
 const DEFAULT_KLING_GENERATE_URL =
   'https://gateway.pixazo.ai/kling-o1-image-208/v1/kling-o1-image-request';

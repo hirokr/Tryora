@@ -6,7 +6,7 @@ import {
   buildHunyuanStartPayload,
   buildPixazoHeaders,
   getPixazoBaseUrl,
-} from '#src/utils/generate3D.ts';
+} from '#src/utils/generateModel.ts';
 
 const HUNYUAN_START_ENDPOINT = 'hunyuan3d-3-0-api-request';
 
