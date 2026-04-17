@@ -5,14 +5,16 @@ import { extractSearchData } from '#src/utils/groq.ts';
 import {
   checkIntent,
   createSearch,
+  getSearchesByUserId,
+  setProducts,
+} from '#src/services/search.service.ts';
+import {
   getProductById,
   getProductsByIds,
   getProductsByfilters,
   getProductsBySearchID,
-  getSearchesByUserId,
-  setProducts,
   updateTrendingScore,
-} from '#src/services/search.service.ts';
+} from '#src/services/product.service.ts';
 import {
   getProductIdsByIntent,
   setProductIdsByIntent,

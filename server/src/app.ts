@@ -15,6 +15,7 @@ import { swaggerOptions } from './docs/swagger/index.ts';
 
 import authRoutes from './routes/auth.route.ts';
 import productRoutes from './routes/product.route.ts';
+import recommendationRoutes from './routes/recomendation.route.ts';
 import usersRoutes from './routes/user.route.ts';
 import tryon from './routes/tryon.route.ts';
 import searchRoutes from './routes/search.route.ts';
@@ -71,6 +72,8 @@ app.use('/api/user', usersRoutes);
 app.use('/api/tryon/', tryon);
 app.use('/api/search', searchRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/recomendations', recommendationRoutes);
+app.use('/api/recommendations', recommendationRoutes);
 
 const openapiSpecification = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));
