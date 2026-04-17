@@ -1,30 +1,5 @@
+import { ProductImageEditJobData } from '#src/types/image.js';
 import { createCustomQueue } from './base.queue.ts';
-
-export type ImageQueueJobType = 'image-generation' | 'image-fusion';
-
-export interface ImageGenerationQueueParams {
-  jobType: 'image-generation';
-  sourceImageUrl: string;
-  userPrompt: string;
-  variantId?: string;
-}
-
-export interface ImageFusionQueueParams {
-  jobType: 'image-fusion';
-  baseImageUrl: string;
-  productImageUrls: string[];
-  bodyImageId?: string;
-}
-
-export type ImageQueueParams =
-  | ImageGenerationQueueParams
-  | ImageFusionQueueParams;
-
-export interface ProductImageEditJobData {
-  generationJobId: string;
-  productId: string;
-  params: ImageQueueParams;
-}
 
 export const PRODUCT_IMAGE_EDIT_JOB_NAME = 'product-image-edit-task';
 export const PRODUCT_IMAGE_EDIT_QUEUE_NAME = 'product-image-edit-queue';
@@ -46,3 +21,9 @@ export const {
   getState: getProductImageJobState,
   close: closeProductImageQueue,
 } = imageEditManager;
+
+// CSE420 -> LRK, NLAM, SUE(best),
+// CSE428 -> MOM
+// CSE461 -> UTKR
+// CST    ->
+// CSE360 -> SHBK

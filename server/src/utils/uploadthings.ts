@@ -15,7 +15,6 @@ export async function handleUrlUpload(
       url: productUrl,
       name: fileName,
     });
-
     return [response];
   } catch (error) {
     throw error;
@@ -34,4 +33,7 @@ export async function handleFileUpload(
   return [response];
 }
 
-// handleUrlUpload('https://avatars.githubusercontent.com/u/117710065?v=4', 'profile-image.png');
+// handleUrlUpload(
+//   'https://avatars.githubusercontent.com/u/117710065?v=4',
+//   'profile-image.png'
+// );
