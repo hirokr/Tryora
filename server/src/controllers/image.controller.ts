@@ -5,6 +5,7 @@ import {
   findProductById,
   findVariantById,
 } from '#src/services/product.service.ts';
+import { getTryOnImage } from '#src/services/tryon.service.ts';
 import { AuthRequest, Response } from '#src/types/authRequest.js';
 import { JobResponseType } from '#src/types/Job.js';
 import { editProductImage } from '#src/utils/image/imageEdit.ts';
@@ -156,6 +157,3 @@ export const fuseProductImages = async (req: AuthRequest, res: Response) => {
     });
   }
 };
-function getTryOnImage(userId: string): any {
-  throw new Error('Function not implemented.');
-}

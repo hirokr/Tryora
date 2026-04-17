@@ -43,13 +43,17 @@ export async function tryOnImageClaid(
     );
     const claidResponse = (await response.json()) as ClaidApiResponse;
 
-    if (!response.ok) {
-      if (claidResponse.data?.status !== claidStatus.accepted) {
-        throw new Error(`API Error: failed to edit image`);
-      }
+    const status = claidResponse.data?.status;
 
-      return claidResponse;
+    if (!response.ok && status !== claidStatus.accepted) {
+      throw new Error(`API Error: failed to edit image`);
     }
+
+    if (!claidResponse.data?.id) {
+      throw new Error('API Error: missing processing request id from Claid.');
+    }
+
+    return claidResponse;
   } catch (error) {
     logger.error('Try-on generation failed', {
       error: error instanceof Error ? error.message : String(error),

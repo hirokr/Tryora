@@ -13,6 +13,7 @@ export interface ImageFusionQueueParams {
   jobType: 'image-fusion';
   baseImageUrl: string;
   productImageUrls: string[];
+  bodyImageId?: string;
 }
 
 export type ImageQueueParams =

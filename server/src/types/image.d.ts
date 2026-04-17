@@ -16,9 +16,8 @@ export interface ClaidImageEditRequest {
 enum claidStatus {
   accepted = 'ACCEPTED',
   processing = 'PROCESSING',
-  succeeded = 'SUCCEEDED',
+  error = 'ERROR',
   done = 'DONE',
-  failed = 'FAILED',
 }
 
 export interface ClaidApiResponse {

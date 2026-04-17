@@ -105,7 +105,6 @@ model Like {
 model Tryon {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId      String   @map("user_id") @db.Uuid
-  userImageId String   @map("body_image_id") @db.Uuid
   productId   String[] @map("product_id") @db.Uuid
 
   jobId     String @unique @map("job_id") @db.Uuid
