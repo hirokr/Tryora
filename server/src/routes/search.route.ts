@@ -541,7 +541,7 @@ router.get('/:searchId/products', getProductsBySearchId);
 
 /**
  * @swagger
- * /api/search/search-by-query:
+ * /api/search/search-filter:
  *   post:
  *     summary: Search products using structured filters
  *     description: |

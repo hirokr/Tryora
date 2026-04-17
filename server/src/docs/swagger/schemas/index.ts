@@ -1,4 +1,7 @@
 import { userSchemas } from './user.schema.ts';
+import { commonSchemas } from './common.schema.ts';
+import { productSchemas } from './product.schema.ts';
+import { tryonSchemas } from './tryon.schema.ts';
 
 /**
  * Aggregates all domain schema definitions into a single object
@@ -9,5 +12,8 @@ import { userSchemas } from './user.schema.ts';
  *   import { orderSchemas }   from './order.schema.ts';
  */
 export const allSchemas: Record<string, object> = {
+  ...commonSchemas,
   ...userSchemas,
+  ...productSchemas,
+  ...tryonSchemas,
 };

@@ -173,7 +173,7 @@ router.use(authMiddleware);
 
 /**
  * @swagger
- * /api/user/profile:
+ * /api/user/me:
  *   get:
  *     summary: Get current user profile
  *     description: Returns the authenticated user's profile without sensitive fields.
