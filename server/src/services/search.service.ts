@@ -27,7 +27,7 @@ export const createSearch = async (data: {
   prompt: string;
   intentKey: string;
   parsedParams?: any;
-  geo?: any;
+  location?: string;
   userId?: string;
 }) => {
   const searchRecord = await prisma.productSearch.create({
@@ -35,10 +35,8 @@ export const createSearch = async (data: {
       prompt: data.prompt,
       intentKey: data.intentKey,
       parsedParams: data.parsedParams,
-      geo: data.geo,
       userId: data.userId,
-      status: 'PENDING',
-      startedAt: new Date(),
+      location: data.location,
     },
   });
 
@@ -86,9 +84,7 @@ export const getSearchesByUserId = async (userId: string) => {
   });
 };
 
-export const getProductsBySearchID = async (
-  searchId: string,
-) => {
+export const getProductsBySearchID = async (searchId: string) => {
   return prisma.product.findMany({ where: { searchId } });
 };
 
@@ -176,4 +172,3 @@ export const updateTrendingScore = async (
     });
   });
 };
-

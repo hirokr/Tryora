@@ -1,8 +1,7 @@
 import app, { redisClient } from './app.ts';
 import logger from './config/logger.ts';
 import { close3DModelQueue } from './queues/model.queue.ts';
-import { closeProductImageEditQueue } from './queues/Image.queue.ts';
-import { closeTryOnImageQueue } from './queues/imageFusion.queue.ts';
+import { closeProductImageQueue } from './queues/Image.queue.ts';
 
 const PORT = process.env.PORT || 8000;
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -27,8 +26,7 @@ const shutdown = async (signal: string) => {
     try {
       await Promise.all([
         close3DModelQueue(),
-        closeProductImageEditQueue(),
-        closeTryOnImageQueue(),
+        closeProductImageQueue(),
       ]);
 
       if (redisClient.isOpen) {

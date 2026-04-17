@@ -16,10 +16,8 @@ import { swaggerOptions } from './docs/swagger/index.ts';
 import authRoutes from './routes/auth.route.ts';
 import productRoutes from './routes/product.route.ts';
 import usersRoutes from './routes/user.route.ts';
-import model3DRoutes from './routes/3dmodel.route.ts';
-import imageRoutes from './routes/image.route.ts';
+import tryon from './routes/tryon.route.ts';
 import searchRoutes from './routes/search.route.ts';
-// import profileRoutes from './routes/profile.route.ts';
 
 const app = express();
 app.use(helmet());
@@ -70,8 +68,7 @@ app.get('/api', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', usersRoutes);
-app.use('/api/tryon/model', model3DRoutes);
-app.use('/api/tryon/image', imageRoutes);
+app.use('/api/tryon/', tryon);
 app.use('/api/search', searchRoutes);
 app.use('/api/products', productRoutes);
 

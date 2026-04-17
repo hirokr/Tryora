@@ -97,7 +97,7 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
         category,
         culturalTags,
       },
-      geo,
+      location: typeof geo === 'string' ? geo : undefined,
       userId: req.userId,
     });
 
@@ -119,9 +119,7 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
 
     await setProducts(searchRecord.id, uniqueProducts);
 
-    const savedProducts = await getProductsBySearchID(
-      searchRecord.id,
-    );
+    const savedProducts = await getProductsBySearchID(searchRecord.id);
     if (savedProducts.length) {
       await setProductIdsByIntent(
         intentKey,
@@ -312,4 +310,3 @@ export const updateProductMetrics = async (req: AuthRequest, res: Response) => {
     });
   }
 };
-

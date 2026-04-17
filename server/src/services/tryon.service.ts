@@ -12,7 +12,7 @@ export async function getTryOnImage(id: string) {
   return tryonImage?.resultUrl;
 }
 
-export async function createTryOnJob(
+export async function createTryOn(
   userId: string,
   productIds: string[],
   jobId: string,
@@ -32,19 +32,16 @@ export async function createTryOnJob(
   });
 }
 
-export async function updateTryOnJobResult(
-  id: string,
-  data: TryOnUpdateDataType
-) {
+export async function updateTryOnResult(id: string, data: TryOnUpdateDataType) {
   return await prisma.tryon.update({
     where: { id },
     data,
   });
 }
 
-export async function getTryOnJobById(jobId: string) {
+export async function getTryOnById(id: string) {
   return await prisma.tryon.findUnique({
-    where: { jobId },
+    where: { id },
   });
 }
 
@@ -54,8 +51,8 @@ export async function getTryOnJobsByUserId(userId: string) {
   });
 }
 
-export async function deleteTryOnJob(jobId: string) {
+export async function deleteTryOn(id: string) {
   return await prisma.tryon.delete({
-    where: { jobId },
+    where: { id },
   });
 }

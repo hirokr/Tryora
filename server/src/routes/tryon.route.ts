@@ -1,5 +1,10 @@
 import { Router } from 'express';
 import { authMiddleware } from '#src/middlewares/authenticate.middleware.ts';
+import {
+  fuseProductImages,
+  updateProductAppearance,
+} from '#src/controllers/image.controller.ts';
+import { deleteTryOn, getTryOnById } from '#src/services/tryon.service.ts';
 
 const router = Router();
 /**
@@ -22,14 +27,14 @@ router.get(`/discover`, placeHolder);
 router.post(`model/generate`, placeHolder);
 
 // image router
-router.post(`image/generate`, placeHolder);
-router.post('/image/edit', placeHolder);
+router.post(`image/generate`, fuseProductImages);
+router.post('/image/edit', updateProductAppearance);
 
 // get users tryon params={image or model}
 router.get(`/user/:userId`, placeHolder);
 
-router.get(`/:tryonResultId`, placeHolder);
+router.get(`/:tryonId`, getTryOnById);
 
-router.delete(`/:tryonResultId`, placeHolder);
+router.delete(`/:tryonId`, deleteTryOn);
 
 export default router;
