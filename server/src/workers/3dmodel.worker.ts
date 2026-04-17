@@ -11,7 +11,7 @@ import {
   mark3DJobFailedState,
   set3DJobThirdPartyTask,
   update3DJobProgress,
-} from '#src/services/3dmodel.service.ts';
+} from '#src/services/model.service.ts';
 import {
   getHunyuanStatus,
   startHunyuan3DGeneration,

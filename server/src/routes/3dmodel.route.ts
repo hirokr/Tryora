@@ -5,7 +5,7 @@ import {
   get3DGenerationJobStatus,
   get3DModelByTryonResultId,
   request3DModelGeneration,
-} from '#src/controllers/3dmodel.controller.ts';
+} from '#src/controllers/model.controller.ts';
 
 const router = Router();
 const MODEL_ROUTE_BASE = '/3d';

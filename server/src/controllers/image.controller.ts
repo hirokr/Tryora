@@ -1,20 +1,11 @@
-import logger from '#src/config/logger.ts';
-import {
-  createTryOnImageGenerationJob,
-  getUserTryOnImageById,
-  getUserTryOnImages,
-  ImageTryOnError,
-} from '#src/services/image.service.ts';
-import { AuthRequest } from '#src/types/authRequest.js';
-import {
-  CreateTryOnImagesInput,
-  getUserTryOnImageByIdParamsSchema,
-  getUserTryOnImagesQuerySchema,
-} from '#src/validations/image.validation.ts';
-import { Response } from 'express';
-import { ZodError } from 'zod/v3';
+import { createJob } from "#src/services/job.service.ts";
+import { findProductById, findVariantById } from "#src/services/product.service.ts";
+import { AuthRequest, Response } from "#src/types/authRequest.js";
+import { JobResponseType } from "#src/types/Job.js";
+import { editProductImage } from "#src/utils/image/imageEdit.ts";
 
-export const createTryOnFromProducts = async (
+// todo: edit image
+export const updateProductAppearance = async (
   req: AuthRequest,
   res: Response
 ) => {
@@ -23,118 +14,74 @@ export const createTryOnFromProducts = async (
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const body = req.body as CreateTryOnImagesInput;
-    const result = await createTryOnImageGenerationJob({
-      userId: req.userId,
-      productIds: body.productIds,
-      bodyImageId: body.bodyImageId,
-      poseImageUrl: body.poseImageUrl,
-      poser: body.poser,
-      category: body.category,
-    });
+    const { productId, variantId } = req.params;
+    const { userPrompt } = req.body;
 
-    return res.status(202).json(result);
-  } catch (error) {
-    if (error instanceof ImageTryOnError) {
-      return res.status(error.statusCode).json({
-        message: error.message,
-        details: error.details,
+    if (!userPrompt || typeof userPrompt !== 'string') {
+      return res.status(400).json({ message: 'Invalid user prompt' });
+    }
+
+    if (!productId ||typeof productId !== 'string') {
+      return res.status(400).json({ message: 'Invalid product id' });
+    }
+
+    const product = await findProductById(productId);
+    let variant;
+
+    if (variantId) {
+      if (typeof variantId !== 'string') {
+        return res.status(400).json({ message: 'Invalid variant id' });
+      }
+      variant = await findVariantById(variantId);
+    }
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    let url = variant ? variant.imageUrl : product.defaultImageUrl;
+
+    const startEditingImage = await editProductImage({
+      productImageUrl: url,
+      userPrompt,
+    });
+    if (!startEditingImage || !startEditingImage.data) {
+      return res.status(500).json({
+        message: 'Failed to start image editing',
       });
     }
 
-    logger.error('[TryOn] Failed to create try-on image', {
-      error: error instanceof Error ? error.message : String(error),
-    });
-
-    return res.status(500).json({
-      message: 'Failed to generate try-on images',
-    });
-  }
-};
-
-export const getUserTryOnImagesPaginated = async (
-  req: AuthRequest,
-  res: Response
-) => {
-  try {
-    if (!req.userId) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-
-    const query = await getUserTryOnImagesQuerySchema.parseAsync(req.query);
-    const result = await getUserTryOnImages({
+    const jobStart: JobResponseType = await createJob({
       userId: req.userId,
-      page: query.page,
-      limit: query.limit,
-      skip: query.skip,
+      productId,
+      jobType: 'IMAGE_EDIT',
+      userPrompt,
+      thirdPartyTaskId: startEditingImage.data.id,
+      outputresultUrl: startEditingImage.data.result_url,
     });
 
-    return res.status(200).json({
-      message: 'Try-on images fetched successfully',
-      pagination: result.pagination,
-      images: result.images,
-    });
-  } catch (error) {
-    if (error instanceof ZodError) {
-      return res.status(400).json({
-        message: error.errors[0]?.message || 'Validation error',
-        errors: error.flatten().fieldErrors,
-      });
-    }
+      await enqueueProductImageEditJob({
 
-    logger.error('[TryOn] Failed to fetch try-on images', {
-      error: error instanceof Error ? error.message : String(error),
-    });
+      })
 
-    return res.status(500).json({
-      message: 'Failed to fetch try-on images',
-    });
-  }
-};
 
-export const getUserTryOnImageByIdHandler = async (
-  req: AuthRequest,
-  res: Response
-) => {
-  try {
-    if (!req.userId) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-
-    const { tryonResultId } = await getUserTryOnImageByIdParamsSchema.parseAsync(
-      req.params
+    const updatedProduct = await updateProductAppearanceInDb(
+      productId,
+      req.body
     );
 
-    const image = await getUserTryOnImageById({
-      userId: req.userId,
-      tryonResultId,
-    });
-
     return res.status(200).json({
-      message: 'Try-on image fetched successfully',
-      image,
+      status: 'success',
+      data: updatedProduct,
     });
   } catch (error) {
-    if (error instanceof ZodError) {
-      return res.status(400).json({
-        message: error.errors[0]?.message || 'Validation error',
-        errors: error.flatten().fieldErrors,
-      });
-    }
-
-    if (error instanceof ImageTryOnError) {
-      return res.status(error.statusCode).json({
-        message: error.message,
-        details: error.details,
-      });
-    }
-
-    logger.error('[TryOn] Failed to fetch try-on image by id', {
-      error: error instanceof Error ? error.message : String(error),
-    });
-
     return res.status(500).json({
-      message: 'Failed to fetch try-on image',
+      message: 'failed to update product appearance',
     });
   }
 };
+}
+
+
+
+
+// todo: image fusion

@@ -6,6 +6,22 @@ export const findProductById = async (productId: string) => {
   });
 };
 
+export const getProductsService = async (limit: number = 20, skip: number = 0) => {
+  return prisma.product.findMany({
+    take: limit,
+    skip: skip,
+    select:{
+      id: true,
+      title: true,
+      source: true,
+      defaultImageUrl: true,
+      price: true,
+      viewCount: true,
+      likeCount: true,
+    }
+  });
+};
+
 export const getProductDetailsById = async (productId: string) => {
   return prisma.product.findUnique({
     where: { id: productId },
@@ -30,30 +46,23 @@ export const getProductDetailsById = async (productId: string) => {
   });
 };
 
-// todo: call external service to get product details and update db record if needed
-export const updateProductAppearance = async (
+export const findVariantById = async (variantId: string) => {
+  return prisma.productVariant.findUnique({
+    where: { id: variantId },
+  });
+};
+
+export const addProductVariant = async (
   productId: string,
-  appearance: {
-    colorTags?: string[];
-    patternTags?: string[];
-  }
+  imageUrl: string,
+  variantData: string
 ) => {
-  const data: {
-    colorTags?: string[];
-    patternTags?: string[];
-  } = {};
-
-  if (appearance.colorTags !== undefined) {
-    data.colorTags = appearance.colorTags;
-  }
-
-  if (appearance.patternTags !== undefined) {
-    data.patternTags = appearance.patternTags;
-  }
-
-  return prisma.product.update({
-    where: { id: productId },
-    data,
+  return prisma.productVariant.create({
+    data: {
+      productId,
+      imageUrl,
+      variantData,
+    },
   });
 };
 

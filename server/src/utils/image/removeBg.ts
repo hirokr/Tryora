@@ -1,29 +1,28 @@
+import path from 'node:path';
 import {
-  removeBackgroundFromImageFile,
+  removeBackgroundFromImageUrl, 
   RemoveBgResult,
-  RemoveBgError,
 } from 'remove.bg';
 
 const API_KEY = process.env.REMOVEBG_API_KEY;
-if (!API_KEY) {
-  throw new Error('Missing REMOVEBG_API_KEY in environment variables');
-}
-const RESOLVED_API_KEY: string = API_KEY;
+const LOCAL_OUTPUT_DIR = path.resolve(__dirname, '../../../assets/output');
 
-export async function removeBackground(inputPath: string, outputPath: string) {
+export async function removeBackground(cloudImageUrl: string, userId: string) {
   try {
-    const result: RemoveBgResult = await removeBackgroundFromImageFile({
-      path: inputPath,
-      apiKey: RESOLVED_API_KEY,
-      size: 'full', // Options: preview, full, auto
-      type: 'person', 
-      outputFile: outputPath,
+    const fileName = `user_id_${userId}.png`;
+    const outputPath = path.join(LOCAL_OUTPUT_DIR, fileName);
+
+    const result: RemoveBgResult = await removeBackgroundFromImageUrl({
+      url: cloudImageUrl, 
+      apiKey: API_KEY!,
+      size: 'full',
+      type: 'person',
+      outputFile: outputPath, 
     });
 
-    return result;
+    return { result, outputPath };
   } catch (errors) {
-    const errs = errors as Array<RemoveBgError>;
-    console.error('Error:', JSON.stringify(errs));
+    console.error('Error:', JSON.stringify(errors));
     throw errors;
   }
 }

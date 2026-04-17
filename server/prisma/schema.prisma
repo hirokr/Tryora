@@ -135,6 +135,7 @@ model Job {
   id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId     String  @map("user_id") @db.Uuid
   productId  String? @map("product_id") @db.Uuid
+  variantId  String? @map("variant_id") @db.Uuid
   userPrompt String? @map("user_prompt") @db.Text
 
   jobType JobType

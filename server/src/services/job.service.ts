@@ -18,6 +18,6 @@ export const createJob = async (
   return {
     jobId: job.id,
     status: job.status,
-    outputresultUrl: job.outputresultUrl,
+    outputresultUrl: data.outputresultUrl,
   };
 };

@@ -1,11 +1,5 @@
 import { Router } from 'express';
 import { authMiddleware } from '#src/middlewares/authenticate.middleware.ts';
-import {
-  delete3DModelByTryonResultId,
-  get3DGenerationJobStatus,
-  get3DModelByTryonResultId,
-  request3DModelGeneration,
-} from '#src/controllers/3dmodel.controller.ts';
 
 const router = Router();
 /**
@@ -18,21 +12,24 @@ const placeHolder = () => console.log('hi');
 router.use(authMiddleware);
 
 // get the jobs
-router.get(`/:jobId`, get3DGenerationJobStatus);
+router.get(`/:jobId`, placeHolder);
 
 // discover tryons
 router.get(`/discover`, placeHolder);
 
 //todo: create actul generation controller and remove this placeholder route
 // 3D model generation route
-router.post(`model/generate`, request3DModelGeneration);
+router.post(`model/generate`, placeHolder);
 
 // image router
 router.post(`image/generate`, placeHolder);
 router.post('/image/edit', placeHolder);
 
-router.get(`/:tryonResultId`, get3DModelByTryonResultId);
+// get users tryon params={image or model}
+router.get(`/user/:userId`, placeHolder);
 
-router.delete(`/:tryonResultId`, delete3DModelByTryonResultId);
+router.get(`/:tryonResultId`, placeHolder);
+
+router.delete(`/:tryonResultId`, placeHolder);
 
 export default router;
