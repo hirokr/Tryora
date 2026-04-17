@@ -1,9 +1,9 @@
 import { AuthRequest } from '#src/types/authRequest.js';
 import { Response } from 'express';
 import {
-  findProductById,
   getProductDetailsById as getProductDetailsByIdFromDb,
-  updateProductAppearance as updateProductAppearanceInDb,
+  getProductsService,
+  getTopTrending,
 } from '#src/services/product.service.ts';
 
 export const getProductDetailsById = async (
@@ -38,39 +38,65 @@ export const getProductDetailsById = async (
   }
 };
 
-export const updateProductAppearance = async (
+export const getProducts = async (req: AuthRequest, res: Response) => {
+  try {
+    const { limit = 20, skip = 0 } = req.query;
+    const numericLimit =
+      typeof limit === 'string' && !isNaN(parseInt(limit))
+        ? parseInt(limit)
+        : 20;
+    const numericSkip =
+      typeof skip === 'string' && !isNaN(parseInt(skip)) ? parseInt(skip) : 0;
+
+    const products = await getProductsService(numericLimit, numericSkip);
+
+    if (!products.length) {
+      return res.status(200).json({
+        status: 'empty',
+        results: [],
+      });
+    }
+
+    res.status(200).json({
+      status: 'success',
+      results: products,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'failed to fetch products',
+    });
+  }
+};
+
+export const getTopTrendingProducts = async (
   req: AuthRequest,
   res: Response
 ) => {
   try {
-    if (!req.userId) {
-      return res.status(401).json({ message: 'Unauthorized' });
+    const { limit = 20, skip = 0 } = req.query;
+    const numericLimit =
+      typeof limit === 'string' && !isNaN(parseInt(limit))
+        ? parseInt(limit)
+        : 20;
+    const numericSkip =
+      typeof skip === 'string' && !isNaN(parseInt(skip)) ? parseInt(skip) : 0;
+
+    const products = await getTopTrending(numericLimit, numericSkip);
+
+    if (!products.length) {
+      return res.status(200).json({
+        status: 'empty',
+        results: [],
+      });
     }
 
-    const { productId } = req.params;
-
-    if (!productId || typeof productId !== 'string') {
-      return res.status(400).json({ message: 'Invalid product id' });
-    }
-
-    const product = await findProductById(productId);
-
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
-
-    const updatedProduct = await updateProductAppearanceInDb(
-      productId,
-      req.body
-    );
-
-    return res.status(200).json({
+    res.status(200).json({
       status: 'success',
-      data: updatedProduct,
+      results: products,
     });
   } catch (error) {
     return res.status(500).json({
-      message: 'failed to update product appearance',
+      message: 'failed to fetch trending products',
     });
   }
 };

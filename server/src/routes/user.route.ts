@@ -173,7 +173,7 @@ router.use(authMiddleware);
 
 /**
  * @swagger
- * /api/user/profile:
+ * /api/user/me:
  *   get:
  *     summary: Get current user profile
  *     description: Returns the authenticated user's profile without sensitive fields.
@@ -195,11 +195,11 @@ router.use(authMiddleware);
  *       500:
  *         description: Failed to fetch user profile
  */
-router.get('/profile', getProfile);
+router.get('/me', getProfile);
 
 /**
  * @swagger
- * /api/user/profile:
+ * /api/user/me:
  *   patch:
  *     summary: Update basic profile fields
  *     description: Updates profile fields such as name and avatar URL for the authenticated user.
@@ -242,7 +242,7 @@ router.get('/profile', getProfile);
  *       500:
  *         description: Failed to update user profile
  */
-router.patch('/profile', updateUserProfileData);
+router.patch('/me', updateUserProfileData);
 
 /**
  * @swagger

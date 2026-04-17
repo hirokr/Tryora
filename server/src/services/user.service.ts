@@ -22,10 +22,41 @@ export async function findUserById(id: string) {
   try {
     const user = await prisma.user.findUnique({
       where: { id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatarUrl: true,
+        age: true,
+        gender: true,
+        location: true,
+        interests: true,
+        passwordHash: true,
+        oauthProvider: true,
+        oauthId: true,
+        emailVerified: true,
+        isActive: true,
+        deletedAt: true,
+      },
     });
     return user;
   } catch (err) {
     console.error('User Not Found:', err);
+    throw err;
+  }
+}
+
+export async function getUserBodyImageUrl(
+  userId: string
+): Promise<string | null> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { userBodyImageUrl: true },
+    });
+    return user?.userBodyImageUrl || null;
+  } catch (err) {
+    console.error('Error fetching user body image URL:', err);
     throw err;
   }
 }

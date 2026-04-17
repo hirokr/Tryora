@@ -1,37 +1,133 @@
 import { Router } from 'express';
-import {
-  authMiddleware,
-  validateRequest,
-} from '#src/middlewares/authenticate.middleware.ts';
+import { authMiddleware } from '#src/middlewares/authenticate.middleware.ts';
 import {
   getProductDetailsById,
-  updateProductAppearance,
+  getProducts,
+  getTopTrendingProducts,
 } from '#src/controllers/product.controller.ts';
-import { editProductImageAppearance } from '#src/controllers/productImageEdit.controller.ts';
-import {
-  editProductImageAppearanceSchema,
-  updateProductAppearanceSchema,
-} from '#src/validations/product.validation.ts';
 
 const router = Router();
-
-router.use(authMiddleware);
 
 /**
  * @swagger
  * tags:
- *   - name: Products
- *     description: Product maintenance endpoints.
+ *   - name: Product
+ *     description: Product browsing and details endpoints.
  */
+
+/**
+ * @swagger
+ * /api/products/trending:
+ *   get:
+ *     summary: Get top trending products
+ *     description: |
+ *       Returns products ranked by `trendingScore` in descending order.
+ *       Supports pagination with `limit` and `skip` query parameters.
+ *       This endpoint is public.
+ *     tags:
+ *       - Product
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: Maximum number of products to return.
+ *         example: 20
+ *       - in: query
+ *         name: skip
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *           default: 0
+ *         description: Number of products to skip.
+ *         example: 0
+ *     responses:
+ *       200:
+ *         description: Trending products fetched successfully or no products available.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - $ref: '#/components/schemas/ProductListSuccessResponse'
+ *                 - $ref: '#/components/schemas/ProductListEmptyResponse'
+ *       500:
+ *         description: Failed to fetch trending products.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiErrorResponse'
+ */
+router.get('/trending', getTopTrendingProducts);
+
+/**
+ * @swagger
+ * /api/products/product:
+ *   get:
+ *     summary: Get products feed
+ *     description: |
+ *       Returns a paginated list of products ordered by creation date (latest first).
+ *       Requires authentication.
+ *     tags:
+ *       - Product
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         example: 20
+ *       - in: query
+ *         name: skip
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *           default: 0
+ *         example: 0
+ *     responses:
+ *       200:
+ *         description: Product list fetched successfully or empty.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               oneOf:
+ *                 - $ref: '#/components/schemas/ProductListSuccessResponse'
+ *                 - $ref: '#/components/schemas/ProductListEmptyResponse'
+ *       401:
+ *         description: Missing or invalid authentication.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiErrorResponse'
+ *       500:
+ *         description: Failed to fetch products.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiErrorResponse'
+ */
+router.get('/product', authMiddleware, getProducts);
 
 /**
  * @swagger
  * /api/products/{productId}:
  *   get:
- *     summary: Get one product details by id
- *     description: Returns one product and related image records for the authenticated user.
+ *     summary: Get product details by ID
+ *     description: |
+ *       Returns a single product with variant metadata and engagement counters.
+ *       Requires authentication.
  *     tags:
- *       - Products
+ *       - Product
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -41,166 +137,40 @@ router.use(authMiddleware);
  *         schema:
  *           type: string
  *           format: uuid
- *         description: Product ID to fetch.
+ *         description: Product identifier.
+ *         example: 50f8f2d6-78c3-4e79-a9a4-a8d8ac09b2d8
  *     responses:
  *       200:
- *         description: Product details fetched successfully
- *       400:
- *         description: Invalid product id
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Product not found
- *       500:
- *         description: Failed to fetch product details
- */
-router.get('/:productId', getProductDetailsById);
-
-/**
- * @swagger
- * /api/products/{productId}/appearance:
- *   patch:
- *     summary: Update product color and pattern tags
- *     description: |
- *       Updates the stored appearance metadata for a product.
- *       Authentication is required.
- *     tags:
- *       - Products
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: productId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: Product ID to update.
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               colorTags:
- *                 type: array
- *                 items:
- *                   type: string
- *                 example: [black, beige]
- *               patternTags:
- *                 type: array
- *                 items:
- *                   type: string
- *                 example: [striped, floral]
- *     responses:
- *       200:
- *         description: Product appearance updated successfully
- *       400:
- *         description: Invalid product id or invalid payload
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Product not found
- *       500:
- *         description: Failed to update product appearance
- */
-router.patch(
-  '/:productId/appearance',
-  validateRequest(updateProductAppearanceSchema),
-  updateProductAppearance
-);
-
-/**
- * @swagger
- * /api/products/{productId}/appearance/ai-edit:
- *   post:
- *     summary: Queue an edited product image generation job
- *     description: |
- *       Creates an asynchronous generation job for product AI-edit.
- *       Use `GET /api/jobs/{jobId}` to poll progress and final output image URL.
- *     tags:
- *       - Products
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: productId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *         description: Product ID to edit.
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - color
- *             properties:
- *               color:
- *                 type: string
- *                 example: black
- *               pattern:
- *                 type: string
- *                 example: striped
- *               prompt:
- *                 type: string
- *                 example: Change only the outfit to matte black with subtle thin stripes.
- *               model:
- *                 type: string
- *                 enum: [v1, v2]
- *                 example: v2
- *               aspectRatio:
- *                 type: string
- *                 enum: [1:1, 2:3, 3:2, 3:4, 4:3, 9:16, 16:9, 9:21, 21:9]
- *                 example: 1:1
- *               inferenceSteps:
- *                 type: integer
- *                 minimum: 1
- *                 maximum: 50
- *                 example: 30
- *               guidanceScale:
- *                 type: number
- *                 minimum: 1
- *                 maximum: 10
- *                 example: 7
- *               format:
- *                 type: string
- *                 enum: [png, jpeg]
- *                 example: png
- *     responses:
- *       202:
- *         description: Product image edit job accepted and queued
+ *         description: Product details fetched successfully.
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               required:
- *                 - jobId
- *                 - status
- *               properties:
- *                 jobId:
- *                   type: string
- *                   format: uuid
- *                 status:
- *                   type: string
- *                   enum: [QUEUED, PROCESSING, COMPLETED, FAILED, CANCELLED]
+ *               $ref: '#/components/schemas/ProductDetailSuccessResponse'
  *       400:
- *         description: Invalid product id or invalid payload
+ *         description: Invalid product ID parameter.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiErrorResponse'
  *       401:
- *         description: Unauthorized
+ *         description: Missing or invalid authentication.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiErrorResponse'
  *       404:
- *         description: Product not found
+ *         description: Product not found.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiErrorResponse'
  *       500:
- *         description: Failed to update product image
+ *         description: Failed to fetch product details.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ApiErrorResponse'
  */
-router.post(
-  '/:productId/appearance/ai-edit',
-  validateRequest(editProductImageAppearanceSchema),
-  editProductImageAppearance
-);
+router.get('/:productId', authMiddleware, getProductDetailsById);
 
 export default router;

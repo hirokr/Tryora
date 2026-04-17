@@ -5,18 +5,24 @@ import { extractSearchData } from '#src/utils/groq.ts';
 import {
   checkIntent,
   createSearch,
+  getSearchesByUserId,
+  setProducts,
+} from '#src/services/search.service.ts';
+import {
   getProductById,
+  getProductsByIds,
   getProductsByfilters,
   getProductsBySearchID,
-  getSearchesByUserId,
-  getTopTrending,
-  setProducts,
-  updateSearchStatus,
   updateTrendingScore,
-} from '#src/services/search.service.ts';
+} from '#src/services/product.service.ts';
+import {
+  getProductIdsByIntent,
+  setProductIdsByIntent,
+} from '#src/utils/redis.ts';
 
 import { searchSerper } from '#src/utils/serper.ts';
 import { Product, type ProductMetricAction } from '#src/types/product.js';
+import { SearchData } from '#src/types/gorq.js';
 
 export const searchProducts = async (req: AuthRequest, res: Response) => {
   let searchRecordId: string | null = null;
@@ -40,23 +46,46 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { intentKey, product, style, occasion, gender, queries } =
-      aiResult.data as {
-        intentKey: string;
-        product: string;
-        style: string;
-        occasion: string;
-        gender: string;
-        queries: string[];
-      };
-
+    const {
+      intentKey,
+      product,
+      style,
+      occasion,
+      gender,
+      category,
+      culturalTags,
+      queries,
+    } = aiResult.data as SearchData;
     const cached = await checkIntent(intentKey);
 
+    const redisProductIds = await getProductIdsByIntent(intentKey);
+    if (redisProductIds?.length) {
+      const cachedProducts = await getProductsByIds(redisProductIds);
+      if (cachedProducts.length) {
+        const productById = new Map(
+          cachedProducts.map(item => [item.id, item])
+        );
+        const orderedProducts = redisProductIds
+          .map(productId => productById.get(productId))
+          .filter(Boolean);
+
+        return res.status(200).json({
+          status: 'cached',
+          intentKey,
+          results: orderedProducts,
+        });
+      }
+    }
+
     if (cached.status === 'cached') {
+      const cachedResults = cached.results ?? [];
+      const cachedProductIds = cachedResults.map(item => item.id);
+      await setProductIdsByIntent(intentKey, cachedProductIds);
+
       return res.status(200).json({
         status: 'cached',
         intentKey,
-        results: cached.results,
+        results: cachedResults,
       });
     }
     const searchRecord = await createSearch({
@@ -67,8 +96,10 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
         style,
         occasion,
         gender,
+        category,
+        culturalTags,
       },
-      geo,
+      location: typeof geo === 'string' ? geo : undefined,
       userId: req.userId,
     });
 
@@ -82,38 +113,30 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
       .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled')
       .flatMap(r => r.value || []);
 
-    if (!successfulResults.length) {
-      await updateSearchStatus(searchRecord.id, 'FAILED', 'No results found');
-
-      return res.status(200).json({
-        status: 'empty',
-        intentKey,
-        results: [],
-      });
-    }
-
     const flatProducts: Product[] = successfulResults;
 
     const uniqueProducts = Array.from(
-      new Map(flatProducts.map(p => [p.link, p])).values()
+      new Map(flatProducts.map(p => [p.searchProductId, p])).values()
     );
 
     await setProducts(searchRecord.id, uniqueProducts);
 
-    await updateSearchStatus(searchRecord.id, 'COMPLETED');
+    const savedProducts = await getProductsBySearchID(searchRecord.id);
+    if (savedProducts.length) {
+      await setProductIdsByIntent(
+        intentKey,
+        savedProducts.map(item => item.id)
+      );
+    }
 
     return res.status(200).json({
       status: 'fresh',
       intentKey,
       searchId: searchRecord.id,
-      results: uniqueProducts,
+      results: savedProducts.length ? savedProducts : uniqueProducts,
     });
   } catch (error: any) {
     console.error('Search Error:', error);
-
-    if (searchRecordId) {
-      await updateSearchStatus(searchRecordId, 'FAILED', error.message);
-    }
 
     return res.status(500).json({
       message: 'Internal server error',
@@ -163,7 +186,7 @@ export const getProductsBySearchId = async (
       return res.status(400).json({ message: 'Invalid search id' });
     }
 
-    const products = await getProductsBySearchID(searchId, req.userId);
+    const products = await getProductsBySearchID(searchId);
 
     if (!products.length) {
       return res.status(200).json({
@@ -286,39 +309,6 @@ export const updateProductMetrics = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     return res.status(500).json({
       message: 'failed to update product metrics',
-    });
-  }
-};
-
-export const getTopTrendingProducts = async (
-  req: AuthRequest,
-  res: Response
-) => {
-  try {
-    const { limit = 20, skip = 0 } = req.query;
-    const numericLimit =
-      typeof limit === 'string' && !isNaN(parseInt(limit))
-        ? parseInt(limit)
-        : 20;
-    const numericSkip =
-      typeof skip === 'string' && !isNaN(parseInt(skip)) ? parseInt(skip) : 0;
-
-    const products = await getTopTrending(numericLimit, numericSkip);
-
-    if (!products.length) {
-      return res.status(200).json({
-        status: 'empty',
-        results: [],
-      });
-    }
-
-    res.status(200).json({
-      status: 'success',
-      results: products,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      message: 'failed to fetch trending products',
     });
   }
 };

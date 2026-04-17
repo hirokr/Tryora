@@ -1,48 +1,44 @@
-# MagiShop Server - Checklist
+# The main todo file of the project
 
-## Setup
+## Resposilibity 
 
-- [x] Install dependencies
-- [x] Configure environment variables
-- [x] Set up database
-- [x] Run migrations
+### Backgorund Worker
+ - Manage jobs
+ - creates recomendations
 
-## Authentication
+## General Tasks
 
-- [ ] Create auth/refresh
-- [ ] Create auth/signup
-- [ ] Create auth/signin
-- [ ] Create auth/signout
-- [ ] Create auth/refresh
-- [ ] Create auth/google/login
-- [ ] Create auth/google/callback -> send token to frontend
-- [ ] Create auth/
+- [x] User authentication
+- [x] User profile create
+- [x] User password recovary and rest
 
-## Documentation
+## Mandatory tasks
 
-- [ ] Document API endpoints
-- [ ] Create setup instructions
-- [ ] Write usage examples
-- [ ] Add troubleshooting guide
+- [x] generate a schema for for all the works
 
-## Testing
+## Module - 1
 
-- [ ] Run all tests
-- [ ] Test error handling
-- [ ] Perform load testing
-- [ ] Manual testing
+- [x] get three images or link of the images, handle three images
+- [x] get user preferences
+- [x] generate 3d model of the base images
+- [x] store the model in the in a storage
+- [x] dress search api, search dresses in real time as a fallback, mainly search in the loal databse and then searchs the other sites for the real time search capabilities
+- [x] get the dresses filter with api and frontend
+- [x] create trending api to get the tending clothes. uses a separate table to store the tendings
 
-## Deployment
+## Module - 2
 
-- [ ] Code review
-- [ ] Security audit
-- [ ] Build production image
-- [ ] Deploy to staging
-- [ ] Deploy to production
+- [x] generate 3d mesh from each dress and store them in the database and the cache and the show and put color and patter on them
+- [ ] change color and patter on the dress image
 
-## Monitoring
+## Moduel - 3
 
-- [ ] Set up logging
-- [ ] Configure alerts
-- [ ] Monitor performance
-- [ ] Track errors
+- [ ] select a body part to make them ware a accesories
+- [x] generate images of the user waring the dresses
+- [ ] Save the outfit waring localy and make wishlist
+- [ ] comaprison screen of the saved/ wishlist items
+- [ ] outfit sharing link
+- [ ] pose generator, make the image/3d model stand in a certain pose
+- [ ] make the wared dresses cache on the user machine
+- [ ] using the keyboard keys make the model interactive
+

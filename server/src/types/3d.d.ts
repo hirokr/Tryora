@@ -1,69 +1,58 @@
-import type { JobStatus, JobType } from '@prisma/client';
+import type { JobType } from '#src/generated/enums.ts';
 
-export interface Generate3DModelOptions {
-  tryonResultId: string;
-  imageUri: string;
-  prompt?: string;
-}
-
-export interface Generate3DModelJobData {
-  generationJobId: string;
-  userId: string;
-  tryonResultId: string;
-  imageUri: string;
-  prompt: string;
-}
-
-export interface TryonResult3DRecord {
-  id: string;
-  resultImageUrl: string;
-  glbUrl: string | null;
-  glbJobId: string | null;
-}
-
-export interface GenerationJobStatusRecord {
-  id: string;
-  jobType: JobType;
-  status: JobStatus;
-  progress: number;
-  currentStage: string | null;
-  outputGlbUrl: string | null;
-  outputImageUrl: string | null;
-  errorMessage: string | null;
-  createdAt: Date;
-  startedAt: Date | null;
-  completedAt: Date | null;
-  retryCount: number;
-}
-
-export interface GenerationJobStatusResponse extends GenerationJobStatusRecord {
-  tryonResultId: string | null;
-  productId: string | null;
-}
-
-export interface GenerationJobProgressRecord {
-  status: JobStatus;
-  progress: number;
-  currentStage: string | null;
-  errorMessage: string | null;
-}
-
+// Types to add to your #src/types/3d.ts
 export interface HunyuanStartRequestPayload {
   input_image_url: string;
   prompt: string;
   face_count: number;
 }
 
-export type HunyuanStartResponse = {
-  id: string; // job id
-};
+export interface HunyuanStatusResponse {
+  request_id: string;
+  status: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  polling_url: string;
+}
 
-export type HunyuanStatusResponse = {
-  id: string;
-  status: 'queued' | 'running' | 'succeeded' | 'failed';
-  output?: {
-    model_url?: string;
-    preview_url?: string;
-  };
-  error?: string;
-};
+export interface HunyuanResultResponse {
+  request_id: string;
+  status:
+    | 'QUEUED'
+    | 'PROCESSING'
+    | 'COMPLETED'
+    | 'FAILED'
+    | 'CANCELLED'
+    | string;
+  model_id?: string;
+  error?: string | null;
+  output: {
+    media_url: string[];
+    media_type: string;
+  } | null;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+}
+
+export interface Generate3DModelJobData {
+  generationJobId: string;
+  userId: string;
+  jobType: JobType;
+  imageUri: string;
+  outputResultUrl: string;
+}
+
+// {
+//   "request_id": "hunyuan-image_019dxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+//   "status": "COMPLETED",
+//   "model_id": "hunyuan-image",
+//   "error": null,
+//   "output": {
+//     "media_url": [
+//       "https://pub-582b7213209642b9b995c96c95a30381.r2.dev/v1/hunyuan-image_019dxxxx-xxxx/output.ext"
+//     ],
+//     "media_type": "application/octet-stream"
+//   },
+//   "created_at": "2026-03-31T10:00:00.000Z",
+//   "updated_at": "2026-03-31T10:00:15.000Z",
+//   "completed_at": "2026-03-31T10:00:15.000Z"
+// }

@@ -1,14 +1,17 @@
 import type {
-  HunyuanStartResponse,
+  HunyuanResultResponse,
   HunyuanStatusResponse,
 } from '#src/types/3d.js';
 import {
   buildHunyuanStartPayload,
   buildPixazoHeaders,
   getPixazoBaseUrl,
-} from '#src/utils/generate3D.ts';
+} from '#src/utils/generateModel.ts';
 
 const HUNYUAN_START_ENDPOINT = 'hunyuan3d-3-0-api-request';
+const HUNYUAN_STATUS_ENDPOINT =
+  process.env.PIXAZO_REQUEST_STATUS_URL ||
+  'https://gateway.pixazo.ai/v2/requests/status';
 
 const parseApiResponse = async <T>(
   response: Response,
@@ -35,27 +38,27 @@ export const startHunyuan3DGeneration = async (
     body: JSON.stringify(payload),
   });
 
-  const data = await parseApiResponse<HunyuanStartResponse>(
+  const data = await parseApiResponse<HunyuanStatusResponse>(
     response,
     'Start API Error'
   );
 
-  if (!data.id) {
-    throw new Error('Invalid response: missing job ID');
+  if (!data.request_id) {
+    throw new Error('Invalid response: missing request ID');
   }
 
-  return data.id;
+  return data.request_id;
 };
 
 export const getHunyuanStatus = async (
-  jobId: string
-): Promise<HunyuanStatusResponse> => {
-  const url = `${getPixazoBaseUrl()}/${HUNYUAN_START_ENDPOINT}/${jobId}`;
+  requestId: string
+): Promise<HunyuanResultResponse> => {
+  const url = `${HUNYUAN_STATUS_ENDPOINT}/${encodeURIComponent(requestId)}`;
 
   const response = await fetch(url, {
     method: 'GET',
     headers: buildPixazoHeaders(),
   });
 
-  return parseApiResponse<HunyuanStatusResponse>(response, 'Status API Error');
+  return parseApiResponse<HunyuanResultResponse>(response, 'Status API Error');
 };
