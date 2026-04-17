@@ -39,13 +39,37 @@ export async function updateTryOnResult(id: string, data: TryOnUpdateDataType) {
   });
 }
 
-export async function getTryOnById(id: string) {
-  return await prisma.tryon.findUnique({
-    where: { id },
+export async function getTryon(limit: number, skip: number) {
+  return await prisma.tryon.findMany({
+    take: limit,
+    skip,
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      resultUrl: true,
+      productIds: true,
+      tryonType: true,
+      provider: true,
+      createdAt: true,
+    },
   });
 }
 
-export async function getTryOnJobsByUserId(userId: string) {
+export async function getTryOnById(id: string) {
+  return await prisma.tryon.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      resultUrl: true,
+      productIds: true,
+      tryonType: true,
+      provider: true,
+      createdAt: true,
+    },
+  });
+}
+
+export async function getTryOnsByUserId(userId: string) {
   return await prisma.tryon.findMany({
     where: { userId },
   });

@@ -112,8 +112,6 @@ export const fuseProductImages = async (req: AuthRequest, res: Response) => {
 
     const productImageUrls = products.map(product => product?.defaultImageUrl);
 
-    // todo: remove background from user image before fusion to improve results
-
     const fuseImage = await tryOnImageClaid(
       tryonImageUrl as string,
       productImageUrls as string[]

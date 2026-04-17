@@ -1,21 +1,5 @@
+import { Generate3DModelJobData } from '#src/types/3d.js';
 import { createCustomQueue } from './base.queue.ts';
-
-export type ModelQueueJobType = 'model-generation';
-
-export interface ModelGenerationQueueParams {
-  jobType: 'model-generation';
-  tryonResultId: string;
-  imageUri: string;
-  prompt?: string;
-}
-
-export type ModelQueueParams = ModelGenerationQueueParams;
-
-export interface Generate3DModelJobData {
-  generationJobId: string;
-  userId: string;
-  params: ModelQueueParams;
-}
 
 export const MODEL_GENERATION_JOB_NAME = 'model-generation-task';
 export const MODEL_GENERATION_QUEUE_NAME = 'model-generation-queue';

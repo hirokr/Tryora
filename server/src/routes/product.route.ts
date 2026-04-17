@@ -8,11 +8,12 @@ import {
 
 const router = Router();
 
+router.get('/trending', getTopTrendingProducts);
+router.get('/:productId', getProductDetailsById);
+
 router.use(authMiddleware);
 
-router.get('/:productId', getProductDetailsById);
 router.get('/product', getProducts);
-
-router.get('/trending', getTopTrendingProducts);
+router.get('/recomendations', () => console.log('hi'));
 
 export default router;

@@ -1,7 +1,4 @@
-import type {
-  HunyuanStartResponse,
-  HunyuanStatusResponse,
-} from '#src/types/3d.js';
+import type { HunyuanStatusResponse } from '#src/types/3d.js';
 import {
   buildHunyuanStartPayload,
   buildPixazoHeaders,
@@ -35,16 +32,16 @@ export const startHunyuan3DGeneration = async (
     body: JSON.stringify(payload),
   });
 
-  const data = await parseApiResponse<HunyuanStartResponse>(
+  const data = await parseApiResponse<HunyuanStatusResponse>(
     response,
     'Start API Error'
   );
 
-  if (!data.id) {
-    throw new Error('Invalid response: missing job ID');
+  if (!data.request_id) {
+    throw new Error('Invalid response: missing request ID');
   }
 
-  return data.id;
+  return data.request_id;
 };
 
 export const getHunyuanStatus = async (
