@@ -1,13 +1,10 @@
 import { Worker, type Job } from 'bullmq';
 import logger from '#src/config/logger.ts';
 import { bullmqConnection } from '#src/queues/bullmq.connection.ts';
-import { PRODUCT_IMAGE_EDIT_QUEUE_NAME } from '#src/queues/ImageEdit.queue.ts';
-// import {
-//   PRODUCT_IMAGE_EDIT_QUEUE_NAME,
-//   type ProductImageEditJobData,
-// } from './types.ts';
-
-ProductImageEditJobData
+import {
+  PRODUCT_IMAGE_EDIT_QUEUE_NAME,
+  type ProductImageEditJobData,
+} from '#src/queues/Image.queue.ts';
 
 /**
  * Worker for handling 20s+ image editing tasks.
@@ -15,10 +12,10 @@ ProductImageEditJobData
 export const productImageEditWorker = new Worker<ProductImageEditJobData>(
   PRODUCT_IMAGE_EDIT_QUEUE_NAME,
   async (job: Job<ProductImageEditJobData>) => {
-    const { generationJobId, editType, sourceImageUrl, productId } = job.data;
+    const { generationJobId, productId, params } = job.data;
 
     logger.info(
-      `[Worker] Starting job ${job.id} for Product ${productId} (Type: ${editType})`
+      `[Worker] Starting job ${job.id} for Product ${productId} (Type: ${params.jobType})`
     );
 
     try {
@@ -29,12 +26,13 @@ export const productImageEditWorker = new Worker<ProductImageEditJobData>(
       await job.updateProgress(100);
 
       return {
-        processedImageUrl: `https://example.com{generationJobId}.webp`,
+        processedImageUrl: `https://example.com/${generationJobId}.webp`,
+        jobType: params.jobType,
         timestamp: new Date().toISOString(),
       };
     } catch (error: any) {
-      logger.error(`[Worker] Failed job ${job.id}: ${error?.message }`);
-      throw error; 
+      logger.error(`[Worker] Failed job ${job.id}: ${error?.message}`);
+      throw error;
     }
   },
   {
@@ -61,3 +59,7 @@ productImageEditWorker.on('completed', job => {
 productImageEditWorker.on('failed', (job, err) => {
   logger.error(`[Worker] Job ${job?.id} failed with ${err.message}`);
 });
+
+export const closeProductImageEditWorker = async () => {
+  await productImageEditWorker.close();
+};

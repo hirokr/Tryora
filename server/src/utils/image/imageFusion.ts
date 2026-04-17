@@ -1,88 +1,55 @@
-import { generateGeminiImage } from '#src/client/geminiImage.client.ts';
+import fetch from 'node-fetch';
 import logger from '#src/config/logger.ts';
-import { storeGeneratedImageBytesToOwnedStorage } from '#src/services/imageStorage.service.ts';
+import { ClaidApiResponse, claidStatus } from '#src/types/image.js';
 
-interface TryOnRequest {
-  personImagePath: string;
-  garmentImagePaths: string[];
-  category?: 'tops' | 'bottoms' | 'full_body';
-  poser?: 'front' | 'side' | 'back';
-}
+const CLAID_API_KEY = process.env.CLAID_API_KEY;
 
-interface TryOnResponse {
-  data: {
-    output_url: string;
-  };
-}
-
-const categoryPoseMap: Record<NonNullable<TryOnRequest['category']>, string> = {
-  tops: 'upper body, neutral stance, arms relaxed',
-  bottoms: 'full body, neutral stance, arms relaxed',
-  full_body: 'full body, neutral stance, arms relaxed',
-};
-
-const poserPoseMap: Record<NonNullable<TryOnRequest['poser']>, string> = {
-  front: 'front view',
-  side: 'side view',
-  back: 'back view',
-};
-
-const buildTryOnPrompt = (input: {
-  category: NonNullable<TryOnRequest['category']>;
-  poser: NonNullable<TryOnRequest['poser']>;
-  clothingRefs: string[];
-}) => {
-  const clothingRefText = input.clothingRefs.join(', ');
-
-  return [
-    'Generate a realistic virtual try-on image.',
-    'Use @Image1 as the person reference and keep identity, body proportions, and pose consistent.',
-    `Use ${clothingRefText} as the clothing references and blend garments naturally on the person.`,
-    `Pose guidance: ${categoryPoseMap[input.category]}, ${poserPoseMap[input.poser]}.`,
-    'Use a minimalistic studio background and keep image quality commercial-grade.',
-  ].join(' ');
-};
-
-export async function generateTryOnImage({
-  personImagePath,
-  garmentImagePaths,
-  category = 'tops',
-  poser = 'front',
-}: TryOnRequest): Promise<TryOnResponse> {
+export async function tryOnImageClaid(
+  modelImage: String,
+  productImagePaths: String[]
+): Promise<ClaidApiResponse | undefined> {
   try {
-    if (!garmentImagePaths.length) {
-      throw new Error('At least one garment image path is required.');
+    if (!CLAID_API_KEY) {
+      throw new Error('CLAID_API_KEY is not configured.');
+    }
+    if (!productImagePaths || productImagePaths.length === 0) {
+      throw new Error('At least one product image path is required.');
     }
 
-    const allImageUrls = [personImagePath, ...garmentImagePaths];
-    const clothingRefs = garmentImagePaths.map(
-      (_, index) => `@Image${index + 2}`
+    const response = await fetch(
+      'https://api.claid.ai/v1/image/ai-fashion-models',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${CLAID_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          output: {
+            number_of_images: 1,
+            format: 'png',
+          },
+          input: {
+            model: modelImage,
+            clothing: productImagePaths,
+          },
+          options: {
+            background: 'minimalistic studio background',
+            pose: 'full body, front view, neutral stance, arms relaxed',
+            aspect_ratio: '9:16',
+          },
+        }),
+      }
     );
+    const claidResponse = (await response.json()) as ClaidApiResponse;
 
-    const generated = await generateGeminiImage({
-      prompt: buildTryOnPrompt({
-        category,
-        poser,
-        clothingRefs,
-      }),
-      imageUrls: allImageUrls,
-      model:
-        process.env.GEMINI_IMAGE_MODEL_TRYON?.trim() ||
-        'gemini-3.1-flash-image-preview',
-      requestLabel: 'Try-on generation',
-    });
+    if (!response.ok) {
+      if (claidResponse.data?.status !== claidStatus.accepted) {
+        throw new Error(`API Error: failed to edit image`);
+      }
 
-    const storedImage = await storeGeneratedImageBytesToOwnedStorage({
-      bytes: generated.outputImageBytes,
-      contentType: generated.outputMimeType,
-      sourceLabel: 'tryon',
-    });
-
-    return {
-      data: {
-        output_url: storedImage.url,
-      },
-    };
+      return claidResponse;
+    }
   } catch (error) {
     logger.error('Try-on generation failed', {
       error: error instanceof Error ? error.message : String(error),

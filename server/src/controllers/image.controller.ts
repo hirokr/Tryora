@@ -1,10 +1,19 @@
-import { createJob } from "#src/services/job.service.ts";
-import { findProductById, findVariantById } from "#src/services/product.service.ts";
-import { AuthRequest, Response } from "#src/types/authRequest.js";
-import { JobResponseType } from "#src/types/Job.js";
-import { editProductImage } from "#src/utils/image/imageEdit.ts";
+import { JobStatus, JobType } from '#src/generated/enums.ts';
+import { enqueueProductImageJob } from '#src/queues/Image.queue.ts';
+import { createJob } from '#src/services/job.service.ts';
+import {
+  findProductById,
+  findVariantById,
+} from '#src/services/product.service.ts';
+import {
+  findUserById,
+  getUserBodyImageUrl,
+} from '#src/services/user.service.ts';
+import { AuthRequest, Response } from '#src/types/authRequest.js';
+import { JobResponseType } from '#src/types/Job.js';
+import { editProductImage } from '#src/utils/image/imageEdit.ts';
+import { tryOnImageClaid } from '#src/utils/image/imageFusion.ts';
 
-// todo: edit image
 export const updateProductAppearance = async (
   req: AuthRequest,
   res: Response
@@ -21,24 +30,27 @@ export const updateProductAppearance = async (
       return res.status(400).json({ message: 'Invalid user prompt' });
     }
 
-    if (!productId ||typeof productId !== 'string') {
+    if (!productId || typeof productId !== 'string') {
       return res.status(400).json({ message: 'Invalid product id' });
     }
 
-    const product = await findProductById(productId);
-    let variant;
-
+    let url;
     if (variantId) {
       if (typeof variantId !== 'string') {
         return res.status(400).json({ message: 'Invalid variant id' });
       }
-      variant = await findVariantById(variantId);
+      const variant = await findVariantById(variantId);
+      if (!variant) {
+        return res.status(404).json({ message: 'Variant not found' });
+      }
+      url = variant.imageUrl;
+    } else {
+      const product = await findProductById(productId);
+      if (!product) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+      url = product.defaultImageUrl;
     }
-
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
-    let url = variant ? variant.imageUrl : product.defaultImageUrl;
 
     const startEditingImage = await editProductImage({
       productImageUrl: url,
@@ -53,35 +65,96 @@ export const updateProductAppearance = async (
     const jobStart: JobResponseType = await createJob({
       userId: req.userId,
       productId,
+      variantId: variantId || undefined,
       jobType: 'IMAGE_EDIT',
       userPrompt,
       thirdPartyTaskId: startEditingImage.data.id,
       outputresultUrl: startEditingImage.data.result_url,
     });
 
-      await enqueueProductImageEditJob({
-
-      })
-
-
-    const updatedProduct = await updateProductAppearanceInDb(
+    await enqueueProductImageJob({
+      generationJobId: jobStart.jobId,
       productId,
-      req.body
-    );
+      params: {
+        jobType: 'image-generation',
+        sourceImageUrl: url,
+        userPrompt,
+        variantId: variantId || undefined,
+      },
+    });
 
     return res.status(200).json({
-      status: 'success',
-      data: updatedProduct,
+      success: true,
+      JobType: JobType.IMAGE_EDIT,
+      status: JobStatus.QUEUED,
+      jobId: jobStart.jobId,
     });
   } catch (error) {
     return res.status(500).json({
+      success: false,
       message: 'failed to update product appearance',
     });
   }
 };
-}
 
+export const fuseProductImages = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
 
+    const { productIds } = req.body;
+    if (!productIds || !Array.isArray(productIds)) {
+      return res.status(400).json({ message: 'Invalid product ids' });
+    }
 
+    const [userImage, products] = await Promise.all([
+      getUserBodyImageUrl(req.userId),
+      Promise.all(productIds.map((id: string) => findProductById(id))),
+    ]);
 
-// todo: image fusion
+    const productImageUrls = products.map(product => product?.defaultImageUrl);
+
+    const fuseImage = await tryOnImageClaid(
+      userImage as string,
+      productImageUrls as string[]
+    );
+
+    if (!fuseImage || !fuseImage.data) {
+      return res.status(500).json({
+        message: 'Failed to start image fusion',
+      });
+    }
+
+    const jobStart: JobResponseType = await createJob({
+      userId: req.userId,
+      productId: productIds[0], // Assuming the first product is the main one for the job
+      variantId: undefined,
+      jobType: 'IMAGE_EDIT',
+      thirdPartyTaskId: fuseImage.data.id,
+      outputresultUrl: fuseImage.data.result_url,
+    });
+
+    await enqueueProductImageJob({
+      generationJobId: jobStart.jobId,
+      productId: productIds[0],
+      params: {
+        jobType: 'image-fusion',
+        productImageUrls: productImageUrls as string[],
+        baseImageUrl: userImage as string,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      JobType: JobType.IMAGE_TRYON,
+      status: JobStatus.QUEUED,
+      jobId: jobStart.jobId,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fuse product images',
+    });
+  }
+};

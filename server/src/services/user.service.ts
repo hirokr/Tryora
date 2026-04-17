@@ -46,6 +46,21 @@ export async function findUserById(id: string) {
   }
 }
 
+export async function getUserBodyImageUrl(
+  userId: string
+): Promise<string | null> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { userBodyImageUrl: true },
+    });
+    return user?.userBodyImageUrl || null;
+  } catch (err) {
+    console.error('Error fetching user body image URL:', err);
+    throw err;
+  }
+}
+
 export async function createUser(data: CreateUserDto): Promise<ReturnUserDto> {
   try {
     const { email, name, passwordHash, avatarUrl } = data;

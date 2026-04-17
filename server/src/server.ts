@@ -1,7 +1,7 @@
 import app, { redisClient } from './app.ts';
 import logger from './config/logger.ts';
 import { close3DModelQueue } from './queues/model.queue.ts';
-import { closeProductImageEditQueue } from './queues/ImageEdit.queue.ts';
+import { closeProductImageEditQueue } from './queues/Image.queue.ts';
 import { closeTryOnImageQueue } from './queues/imageFusion.queue.ts';
 
 const PORT = process.env.PORT || 8000;

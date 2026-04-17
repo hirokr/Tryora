@@ -3,6 +3,7 @@ import { JobStatus, JobType } from '#src/generated/enums.ts';
 export interface JobRequestType {
   userId: string;
   productId: string;
+  variantId?: string;
   thirdPartyTaskId: string;
   outputresultUrl: string;
   jobType?: JobType;
