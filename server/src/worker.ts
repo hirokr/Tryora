@@ -7,7 +7,7 @@ import {
 import {
   closeProductImageEditWorker,
   productImageEditWorker,
-} from '#src/workers/productImageEdit.worker.ts';
+} from '#src/workers/Image.worker.ts';
 import {
   closeTryOnImageWorker,
   tryOnImageWorker,

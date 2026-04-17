@@ -5,10 +5,6 @@ import {
   findProductById,
   findVariantById,
 } from '#src/services/product.service.ts';
-import {
-  findUserById,
-  getUserBodyImageUrl,
-} from '#src/services/user.service.ts';
 import { AuthRequest, Response } from '#src/types/authRequest.js';
 import { JobResponseType } from '#src/types/Job.js';
 import { editProductImage } from '#src/utils/image/imageEdit.ts';
@@ -108,15 +104,17 @@ export const fuseProductImages = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Invalid product ids' });
     }
 
-    const [userImage, products] = await Promise.all([
-      getUserBodyImageUrl(req.userId),
+    const [tryonImageUrl, products] = await Promise.all([
+      getTryOnImage(req.userId),
       Promise.all(productIds.map((id: string) => findProductById(id))),
     ]);
 
     const productImageUrls = products.map(product => product?.defaultImageUrl);
 
+    // todo: remove background from user image before fusion to improve results
+
     const fuseImage = await tryOnImageClaid(
-      userImage as string,
+      tryonImageUrl as string,
       productImageUrls as string[]
     );
 
@@ -128,9 +126,9 @@ export const fuseProductImages = async (req: AuthRequest, res: Response) => {
 
     const jobStart: JobResponseType = await createJob({
       userId: req.userId,
-      productId: productIds[0], // Assuming the first product is the main one for the job
+      productId: productIds[0],
       variantId: undefined,
-      jobType: 'IMAGE_EDIT',
+      jobType: 'IMAGE_TRYON',
       thirdPartyTaskId: fuseImage.data.id,
       outputresultUrl: fuseImage.data.result_url,
     });
@@ -141,7 +139,7 @@ export const fuseProductImages = async (req: AuthRequest, res: Response) => {
       params: {
         jobType: 'image-fusion',
         productImageUrls: productImageUrls as string[],
-        baseImageUrl: userImage as string,
+        baseImageUrl: tryonImageUrl as string,
       },
     });
 
@@ -158,3 +156,6 @@ export const fuseProductImages = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+function getTryOnImage(userId: string): any {
+  throw new Error('Function not implemented.');
+}
