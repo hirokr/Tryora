@@ -30,6 +30,32 @@ export async function findUserById(id: string) {
   }
 }
 
+export async function findUserProfileByUserId(userId: string) {
+  try {
+    const user = await prisma.userProfile.findUnique({
+      where: { userId: userId },
+      select: {
+        id: true,
+        userId: true,
+        age: true,
+        gender: true,
+        location: true,
+        interests: true,
+        tryons: {
+          select: {
+            id: true,
+            imageUrl: true,
+          },
+        },
+      },
+    });
+    return user;
+  } catch (err) {
+    console.error('User Not Found:', err);
+    throw err;
+  }
+}
+
 export async function createUser(data: CreateUserDto): Promise<ReturnUserDto> {
   try {
     const { email, name, passwordHash, avatarUrl } = data;

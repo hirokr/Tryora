@@ -4,6 +4,7 @@ import {
   findUserByEmail,
   findUserById,
   findUserByVerificationToken,
+  findUserProfileByUserId,
   updateUserPassword,
   updateUserProfile,
   verifyUserEmail,
@@ -22,7 +23,6 @@ import {
   deleteAllRefreshTokens,
   deleteCurrentRefreshToken,
 } from '#src/services/token.service.ts';
-import crypto from 'crypto';
 import {
   ChangePasswordSchema,
   updateProfileSchema,
@@ -34,6 +34,17 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
     if (!req.userId) {
       return res.status(401).json({ message: 'User not authenticated' });
     }
+    let userProfileData = null;
+
+    const { profile } = req.query;
+    if (profile === 'true') {
+      userProfileData = await findUserProfileByUserId(req.userId);
+      if (!userProfileData) {
+        return res.status(404).json({ message: 'User profile not found' });
+      }
+      return res.status(200).json(userProfileData);
+    }
+
     const user = await findUserById(req.userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -41,14 +52,20 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 
     const { passwordHash, oauthProvider, oauthId, deletedAt, ...userProfile } =
       user;
-    return res.status(200).json(userProfile);
+    return res.status(200).json({
+      user: userProfile,
+      profile: userProfileData,
+    });
   } catch (error) {
     //  console.error('Error fetching user profile:', error);
     return res.status(500).json({ message: 'Failed to fetch user profile' });
   }
 };
 
-export const updateUserProfileData = async (req: AuthRequest, res: Response) => {
+export const updateUserProfileData = async (
+  req: AuthRequest,
+  res: Response
+) => {
   try {
     if (!req.userId) {
       return res.status(401).json({ message: 'User not authenticated' });

@@ -56,7 +56,7 @@ app.get('/', (req, res) => {
   res.status(200).send('Hello from Tryora!');
 });
 
-app.get('/health', (req, res) => {
+app.head('/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
     timestamp: new Date().toISOString(),
@@ -70,9 +70,9 @@ app.get('/api', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', usersRoutes);
-app.use('/api', model3DRoutes);
-app.use('/api', imageRoutes);
-app.use('/api/profile', profileRoutes);
+app.use('/api/user/profile', profileRoutes);
+app.use('/api/tryon/model', model3DRoutes);
+app.use('/api/tryon/image', imageRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/products', productRoutes);
 
@@ -90,9 +90,9 @@ export const redisClient = redis.createClient({
 });
 
 app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  res
+    .status(404)
+    .json({ succes: false, error: 'Route not found', redirect: '/api-docs' });
 });
 
 export default app;
-
-// !test run

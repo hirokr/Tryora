@@ -35,3 +35,4 @@
 - [ ] pose generator, make the image/3d model stand in a certain pose
 - [ ] make the wared dresses cache on the user machine
 - [ ] using the keyboard keys make the model interactive
+
