@@ -1,7 +1,5 @@
 import {
-  getProductsById,
   getProductsBySearchId,
-  getTopTrendingProducts,
   getUserSearchHistory,
   searchProducts,
   searchProductsByQuery,
@@ -737,7 +735,7 @@ router.get('/:searchId/products', getProductsBySearchId);
  *                   type: string
  *                   example: failed to fetch products for this search
  */
-router.post('/search-by-query', searchProductsByQuery);
+router.post('/search-filter', searchProductsByQuery);
 
 /**
  * @swagger

@@ -10,7 +10,8 @@ datasource db {
 // ENUMS
 
 enum JobType {
-  IMAGE
+  IMAGE_TRYON
+  IMAGE_EDIT
   MODEL
 }
 
@@ -56,7 +57,7 @@ model User {
 
   refreshTokens   RefreshToken[]
   productSearches ProductSearch[]
-  generationJobs  JOB[]
+  generationJobs  Job[]
   likes           Like[]
   tryons          Tryon[]
 
@@ -130,9 +131,11 @@ model Tryon {
   @@map("tryon_results")
 }
 
-model JOB {
-  id     String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId String @map("user_id") @db.Uuid
+model Job {
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String  @map("user_id") @db.Uuid
+  productId  String? @map("product_id") @db.Uuid
+  userPrompt String? @map("user_prompt") @db.Text
 
   jobType JobType
   status  JobStatus @default(QUEUED)
@@ -148,8 +151,8 @@ model JOB {
   startedAt   DateTime? @map("started_at")
   completedAt DateTime? @map("completed_at")
 
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tryonId String @db.Uuid
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tryonId String? @db.Uuid
 
   @@index([status, createdAt])
   @@index([userId, status])

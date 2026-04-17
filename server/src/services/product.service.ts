@@ -9,17 +9,28 @@ export const findProductById = async (productId: string) => {
 export const getProductDetailsById = async (productId: string) => {
   return prisma.product.findUnique({
     where: { id: productId },
-    include: {
-      images: {
+    select: {
+      id: true,
+      title: true,
+      source: true,
+      defaultImageUrl: true,
+      googlelink: true,
+      price: true,
+      rating: true,
+      ratingCount: true,
+      viewCount: true,
+      likeCount: true,
+      variants: {
         select: {
-          id: true,
-          url: true,
+          imageUrl: true,
+          variantData: true,
         },
       },
     },
   });
 };
 
+// todo: call external service to get product details and update db record if needed
 export const updateProductAppearance = async (
   productId: string,
   appearance: {
@@ -43,5 +54,15 @@ export const updateProductAppearance = async (
   return prisma.product.update({
     where: { id: productId },
     data,
+  });
+};
+
+export const getTopTrending = async (limit: number = 20, skip: number = 0) => {
+  return await prisma.product.findMany({
+    orderBy: {
+      trendingScore: 'desc',
+    },
+    take: limit,
+    skip: skip,
   });
 };

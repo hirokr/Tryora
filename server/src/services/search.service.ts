@@ -88,7 +88,6 @@ export const getSearchesByUserId = async (userId: string) => {
 
 export const getProductsBySearchID = async (
   searchId: string,
-  userId: string
 ) => {
   return prisma.product.findMany({ where: { searchId } });
 };
@@ -178,12 +177,3 @@ export const updateTrendingScore = async (
   });
 };
 
-export const getTopTrending = async (limit: number = 20, skip: number = 0) => {
-  return await prisma.product.findMany({
-    orderBy: {
-      trendingScore: 'desc',
-    },
-    take: limit,
-    skip: skip,
-  });
-};

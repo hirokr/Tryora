@@ -1,6 +1,6 @@
 import prisma from '#src/config/database.ts';
 import { JobStatus, JobType } from '#src/generated/enums.ts';
-import { enqueue3DModelJob } from '#src/queues/3dmodel.queue.ts';
+import { enqueue3DModelJob } from '#src/queues/model.queue.ts';
 import type {
   Generate3DModelOptions,
   GenerationJobProgressRecord,

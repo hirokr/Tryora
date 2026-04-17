@@ -10,7 +10,6 @@ import {
   getProductsByfilters,
   getProductsBySearchID,
   getSearchesByUserId,
-  getTopTrending,
   setProducts,
   updateTrendingScore,
 } from '#src/services/search.service.ts';
@@ -122,7 +121,6 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
 
     const savedProducts = await getProductsBySearchID(
       searchRecord.id,
-      req.userId
     );
     if (savedProducts.length) {
       await setProductIdsByIntent(
@@ -188,7 +186,7 @@ export const getProductsBySearchId = async (
       return res.status(400).json({ message: 'Invalid search id' });
     }
 
-    const products = await getProductsBySearchID(searchId, req.userId);
+    const products = await getProductsBySearchID(searchId);
 
     if (!products.length) {
       return res.status(200).json({
@@ -315,35 +313,3 @@ export const updateProductMetrics = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const getTopTrendingProducts = async (
-  req: AuthRequest,
-  res: Response
-) => {
-  try {
-    const { limit = 20, skip = 0 } = req.query;
-    const numericLimit =
-      typeof limit === 'string' && !isNaN(parseInt(limit))
-        ? parseInt(limit)
-        : 20;
-    const numericSkip =
-      typeof skip === 'string' && !isNaN(parseInt(skip)) ? parseInt(skip) : 0;
-
-    const products = await getTopTrending(numericLimit, numericSkip);
-
-    if (!products.length) {
-      return res.status(200).json({
-        status: 'empty',
-        results: [],
-      });
-    }
-
-    res.status(200).json({
-      status: 'success',
-      results: products,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      message: 'failed to fetch trending products',
-    });
-  }
-};

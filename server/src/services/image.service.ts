@@ -1,13 +1,13 @@
 import prisma from '#src/config/database.ts';
 import logger from '#src/config/logger.ts';
 import { JobStatus, JobType } from '#src/generated/enums.ts';
-import { enqueueTryOnImageGenerationJob } from '#src/queues/tryOnImage.queue.ts';
+import { enqueueTryOnImageGenerationJob } from '#src/queues/imageFusion.queue.ts';
 import type {
   Poser,
   TryOnCategory,
   TryOnImageGenerationJobData,
   TryOnImageGenerationQueueResponse,
-} from '#src/types/tryOnJob.js';
+} from '#src/types/tJob.js';
 import { generateTryOnImage } from '#src/utils/image/imageFusion.ts';
 
 const MAX_RETRIES = 3;
