@@ -16,7 +16,7 @@ export async function removeBackground(inputPath: string, outputPath: string) {
       path: inputPath,
       apiKey: RESOLVED_API_KEY,
       size: 'full', // Options: preview, full, auto
-      type: 'person', // Options: person, product, animal, car, etc.
+      type: 'person', 
       outputFile: outputPath,
     });
 
