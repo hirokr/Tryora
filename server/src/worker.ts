@@ -4,6 +4,10 @@ import {
   closeProductImageEditWorker,
   productImageEditWorker,
 } from '#src/workers/image/Image.worker.ts';
+import {
+  closeModelGenerationWorker,
+  modelGenerationWorker,
+} from '#src/workers/model/3dmodel.worker.ts';
 
 let isShuttingDown = false;
 
@@ -16,7 +20,10 @@ const shutdown = async (signal: string) => {
   logger.info(`[BullMQ] Worker shutdown signal received: ${signal}`);
 
   try {
-    await Promise.all([closeProductImageEditWorker()]);
+    await Promise.all([
+      closeProductImageEditWorker(),
+      closeModelGenerationWorker(),
+    ]);
     logger.info('[BullMQ] Worker closed cleanly');
     process.exit(0);
   } catch (error) {
@@ -35,8 +42,12 @@ process.on('SIGTERM', () => {
 
 const startWorkers = async () => {
   try {
-    await productImageEditWorker.waitUntilReady();
+    await Promise.all([
+      productImageEditWorker.waitUntilReady(),
+      modelGenerationWorker.waitUntilReady(),
+    ]);
     logger.info('[BullMQ] Product image edit worker is running');
+    logger.info('[BullMQ] 3D model generation worker is running');
   } catch (error: unknown) {
     logger.error(`[BullMQ] Worker failed to start: ${String(error)}`);
     process.exit(1);

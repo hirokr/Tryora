@@ -1,3 +1,5 @@
+import type { JobType } from '#src/generated/enums.ts';
+
 // Types to add to your #src/types/3d.ts
 export interface HunyuanStartRequestPayload {
   input_image_url: string;
@@ -13,9 +15,15 @@ export interface HunyuanStatusResponse {
 
 export interface HunyuanResultResponse {
   request_id: string;
-  status: 'COMPLETED' | 'FAILED';
-  model_id: string;
-  error: string | null;
+  status:
+    | 'QUEUED'
+    | 'PROCESSING'
+    | 'COMPLETED'
+    | 'FAILED'
+    | 'CANCELLED'
+    | string;
+  model_id?: string;
+  error?: string | null;
   output: {
     media_url: string[];
     media_type: string;
