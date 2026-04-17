@@ -29,6 +29,11 @@ enum Gender {
   UNISEX
 }
 
+enum PROVIDER {
+  CLAID
+  PIXAZO
+}
+
 // USER
 
 model User {
@@ -103,15 +108,15 @@ model Like {
 }
 
 model Tryon {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId      String   @map("user_id") @db.Uuid
-  productId   String[] @map("product_id") @db.Uuid
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  productIds String[] @map("product_id") @db.Uuid
 
   jobId     String @unique @map("job_id") @db.Uuid
   resultUrl String @db.Text
 
   tryonType JobType
-  provider  String? @map("model_version") @db.VarChar(50)
+  provider  PROVIDER?
 
   isFavorite Boolean @default(false) @map("is_favorite")
   isPublic   Boolean @default(false) @map("is_public")
@@ -125,7 +130,7 @@ model Tryon {
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([userId, isFavorite])
-  @@index([productId])
+  @@index([productIds])
   @@index([deletedAt])
   @@map("tryon_results")
 }
