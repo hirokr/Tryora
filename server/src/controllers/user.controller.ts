@@ -4,7 +4,6 @@ import {
   findUserByEmail,
   findUserById,
   findUserByVerificationToken,
-  findUserProfileByUserId,
   updateUserPassword,
   updateUserProfile,
   verifyUserEmail,
@@ -34,16 +33,6 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
     if (!req.userId) {
       return res.status(401).json({ message: 'User not authenticated' });
     }
-    let userProfileData = null;
-
-    const { profile } = req.query;
-    if (profile === 'true') {
-      userProfileData = await findUserProfileByUserId(req.userId);
-      if (!userProfileData) {
-        return res.status(404).json({ message: 'User profile not found' });
-      }
-      return res.status(200).json(userProfileData);
-    }
 
     const user = await findUserById(req.userId);
     if (!user) {
@@ -54,7 +43,6 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
       user;
     return res.status(200).json({
       user: userProfile,
-      profile: userProfileData,
     });
   } catch (error) {
     //  console.error('Error fetching user profile:', error);

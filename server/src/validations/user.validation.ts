@@ -5,6 +5,11 @@ export const updateProfileSchema = z
   .object({
     name: z.string().trim().min(1, 'Name cannot be empty').optional(),
     avatarUrl: z.string().url('Invalid avatar URL').trim().optional(),
+    age: z.number().min(0).optional(),
+    gender: z.string().optional(),
+    location: z.string().optional(),
+    interests: z.array(z.string()).optional(),
+    ethnicity: z.string().optional(),
   })
   .refine(data => Object.keys(data).length > 0, {
     message: 'At least one field (name or avatarUrl) must be provided',

@@ -45,31 +45,17 @@ export const createSearch = async (data: {
   return searchRecord;
 };
 
-export const updateSearchStatus = async (
-  searchId: string,
-  status: 'PENDING' | 'COMPLETED' | 'FAILED',
-  errorMessage?: string
-) => {
-  return prisma.productSearch.update({
-    where: { id: searchId },
-    data: {
-      status,
-      errorMessage,
-      completedAt: status === 'COMPLETED' ? new Date() : undefined,
-    },
-  });
-};
-
 export const setProducts = async (searchId: string, productData: Product[]) => {
-  if (!productData.length) return { count: 0 };
-
   const data = productData.map(p => ({
-    searchId, // 🔥 FIXED: required relation field
+    searchId,
     title: p.title,
-    price: p.price,
-    link: p.link,
-    image: p.image,
     source: p.source,
+    googlelink: p.googlelink,
+    price: p.price,
+    defaultImageUrl: p.defaultImageUrl,
+    rating: p.rating,
+    ratingCount: p.ratingCount,
+    searchProductId: p.searchProductId,
   }));
 
   return prisma.product.createMany({
@@ -104,7 +90,21 @@ export const getProductsBySearchID = async (
   searchId: string,
   userId: string
 ) => {
-  return prisma.product.findMany({ where: { searchId} });
+  return prisma.product.findMany({ where: { searchId } });
+};
+
+export const getProductsByIds = async (productIds: string[]) => {
+  if (!productIds.length) {
+    return [];
+  }
+
+  return prisma.product.findMany({
+    where: {
+      id: {
+        in: productIds,
+      },
+    },
+  });
 };
 
 export const getProductById = async (productId: string) => {

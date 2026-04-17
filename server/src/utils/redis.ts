@@ -3,6 +3,10 @@ import { redisClient } from '#src/app.ts';
 let DEFAULT_EXPIRATION =
   Number(process.env.REDIS_DEFAULT_EXPIRATION) || 15 * 60 * 60 * 24;
 
+const PRODUCT_INTENT_CACHE_PREFIX = 'product-intent';
+const PRODUCT_INTENT_EXPIRATION =
+  Number(process.env.REDIS_PRODUCT_INTENT_EXPIRATION) || DEFAULT_EXPIRATION;
+
 // ! Gpt experimental function, not used anywhere yet
 export const getSetRedis = (key: string, cb: any) => {
   return new Promise(async (resolve, reject) => {
@@ -36,6 +40,9 @@ const parseUserIdFromSessionCacheKey = (key: string): string | null => {
 
   return userId;
 };
+
+const makeProductIntentCacheKey = (intentKey: string): string =>
+  `${PRODUCT_INTENT_CACHE_PREFIX}:${intentKey}`;
 
 // DONE: Create a utility function to get and set cache with expiration
 export const getSetCache = async <T>(
@@ -89,6 +96,55 @@ export const setCache = async (
   expiration?: number
 ) => {
   await _addKeyAndIndex(key, userId, value, expiration);
+};
+
+export const getProductIdsByIntent = async (
+  intentKey: string
+): Promise<string[] | null> => {
+  const key = makeProductIntentCacheKey(intentKey);
+  const data = await redisClient.get(key);
+
+  if (!data) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(data);
+    if (!Array.isArray(parsed)) {
+      return null;
+    }
+
+    const productIds = parsed.filter(
+      (value): value is string => typeof value === 'string' && value.length > 0
+    );
+
+    return productIds.length > 0 ? productIds : null;
+  } catch {
+    return null;
+  }
+};
+
+export const setProductIdsByIntent = async (
+  intentKey: string,
+  productIds: string[]
+): Promise<void> => {
+  const normalizedProductIds = Array.from(
+    new Set(
+      productIds.filter(
+        (value): value is string =>
+          typeof value === 'string' && value.length > 0
+      )
+    )
+  );
+
+  if (!normalizedProductIds.length) {
+    return;
+  }
+
+  const key = makeProductIntentCacheKey(intentKey);
+  await redisClient.set(key, JSON.stringify(normalizedProductIds), {
+    EX: PRODUCT_INTENT_EXPIRATION,
+  });
 };
 
 // DONE: Create a utility function to generate cache key for user sessions

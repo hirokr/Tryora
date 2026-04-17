@@ -31,12 +31,17 @@ enum Gender {
 // USER
 
 model User {
-  id               String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email            String  @unique @db.VarChar(255)
-  passwordHash     String? @map("password_hash") @db.VarChar(255)
-  name             String  @db.VarChar(255)
-  avatarUrl        String? @map("avatar_url") @db.Text
-  userBodyImageUrl String? @map("user_body_image_url") @db.Text
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email            String   @unique @db.VarChar(255)
+  passwordHash     String?  @map("password_hash") @db.VarChar(255)
+  name             String   @db.VarChar(255)
+  avatarUrl        String?  @map("avatar_url") @db.Text
+  userBodyImageUrl String?  @map("user_body_image_url") @db.Text
+  age              Int?     @db.Integer
+  ethnicity        String?  @db.VarChar(100)
+  gender           Gender   @default(UNISEX)
+  interests        String[] @map("interests")
+  location         String?  @db.VarChar(255)
 
   verificationToken String? @map("verification_token") @db.VarChar(255)
   emailVerified     Boolean @default(false) @map("email_verified")
@@ -49,33 +54,16 @@ model User {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  profile         UserProfile?
-  tryonResults    Tryon[]
   refreshTokens   RefreshToken[]
   productSearches ProductSearch[]
   generationJobs  JOB[]
   likes           Like[]
+  tryons          Tryon[]
 
   @@unique([oauthProvider, oauthId])
   @@index([email])
   @@index([deletedAt])
   @@map("users")
-}
-
-// USER PROFILE
-model UserProfile {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  age       Int?     @db.Integer
-  ethnicity String?  @db.VarChar(100)
-  gender    Gender
-  interests String[] @map("interests")
-  location  String?  @db.VarChar(255)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tryons    Tryon[]
-
-  @@unique([userId])
-  @@map("user_profiles")
 }
 
 model RefreshToken {
@@ -132,9 +120,8 @@ model Tryon {
   createdAt DateTime  @default(now()) @map("created_at")
   deletedAt DateTime? @map("deleted_at")
 
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userProfile UserProfile @relation(fields: [userImageId], references: [id], onDelete: Cascade)
-  products    Product[]
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products Product[]
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([userId, isFavorite])
@@ -206,14 +193,14 @@ model Product {
   title           String  @db.VarChar(500)
   source          String? @db.VarChar(100)
   googlelink      String? @db.Text
-  price           Float?
+  price           String?
   defaultImageUrl String  @db.Text
   rating          Int?    @default(0)
   ratingCount     Int?    @default(0)
   searchProductId String?
 
   // Recommendation Data
-  preferedGender Gender
+  preferedGender Gender   @default(UNISEX)
   ageRange       String?  @map("age_range") @db.VarChar(50)
   culturalTags   String[] @map("cultural_tags")
   extarnalTags   String[] @map("external_tags")

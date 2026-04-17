@@ -6,17 +6,22 @@ import {
   checkIntent,
   createSearch,
   getProductById,
+  getProductsByIds,
   getProductsByfilters,
   getProductsBySearchID,
   getSearchesByUserId,
   getTopTrending,
   setProducts,
-  updateSearchStatus,
   updateTrendingScore,
 } from '#src/services/search.service.ts';
+import {
+  getProductIdsByIntent,
+  setProductIdsByIntent,
+} from '#src/utils/redis.ts';
 
 import { searchSerper } from '#src/utils/serper.ts';
 import { Product, type ProductMetricAction } from '#src/types/product.js';
+import { SearchData } from '#src/types/gorq.js';
 
 export const searchProducts = async (req: AuthRequest, res: Response) => {
   let searchRecordId: string | null = null;
@@ -40,23 +45,46 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { intentKey, product, style, occasion, gender, queries } =
-      aiResult.data as {
-        intentKey: string;
-        product: string;
-        style: string;
-        occasion: string;
-        gender: string;
-        queries: string[];
-      };
-
+    const {
+      intentKey,
+      product,
+      style,
+      occasion,
+      gender,
+      category,
+      culturalTags,
+      queries,
+    } = aiResult.data as SearchData;
     const cached = await checkIntent(intentKey);
 
+    const redisProductIds = await getProductIdsByIntent(intentKey);
+    if (redisProductIds?.length) {
+      const cachedProducts = await getProductsByIds(redisProductIds);
+      if (cachedProducts.length) {
+        const productById = new Map(
+          cachedProducts.map(item => [item.id, item])
+        );
+        const orderedProducts = redisProductIds
+          .map(productId => productById.get(productId))
+          .filter(Boolean);
+
+        return res.status(200).json({
+          status: 'cached',
+          intentKey,
+          results: orderedProducts,
+        });
+      }
+    }
+
     if (cached.status === 'cached') {
+      const cachedResults = cached.results ?? [];
+      const cachedProductIds = cachedResults.map(item => item.id);
+      await setProductIdsByIntent(intentKey, cachedProductIds);
+
       return res.status(200).json({
         status: 'cached',
         intentKey,
-        results: cached.results,
+        results: cachedResults,
       });
     }
     const searchRecord = await createSearch({
@@ -67,6 +95,8 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
         style,
         occasion,
         gender,
+        category,
+        culturalTags,
       },
       geo,
       userId: req.userId,
@@ -82,38 +112,33 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
       .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled')
       .flatMap(r => r.value || []);
 
-    if (!successfulResults.length) {
-      await updateSearchStatus(searchRecord.id, 'FAILED', 'No results found');
-
-      return res.status(200).json({
-        status: 'empty',
-        intentKey,
-        results: [],
-      });
-    }
-
     const flatProducts: Product[] = successfulResults;
 
     const uniqueProducts = Array.from(
-      new Map(flatProducts.map(p => [p.link, p])).values()
+      new Map(flatProducts.map(p => [p.searchProductId, p])).values()
     );
 
     await setProducts(searchRecord.id, uniqueProducts);
 
-    await updateSearchStatus(searchRecord.id, 'COMPLETED');
+    const savedProducts = await getProductsBySearchID(
+      searchRecord.id,
+      req.userId
+    );
+    if (savedProducts.length) {
+      await setProductIdsByIntent(
+        intentKey,
+        savedProducts.map(item => item.id)
+      );
+    }
 
     return res.status(200).json({
       status: 'fresh',
       intentKey,
       searchId: searchRecord.id,
-      results: uniqueProducts,
+      results: savedProducts.length ? savedProducts : uniqueProducts,
     });
   } catch (error: any) {
     console.error('Search Error:', error);
-
-    if (searchRecordId) {
-      await updateSearchStatus(searchRecordId, 'FAILED', error.message);
-    }
 
     return res.status(500).json({
       message: 'Internal server error',

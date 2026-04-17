@@ -1,23 +1,5 @@
+import { ExtractSearchDataResult, SearchData } from '#src/types/gorq.js';
 import Groq from 'groq-sdk';
-
-type SearchData = {
-  intentKey: string;
-  product: string;
-  style: string;
-  occasion: string;
-  gender: string;
-  queries: string[];
-};
-
-type ExtractSearchDataResult =
-  | {
-      status: true;
-      data: SearchData;
-    }
-  | {
-      status: false;
-      message: string;
-    };
 
 const isSearchData = (value: unknown): value is SearchData => {
   if (!value || typeof value !== 'object') return false;
@@ -50,7 +32,9 @@ From user input, extract:
 3. style
 4. occasion
 5. gender
-6. 3-5 Google shopping queries
+6. category
+7. culturalTags
+8. 3-5 Google shopping queries
 
 Rules:
 - intentKey must be reusable (e.g. wedding_saree_elegant)
@@ -81,6 +65,8 @@ export async function extractSearchData(
               style: { type: 'string' },
               occasion: { type: 'string' },
               gender: { type: 'string' },
+              culturalTags: { type: 'array', items: { type: 'string' } },
+              category: { type: 'string' },
               queries: {
                 type: 'array',
                 items: { type: 'string' },
@@ -94,6 +80,8 @@ export async function extractSearchData(
               'style',
               'occasion',
               'gender',
+              'culturalTags',
+              'category',
               'queries',
             ],
             additionalProperties: false,

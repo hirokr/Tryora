@@ -22,31 +22,21 @@ export async function findUserById(id: string) {
   try {
     const user = await prisma.user.findUnique({
       where: { id },
-    });
-    return user;
-  } catch (err) {
-    console.error('User Not Found:', err);
-    throw err;
-  }
-}
-
-export async function findUserProfileByUserId(userId: string) {
-  try {
-    const user = await prisma.userProfile.findUnique({
-      where: { userId: userId },
       select: {
         id: true,
-        userId: true,
+        email: true,
+        name: true,
+        avatarUrl: true,
         age: true,
         gender: true,
         location: true,
         interests: true,
-        tryons: {
-          select: {
-            id: true,
-            imageUrl: true,
-          },
-        },
+        passwordHash: true,
+        oauthProvider: true,
+        oauthId: true,
+        emailVerified: true,
+        isActive: true,
+        deletedAt: true,
       },
     });
     return user;

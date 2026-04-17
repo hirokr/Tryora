@@ -1,16 +1,12 @@
 export type Product = {
   title: string;
-  searchId: string;
-  price?: number | null;
-  link?: string | null;
-  currency?: string | null;
-  image: string;
-  category?: string | null;
-  colorTags?: any;
-  patternTags?: any;
-  brand?: string | null;
-  source?: string | null;
-  rating?: number | null;
+  source: string | null;
+  googlelink: string | null;
+  price: string | null;
+  defaultImageUrl: string;
+  rating: number | null;
+  ratingCount: number | null;
+  searchProductId: string | null;
 };
 
 export type ProductMetricAction = 'VIEW' | 'CLICK' | 'LIKE';
