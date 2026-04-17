@@ -5,7 +5,7 @@ import { pollClaidUntilComplete } from './claid.poller.ts';
 import { handleUrlUpload } from '#src/utils/uploadthings.ts';
 import {
   getJobById,
-  updateJob,
+  updateJobResult,
   updateJobStatus,
 } from '#src/services/job.service.ts';
 import { JobStatus } from '#src/generated/browser.ts';
@@ -14,10 +14,15 @@ import { ProductImageEditJobData } from '#src/types/image.js';
 export const processImageJob = async (
   queueJob: Job<ProductImageEditJobData>
 ): Promise<void> => {
-  const { generationJobId, jobType } = queueJob.data;
+  const { generationJobId } = queueJob.data;
 
   try {
-    const { id: jobId, thirdPartyTaskId } = await getJobById(generationJobId);
+    const { id: jobId, thirdPartyTaskId, jobType } =
+      await getJobById(generationJobId);
+
+    if (!thirdPartyTaskId) {
+      throw new Error(`Missing third-party task ID for job ${generationJobId}.`);
+    }
 
     await updateJobStatus(jobId, JobStatus.PROCESSING);
 
@@ -29,7 +34,7 @@ export const processImageJob = async (
 
     const claidResultUrl = await pollClaidUntilComplete(
       jobType,
-      thirdPartyTaskId as string,
+      thirdPartyTaskId,
       generationJobId
     );
 
@@ -49,18 +54,13 @@ export const processImageJob = async (
       uploadedUrl: response[0]?.data.ufsUrl,
     });
 
-    const updateJobData = {
-      outputresultUrl: response[0].data.ufsUrl,
-      status: JobStatus.COMPLETED,
-    };
-
-    await updateJob(generationJobId, updateJobData);
+    await updateJobResult(generationJobId, response[0].data.ufsUrl);
 
     logger.info('[ImageWorker] Image generation completed', {
       generationJobId,
     });
   } catch (error) {
-    await updateJob(generationJobId, { status: JobStatus.FAILED });
+    await updateJobStatus(generationJobId, JobStatus.FAILED);
 
     logger.error('[ImageWorker] Failed to process image job', {
       generationJobId,

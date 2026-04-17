@@ -63,17 +63,17 @@ export const updateProductAppearance = async (
       userId: req.userId,
       productId,
       variantId: variantId || undefined,
-      jobType: 'IMAGE_EDIT',
+      jobType: JobType.IMAGE_EDIT,
       userPrompt,
-      thirdPartyTaskId: startEditingImage.data.id,
+      thirdPartyTaskId: String(startEditingImage.data.id),
       outputresultUrl: startEditingImage.data.result_url,
     });
 
     await enqueueProductImageJob({
+      jobType: JobType.IMAGE_EDIT,
       generationJobId: jobStart.jobId,
       productId,
       params: {
-        jobType: 'image-generation',
         sourceImageUrl: url,
         userPrompt,
         variantId: variantId || undefined,
@@ -129,16 +129,16 @@ export const fuseProductImages = async (req: AuthRequest, res: Response) => {
       userId: req.userId,
       productId: productIds[0],
       variantId: undefined,
-      jobType: 'IMAGE_TRYON',
-      thirdPartyTaskId: fuseImage.data.id,
+      jobType: JobType.IMAGE_TRYON,
+      thirdPartyTaskId: String(fuseImage.data.id),
       outputresultUrl: fuseImage.data.result_url,
     });
 
     await enqueueProductImageJob({
+      jobType: JobType.IMAGE_TRYON,
       generationJobId: jobStart.jobId,
       productId: productIds[0],
       params: {
-        jobType: 'image-fusion',
         productImageUrls: productImageUrls as string[],
         baseImageUrl: tryonImageUrl as string,
       },
