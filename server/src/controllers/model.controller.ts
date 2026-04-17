@@ -4,7 +4,7 @@ import { createJob } from '#src/services/job.service.ts';
 import { getTryOnById } from '#src/services/tryon.service.ts';
 import { HunyuanStatusResponse } from '#src/types/3d.js';
 import { AuthRequest, Response } from '#src/types/authRequest.js';
-import { JobResponseType } from '#src/types/Job.js';
+import { JobResponseType } from '#src/types/databaseJobs.js';
 import {
   buildHunyuanStartPayload,
   generate3DModelTryon,

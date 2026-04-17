@@ -1,13 +1,8 @@
 import prisma from '#src/config/database.ts';
 import { JobStatus, JobType } from '#src/generated/enums.ts';
 import { JobUpdateInput } from '#src/generated/models.ts';
-import {
-  JOB_FULL_SELECT,
-  JOB_SUMMARY_SELECT,
-  JobFilters,
-  JobRequestType,
-  JobResponseType,
-} from '#src/types/Job.js';
+import {  JOB_FULL_SELECT, JOB_SUMMARY_SELECT, JobFilters, JobRequestType, JobResponseType } from '#src/types/databaseJobs.js';
+
 
 const toJobResponse = (job: {
   id: string;

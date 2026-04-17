@@ -11,7 +11,7 @@ import {
 } from '#src/services/tryon.service.ts';
 import { discoverTryOns } from '#src/controllers/tryon.controller.ts';
 import { generateModelTryon } from '#src/controllers/model.controller.ts';
-import { getJobById } from '#src/services/job.service.ts';
+import { getTryonJobStatus } from '#src/controllers/job.controller.ts';
 
 const router = Router();
 /**
@@ -22,8 +22,8 @@ const router = Router();
  */
 router.use(authMiddleware);
 
-// get the jobs
-router.get(`/:jobId`, getJobById);
+// get a specific try-on generation job status
+router.get('/jobs/:jobId', getTryonJobStatus);
 
 // discover tryons
 router.get(`/discover`, discoverTryOns);
@@ -38,8 +38,8 @@ router.post('/image/edit', updateProductAppearance);
 // get users tryon params={image or model}
 router.get(`/user/:userId`, getTryOnsByUserId);
 
-router.get(`/:tryonId`, getTryOnById);
+router.get('/item/:tryonId', getTryOnById);
 
-router.delete(`/:tryonId`, deleteTryOn);
+router.delete('/item/:tryonId', deleteTryOn);
 
 export default router;

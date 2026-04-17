@@ -32,7 +32,7 @@ export type JobUpdateInput = Partial<{
   completedAt: Date;
 }>;
 
-const JOB_SUMMARY_SELECT = {
+export const JOB_SUMMARY_SELECT = {
   id: true,
   status: true,
   jobType: true,
@@ -40,7 +40,7 @@ const JOB_SUMMARY_SELECT = {
   createdAt: true,
 } as const;
 
-const JOB_FULL_SELECT = {
+export const JOB_FULL_SELECT = {
   id: true,
   userId: true,
   productId: true,
@@ -53,3 +53,28 @@ const JOB_FULL_SELECT = {
   completedAt: true,
   createdAt: true,
 } as const;
+
+export interface TryonSocketData {
+  id: string | null;
+  userId: string;
+  jobId: string;
+  resultUrl: string | null;
+  productIds: string[];
+  tryonType: JobType;
+  provider: PROVIDER | null;
+  createdAt: Date;
+  isPersisted: boolean;
+}
+
+export interface TryonJobStatusPayload {
+  jobId: string;
+  status: JobStatus;
+  jobType: JobType;
+  outputresultUrl: string | null;
+  tryonData: TryonSocketData | null;
+}
+
+export interface TryonJobStatusState {
+  ownerUserId: string;
+  payload: TryonJobStatusPayload;
+}

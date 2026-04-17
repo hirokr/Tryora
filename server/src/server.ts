@@ -2,6 +2,11 @@ import app, { redisClient } from './app.ts';
 import logger from './config/logger.ts';
 import { close3DModelQueue } from './queues/model.queue.ts';
 import { closeProductImageQueue } from './queues/Image.queue.ts';
+import { createServer } from 'node:http';
+import {
+  closeSocketServer,
+  initializeSocketServer,
+} from './socket/socket.server.ts';
 
 const PORT = process.env.PORT || 8000;
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -15,7 +20,10 @@ redisClient
     logger.error(`Failed to connect to Redis: ${String(err)}`);
   });
 
-const server = app.listen(PORT, () => {
+const httpServer = createServer(app);
+initializeSocketServer(httpServer);
+
+const server = httpServer.listen(PORT, () => {
   logger.info(`Server is running at http://localhost:${PORT}`);
 });
 
@@ -27,6 +35,7 @@ const shutdown = async (signal: string) => {
       await Promise.all([
         close3DModelQueue(),
         closeProductImageQueue(),
+        closeSocketServer(),
       ]);
 
       if (redisClient.isOpen) {
