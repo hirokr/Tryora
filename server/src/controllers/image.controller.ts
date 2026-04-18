@@ -62,7 +62,7 @@ export const updateProductAppearance = async (
     const jobStart: JobResponseType = await createJob({
       userId: req.userId,
       productId,
-      variantId: variantId || undefined,
+      variantId: (variantId as string) || undefined,
       jobType: JobType.IMAGE_EDIT,
       userPrompt,
       thirdPartyTaskId: String(startEditingImage.data.id),
@@ -76,7 +76,7 @@ export const updateProductAppearance = async (
       params: {
         sourceImageUrl: url,
         userPrompt,
-        variantId: variantId || undefined,
+        variantId: (variantId as string) || undefined,
       },
     });
 
