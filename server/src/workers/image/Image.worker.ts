@@ -3,7 +3,7 @@ import logger from '#src/config/logger.ts';
 import { bullmqConnection } from '#src/queues/bullmq.connection.ts';
 
 import { processImageJob } from './image.processor.ts';
-import { ProductImageEditJobData } from '#src/types/image.js';
+import { ProductImageEditJobData } from '#src/types/typesimage.js';
 import { PRODUCT_IMAGE_EDIT_QUEUE_NAME } from '#src/queues/Image.queue.ts';
 
 const QUEUE_PREFIX = process.env.BULLMQ_PREFIX || 'tryora';
@@ -33,7 +33,6 @@ productImageEditWorker.on('failed', (job, error) => {
     error: error.message,
   });
 });
-
 
 export const closeProductImageEditWorker = async (): Promise<void> => {
   await productImageEditWorker.close();

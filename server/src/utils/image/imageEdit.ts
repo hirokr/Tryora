@@ -1,11 +1,7 @@
 import fetch from 'node-fetch';
 import logger from '#src/config/logger.ts';
+import { ClaidApiResponse, ClaidImageEditRequest, claidStatus } from '#src/types/typesimage.ts';
 
-import {
-  ClaidApiResponse,
-  ClaidImageEditRequest,
-  claidStatus,
-} from '#src/types/image.js';
 
 const CLAID_API_KEY = process.env.CLAID_API_KEY;
 

@@ -1,3 +1,5 @@
+import { JobType } from "#src/generated/enums.ts";
+
 export type GeneratedImageStorageInput = {
   sourceUrl: string;
 };

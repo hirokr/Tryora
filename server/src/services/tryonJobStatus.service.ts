@@ -1,10 +1,7 @@
 import { JobStatus, JobType, PROVIDER } from '#src/generated/enums.ts';
 import { getJobById } from '#src/services/job.service.ts';
 import { getTryOnByJobId } from '#src/services/tryon.service.ts';
-import {
-  TryonJobStatusState,
-  TryonSocketData,
-} from '#src/types/databaseJobs.js';
+import { TryonJobStatusState, TryonSocketData } from '#src/types/jobs.js';
 
 const TERMINAL_JOB_STATUSES = new Set<JobStatus>([
   JobStatus.COMPLETED,

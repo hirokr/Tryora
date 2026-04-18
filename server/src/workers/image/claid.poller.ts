@@ -1,11 +1,13 @@
 import fetch from 'node-fetch';
 import { JobType } from '#src/generated/enums.ts';
-import { ClaidTaskStatusResponse, claidStatus } from '#src/types/image.js';
+import { ClaidTaskStatusResponse, claidStatus } from '#src/types/typesimage.js';
 
 const CLAID_API_BASE_URL = 'https://api.claid.ai';
 const CLAID_POLL_INTERVAL_MS = 10_000;
-const CLAID_POLL_REQUEST_TIMEOUT_MS = Number(process.env.CLAID_POLL_REQUEST_TIMEOUT_MS) || 15_000;
-const CLAID_MAX_POLL_ATTEMPTS = Number(process.env.CLAID_MAX_POLL_ATTEMPTS) || 8;
+const CLAID_POLL_REQUEST_TIMEOUT_MS =
+  Number(process.env.CLAID_POLL_REQUEST_TIMEOUT_MS) || 15_000;
+const CLAID_MAX_POLL_ATTEMPTS =
+  Number(process.env.CLAID_MAX_POLL_ATTEMPTS) || 8;
 const CLAID_API_KEY = process.env.CLAID_API_KEY;
 
 const sleep = (ms: number): Promise<void> =>
@@ -81,7 +83,7 @@ export const pollClaidUntilComplete = async (
         );
       }
 
-      return resultUrl
+      return resultUrl;
     }
 
     if (

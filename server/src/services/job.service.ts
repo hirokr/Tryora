@@ -1,8 +1,41 @@
 import prisma from '#src/config/database.ts';
 import { JobStatus, JobType } from '#src/generated/enums.ts';
-import { JobUpdateInput } from '#src/generated/models.ts';
-import {  JOB_FULL_SELECT, JOB_SUMMARY_SELECT, JobFilters, JobRequestType, JobResponseType } from '#src/types/databaseJobs.js';
+import {
+  JobFilters,
+  JobRequestType,
+  JobResponseType,
+} from '#src/types/jobs.js';
 
+export type JobUpdateInput = Partial<{
+  status: JobStatus;
+  thirdPartyTaskId: string;
+  outputresultUrl: string | null;
+  tryonId: string;
+  startedAt: Date;
+  completedAt: Date;
+}>;
+
+export const JOB_SUMMARY_SELECT = {
+  id: true,
+  status: true,
+  jobType: true,
+  outputresultUrl: true,
+  createdAt: true,
+} as const;
+
+export const JOB_FULL_SELECT = {
+  id: true,
+  userId: true,
+  productId: true,
+  jobType: true,
+  status: true,
+  thirdPartyTaskId: true,
+  outputresultUrl: true,
+  tryonId: true,
+  startedAt: true,
+  completedAt: true,
+  createdAt: true,
+} as const;
 
 const toJobResponse = (job: {
   id: string;

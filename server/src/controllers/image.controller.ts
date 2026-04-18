@@ -7,7 +7,7 @@ import {
 } from '#src/services/product.service.ts';
 import { getTryOnImage } from '#src/services/tryon.service.ts';
 import { AuthRequest, Response } from '#src/types/authRequest.js';
-import { JobResponseType } from '#src/types/databaseJobs.js';
+import { JobResponseType } from '#src/types/jobs.js';
 import { editProductImage } from '#src/utils/image/imageEdit.ts';
 import { tryOnImageClaid } from '#src/utils/image/imageFusion.ts';
 
