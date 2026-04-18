@@ -143,7 +143,7 @@ export default function AiSyncResultPage() {
 			};
 			persistState(failedState);
 			setModelState(failedState);
-			setStatusMessage(failedState.errorMessage);
+			setStatusMessage(failedState?.errorMessage);
 			return failedState;
 		}
 
@@ -192,7 +192,7 @@ export default function AiSyncResultPage() {
 					};
 					persistState(failedState);
 					setModelState(failedState);
-					setStatusMessage(failedState.errorMessage);
+					setStatusMessage(failedState?.errorMessage);
 				}
 				return;
 			}

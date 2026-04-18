@@ -7,7 +7,7 @@ import {
 } from '#src/services/product.service.ts';
 import { getTryOnImage } from '#src/services/tryon.service.ts';
 import { AuthRequest, Response } from '#src/types/authRequest.js';
-import { JobResponseType } from '#src/types/databaseJobs.js';
+import { JobResponseType } from '#src/types/jobs.js';
 import { editProductImage } from '#src/utils/image/imageEdit.ts';
 import { tryOnImageClaid } from '#src/utils/image/imageFusion.ts';
 
@@ -62,7 +62,7 @@ export const updateProductAppearance = async (
     const jobStart: JobResponseType = await createJob({
       userId: req.userId,
       productId,
-      variantId: variantId || undefined,
+      variantId: (variantId as string) || undefined,
       jobType: JobType.IMAGE_EDIT,
       userPrompt,
       thirdPartyTaskId: String(startEditingImage.data.id),
@@ -76,7 +76,7 @@ export const updateProductAppearance = async (
       params: {
         sourceImageUrl: url,
         userPrompt,
-        variantId: variantId || undefined,
+        variantId: (variantId as string) || undefined,
       },
     });
 

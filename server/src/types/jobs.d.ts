@@ -1,4 +1,4 @@
-import { JobStatus, JobType } from '#src/generated/enums.ts';
+import { JobStatus, JobType, PROVIDER } from '#src/generated/enums.ts';
 
 export interface JobRequestType {
   userId: string;
@@ -22,37 +22,6 @@ export type JobFilters = {
   jobType?: JobType;
   status?: JobStatus;
 };
-
-export type JobUpdateInput = Partial<{
-  status: JobStatus;
-  thirdPartyTaskId: string;
-  outputresultUrl: string | null;
-  tryonId: string;
-  startedAt: Date;
-  completedAt: Date;
-}>;
-
-export const JOB_SUMMARY_SELECT = {
-  id: true,
-  status: true,
-  jobType: true,
-  outputresultUrl: true,
-  createdAt: true,
-} as const;
-
-export const JOB_FULL_SELECT = {
-  id: true,
-  userId: true,
-  productId: true,
-  jobType: true,
-  status: true,
-  thirdPartyTaskId: true,
-  outputresultUrl: true,
-  tryonId: true,
-  startedAt: true,
-  completedAt: true,
-  createdAt: true,
-} as const;
 
 export interface TryonSocketData {
   id: string | null;

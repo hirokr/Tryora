@@ -9,7 +9,7 @@ import {
   updateJobStatus,
 } from '#src/services/job.service.ts';
 import { JobStatus } from '#src/generated/browser.ts';
-import { ProductImageEditJobData } from '#src/types/image.js';
+import { ProductImageEditJobData } from '#src/types/typesimage.js';
 
 export const processImageJob = async (
   queueJob: Job<ProductImageEditJobData>
@@ -17,11 +17,16 @@ export const processImageJob = async (
   const { generationJobId } = queueJob.data;
 
   try {
-    const { id: jobId, thirdPartyTaskId, jobType } =
-      await getJobById(generationJobId);
+    const {
+      id: jobId,
+      thirdPartyTaskId,
+      jobType,
+    } = await getJobById(generationJobId);
 
     if (!thirdPartyTaskId) {
-      throw new Error(`Missing third-party task ID for job ${generationJobId}.`);
+      throw new Error(
+        `Missing third-party task ID for job ${generationJobId}.`
+      );
     }
 
     await updateJobStatus(jobId, JobStatus.PROCESSING);

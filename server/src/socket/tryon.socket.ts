@@ -6,7 +6,7 @@ import {
 } from '#src/services/tryonJobStatus.service.ts';
 import { Namespace, Socket } from 'socket.io';
 import { socketAuthMiddleware } from './socketAuth.ts';
-import { TryonJobStatusPayload } from '#src/types/databaseJobs.js';
+import { TryonJobStatusPayload } from '#src/types/jobs.js';
 
 const TRYON_JOB_POLL_INTERVAL_MS =
   Number(process.env.TRYON_JOB_POLL_INTERVAL_MS) || 3000;

@@ -1,4 +1,4 @@
-import { ProductImageEditJobData } from '#src/types/image.js';
+import { ProductImageEditJobData } from '#src/types/typesimage.js';
 import { createCustomQueue } from './base.queue.ts';
 
 export const PRODUCT_IMAGE_EDIT_JOB_NAME = 'product-image-edit-task';
