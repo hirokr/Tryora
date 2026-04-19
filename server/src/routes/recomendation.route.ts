@@ -13,68 +13,6 @@ const router = Router();
 
 router.use(authMiddleware);
 
-/**
- * @swagger
- * /api/recomendations:
- *   get:
- *     summary: Get personalized recommendations (legacy route)
- *     description: |
- *       Returns personalized product recommendations for the authenticated user,
- *       scored using profile and product-signal ranking.
- *       This route is maintained for backward compatibility.
- *     tags:
- *       - Recommendation
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: limit
- *         required: false
- *         schema:
- *           type: integer
- *           minimum: 1
- *           maximum: 100
- *           default: 20
- *         description: Maximum number of recommendations.
- *         example: 20
- *       - in: query
- *         name: skip
- *         required: false
- *         schema:
- *           type: integer
- *           minimum: 0
- *           default: 0
- *         description: Number of recommendations to skip.
- *         example: 0
- *       - in: query
- *         name: category
- *         required: false
- *         schema:
- *           type: string
- *         description: Optional category filter for recommendation candidates.
- *         example: Dresses
- *     responses:
- *       200:
- *         description: Recommendations fetched successfully or no recommendations available.
- *         content:
- *           application/json:
- *             schema:
- *               oneOf:
- *                 - $ref: '#/components/schemas/RecommendationSuccessResponse'
- *                 - $ref: '#/components/schemas/RecommendationEmptyResponse'
- *       401:
- *         description: Missing or invalid authentication.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiErrorResponse'
- *       500:
- *         description: Failed to fetch runtime recommendations.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ApiErrorResponse'
- */
 
 /**
  * @swagger

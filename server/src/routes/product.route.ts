@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authMiddleware } from '#src/middlewares/authenticate.middleware.ts';
+// import { authMiddleware } from '#src/middlewares/authenticate.middleware.ts';
 import {
   getProductDetailsById,
   getProducts,
@@ -17,9 +17,9 @@ const router = Router();
 
 /**
  * @swagger
- * /api/products/trending:
+ * /api/products/discover:
  *   get:
- *     summary: Get top trending products
+ *     summary: Get top discoverable products
  *     description: |
  *       Returns products ranked by `trendingScore` in descending order.
  *       Supports pagination with `limit` and `skip` query parameters.
@@ -62,7 +62,7 @@ const router = Router();
  *             schema:
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
-router.get('/trending', getTopTrendingProducts);
+router.get('/discover', getTopTrendingProducts);
 
 /**
  * @swagger
@@ -116,7 +116,7 @@ router.get('/trending', getTopTrendingProducts);
  *             schema:
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
-router.get('/product', authMiddleware, getProducts);
+router.get('/product', getProducts);
 
 /**
  * @swagger
@@ -171,6 +171,6 @@ router.get('/product', authMiddleware, getProducts);
  *             schema:
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
-router.get('/:productId', authMiddleware, getProductDetailsById);
+router.get('/:productId', getProductDetailsById);
 
 export default router;
