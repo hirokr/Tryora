@@ -81,7 +81,7 @@ router.get('/jobs/:jobId', getTryonJobStatus);
 
 /**
  * @swagger
- * /api/tryon/discover:
+ * /api/tryon/trending:
  *   get:
  *     summary: Discover try-on results
  *     description: |
@@ -128,7 +128,7 @@ router.get('/jobs/:jobId', getTryonJobStatus);
  *             schema:
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
-router.get(`/discover`, discoverTryOns);
+router.get(`/trending`, discoverTryOns);
 
 /**
  * @swagger
@@ -180,7 +180,7 @@ router.get(`/discover`, discoverTryOns);
  *             schema:
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
-router.post(`model/generate`, generateModelTryon);
+router.post(`/model/generate`, generateModelTryon);
 
 /**
  * @swagger
@@ -226,7 +226,7 @@ router.post(`model/generate`, generateModelTryon);
  *             schema:
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
-router.post(`image/generate`, fuseProductImages);
+router.post(`/image/generate`, fuseProductImages);
 
 /**
  * @swagger
