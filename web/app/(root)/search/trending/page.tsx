@@ -3,7 +3,21 @@
 import { useEffect, useState } from "react";
 
 import { SearchProductCard } from "@/components/utility/search/SearchProductCard";
+import { BACKEND_URL } from "@/constants/constants";
 import type { SearchResponse } from "@/types/search";
+
+function pickResults(payload: unknown): SearchResponse["results"] {
+  const source = (payload || {}) as Record<string, unknown>;
+  if (Array.isArray(source.results)) return source.results as SearchResponse["results"];
+  if (Array.isArray(source.data)) return source.data as SearchResponse["results"];
+
+  const nestedData = source.data as Record<string, unknown> | undefined;
+  if (nestedData && Array.isArray(nestedData.results)) {
+    return nestedData.results as SearchResponse["results"];
+  }
+
+  return [];
+}
 
 export default function TrendingSearchPage() {
   const [results, setResults] = useState<SearchResponse["results"]>([]);
@@ -12,14 +26,18 @@ export default function TrendingSearchPage() {
   useEffect(() => {
     const loadTrending = async () => {
       try {
-        const response = await fetch("/api/search/trending", { method: "GET" });
+        const response = await fetch(`${BACKEND_URL}/api/search/trending`, {
+          method: "GET",
+          credentials: "include",
+        });
+
         const payload = (await response.json().catch(() => ({}))) as SearchResponse;
 
         if (!response.ok) {
           throw new Error(payload.message || "Failed to load trending products");
         }
 
-        setResults(payload.results || []);
+        setResults(pickResults(payload));
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load trending products");
       }

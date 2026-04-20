@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { signOut } from "@/lib/auth/auth";
 import { getSession } from "@/lib/auth/session";
 
 const Header = async () => {
@@ -20,12 +21,14 @@ const Header = async () => {
           </nav>
           <div className="flex items-center gap-4">
       {isAuthenticated ? (
-        <a
-          href="/api/auth/signout"
-          className="rounded-xl border border-primary/40 bg-primary/10 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-primary/20"
-        >
-          Sign out
-        </a>
+        <form action={signOut}>
+          <button
+            type="submit"
+            className="rounded-xl border border-primary/40 bg-primary/10 px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-primary/20"
+          >
+            Sign out
+          </button>
+        </form>
       ) : (
         <Link href="/auth/signup" className="rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-white transition-all hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(140,43,238,0.4)]">
           Sign up

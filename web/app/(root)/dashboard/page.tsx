@@ -1,5 +1,6 @@
 import { DashboardHero } from "@/components/utility/avatar/dashboard/DashboardHero";
 import { DashboardOutfits } from "@/components/utility/avatar/dashboard/DashboardOutfits";
+import { SearchHistoryQuickCard } from "@/components/utility/avatar/dashboard/SearchHistoryQuickCard";
 import { DashboardStatusCard } from "@/components/utility/avatar/dashboard/DashboardStatusCard";
 import { DashboardStyleStats } from "@/components/utility/avatar/dashboard/DashboardStyleStats";
 
@@ -20,8 +21,9 @@ export default function DashboardPage() {
             <div className="lg:col-span-2">
               <DashboardOutfits />
             </div>
-            <div>
+            <div className="space-y-6">
               <DashboardStyleStats />
+              <SearchHistoryQuickCard />
             </div>
           </section>
         </div>

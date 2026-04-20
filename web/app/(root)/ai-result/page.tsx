@@ -6,6 +6,7 @@ import { ResultActions } from "@/components/utility/ai/ResultActions";
 import { ResultAvatarPanel } from "@/components/utility/ai/ResultAvatarPanel";
 
 import { ResultMetricsCard } from "@/components/utility/ai/ResultMetricsCard";
+import { authFetch } from "@/lib/auth/clientAuthFetch";
 
 import { AiResultBackground } from "./_components/AiResultBackground";
 import { AiResultHeading } from "./_components/AiResultHeading";
@@ -84,7 +85,7 @@ export default function AiSyncResultPage() {
 	const refreshModelStatus = async (nextState: StoredModel3DState) => {
 		if (!nextState.tryonResultId) return nextState;
 
-		const modelResponse = await fetch(`/api/3d/${nextState.tryonResultId}`, {
+		const modelResponse = await authFetch(`/api/3d/${nextState.tryonResultId}`, {
 			method: "GET",
 		});
 
@@ -143,7 +144,7 @@ export default function AiSyncResultPage() {
 			};
 			persistState(failedState);
 			setModelState(failedState);
-			setStatusMessage(failedState?.errorMessage);
+			setStatusMessage(failedState.errorMessage || "3D generation failed.");
 			return failedState;
 		}
 
@@ -178,7 +179,7 @@ export default function AiSyncResultPage() {
 		if (modelState.status === "COMPLETED" || modelState.status === "FAILED") return;
 
 		const poll = async () => {
-			const response = await fetch(`/api/jobs/${modelState.jobId}`, {
+			const response = await authFetch(`/api/tryon/jobs/${modelState.jobId}`, {
 				method: "GET",
 			});
 
@@ -192,7 +193,7 @@ export default function AiSyncResultPage() {
 					};
 					persistState(failedState);
 					setModelState(failedState);
-					setStatusMessage(failedState?.errorMessage);
+					setStatusMessage(failedState.errorMessage || "3D generation failed.");
 				}
 				return;
 			}

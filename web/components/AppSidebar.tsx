@@ -10,7 +10,7 @@ const LINKS = [
   { href: "/styling-session", label: "Styling Session", icon: "auto_awesome" },
   { href: "/search", label: "Search", icon: "search" },
   { href: "/search/trending", label: "Trending", icon: "trending_up" },
-  { href: "/search/history", label: "History", icon: "history" },
+  { href: "/search/history", label: "Search History", icon: "history" },
   { href: "/marketplace", label: "Marketplace", icon: "storefront" },
   { href: "/wardrobe", label: "Wardrobe", icon: "checkroom" },
   { href: "/settings", label: "Settings", icon: "settings" },

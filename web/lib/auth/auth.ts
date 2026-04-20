@@ -1,12 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { BACKEND_URL } from "@/constants/constants";
 import { LoginFormSchema, SignupFormSchema } from "@/validation/auth.valid";
 
-import { createSession } from "./session";
+import { createSession, deleteSession } from "./session";
 import { FormState } from "@/types/auth";
-
-const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost:3000";
 
 export async function signUp(
 	state: FormState,
@@ -24,7 +23,7 @@ export async function signUp(
 		};
 	}
 
-	const response = await fetch(`${FRONTEND_URL}/api/auth/signup`, {
+	const response = await fetch(`${BACKEND_URL}/api/auth/signup`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -58,7 +57,7 @@ export async function signIn(
 		};
 	}
 
-	const response = await fetch(`${FRONTEND_URL}/api/auth/signin`, {
+	const response = await fetch(`${BACKEND_URL}/api/auth/signin`, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json",
@@ -96,7 +95,7 @@ export const refreshToken = async (oldRefreshToken: string) => {
 			return null;
 		}
 
-		const response = await fetch(`${FRONTEND_URL}/api/auth/refresh`, {
+		const response = await fetch(`${BACKEND_URL}/api/auth/refresh`, {
 			method: "GET",
 		});
 
@@ -112,3 +111,17 @@ export const refreshToken = async (oldRefreshToken: string) => {
 		return null;
 	}
 };
+
+export async function signOut() {
+	try {
+		await fetch(`${BACKEND_URL}/api/auth/signout`, {
+			method: "GET",
+			credentials: "include",
+		});
+	} catch {
+		// Ensure local session is still cleared even when backend is unreachable.
+	}
+
+	await deleteSession();
+	redirect("/");
+}

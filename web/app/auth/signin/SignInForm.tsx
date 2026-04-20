@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { RefObject } from "react";
+import { BACKEND_URL } from "@/constants/constants";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import SubmitButton from "@/components/ui/submitButton";
@@ -102,7 +103,7 @@ const SignInForm = ({
 						</SubmitButton>
 
 						<a
-							href='/api/auth/google'
+							href={`${BACKEND_URL}/api/auth/google`}
 							className='w-full h-10 mt-2 rounded-2xl border border-[#6b5a86] text-slate-100 text-sm font-semibold flex items-center justify-center gap-2 transition-colors duration-300 hover:bg-white hover:text-black'
 						>
 							Continue with Google

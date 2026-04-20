@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { BACKEND_URL } from "@/constants/constants";
+
 type HistoryItem = {
   id: string;
   prompt?: string;
@@ -23,7 +25,10 @@ export default function SearchHistoryPage() {
   useEffect(() => {
     const loadHistory = async () => {
       try {
-        const response = await fetch("/api/search/history", { method: "GET" });
+        const response = await fetch(`${BACKEND_URL}/api/search/history`, {
+          method: "GET",
+          credentials: "include",
+        });
         const payload = (await response.json().catch(() => ({}))) as HistoryResponse;
 
         if (!response.ok) {

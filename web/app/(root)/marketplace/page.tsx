@@ -1,6 +1,7 @@
 "use client";
 
 import { SEARCH_RECOMMENDATIONS_STORAGE_KEY } from "@/constants/flow";
+import { authFetch } from "@/lib/auth/clientAuthFetch";
 import type { SearchProduct } from "@/types/search";
 import { useEffect, useMemo, useState } from "react";
 
@@ -102,7 +103,7 @@ export default function MarketplacePage() {
     try {
       const responses = await Promise.all(
         ids.map(async (id) => {
-          const response = await fetch(`/api/products/${id}`, {
+          const response = await authFetch(`/api/products/${id}`, {
             method: "GET",
           });
 
@@ -168,7 +169,7 @@ export default function MarketplacePage() {
       .filter(Boolean);
 
     try {
-      const response = await fetch(`/api/products/${selectedProductId}/appearance`, {
+      const response = await authFetch(`/api/products/${selectedProductId}/appearance`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -207,7 +208,7 @@ export default function MarketplacePage() {
     setSuccessMessage(null);
 
     try {
-      const response = await fetch(`/api/products/${selectedProductId}/appearance/ai-edit`, {
+      const response = await authFetch(`/api/products/${selectedProductId}/appearance/ai-edit`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

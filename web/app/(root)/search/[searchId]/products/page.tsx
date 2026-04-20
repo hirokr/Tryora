@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { SearchProductCard } from "@/components/utility/search/SearchProductCard";
+import { authFetch } from "@/lib/auth/clientAuthFetch";
 import type { SearchResponse } from "@/types/search";
 
 export default function SearchProductsPage() {
@@ -17,7 +18,7 @@ export default function SearchProductsPage() {
 
     const loadProducts = async () => {
       try {
-        const response = await fetch(`/api/search/${searchId}/products`, { method: "GET" });
+        const response = await authFetch(`/api/search/${searchId}/products`, { method: "GET" });
         const payload = (await response.json().catch(() => ({}))) as SearchResponse;
 
         if (!response.ok) {

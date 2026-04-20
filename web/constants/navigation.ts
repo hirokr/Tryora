@@ -2,6 +2,7 @@ import type { NavLinkItem } from "@/types/common";
 
 export const MAIN_NAV: NavLinkItem[] = [
 	{ label: "Avatar Studio", icon: "person_pin", href: "/avatar-studio" },
+	{ label: "Search History", icon: "history", href: "/search/history" },
 	{
 		label: "Outfit Compare",
 		icon: "compare_arrows",

@@ -13,9 +13,9 @@ import {
 } from "@/constants/flow";
 
 import { UPDATE_PICS_REFERENCE_IMAGES } from "@/constants/experience";
+import { authFetch } from "@/lib/auth/clientAuthFetch";
 
 import { UpdatePicsIntro } from "./_components/UpdatePicsIntro";
-import { authFetch } from "@/lib/auth/authFetch";
 
 type ViewType = "front" | "side" | "back";
 
