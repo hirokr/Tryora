@@ -21,10 +21,11 @@ export async function findUserByEmail(email: string) {
     const user = await prisma.user.findUnique({
       where: { email },
     });
+    console.log('first');
 
     return user;
   } catch (err) {
-    console.error('User Not Found:', err);
+    console.log(err);
     throw err;
   }
 }
