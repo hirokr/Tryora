@@ -39,6 +39,7 @@ export async function findUserById(id: string) {
         email: true,
         name: true,
         avatarUrl: true,
+        userBodyImageUrl: true,
         age: true,
         gender: true,
         location: true,
@@ -132,10 +133,6 @@ export async function updateUserProfile(
       emailVerified: user.emailVerified,
       isActive: user.isActive,
       userBodyImageUrl: user.userBodyImageUrl || undefined,
-      age: user.age || undefined,
-      gender: user.gender || undefined,
-      location: user.location || undefined,
-      interests: user.interests || undefined,
     } as ReturnUserDto;
   } catch (err) {
     console.error('Error in updating user profile:', err);
