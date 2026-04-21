@@ -43,14 +43,15 @@ Rules:
 `;
 
 export async function extractSearchData(
-  userInput: string
+  userInput: string,
+  location: string,
 ): Promise<ExtractSearchDataResult> {
   try {
     const res = await groq.chat.completions.create({
       model: 'openai/gpt-oss-20b',
       messages: [
         { role: 'system', content: SystemPrompt },
-        { role: 'user', content: userInput },
+        { role: 'user', content: `${userInput} (Location: ${location})` },
       ],
       response_format: {
         type: 'json_schema',

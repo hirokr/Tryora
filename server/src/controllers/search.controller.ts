@@ -32,13 +32,13 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { userInput, geo } = req.body;
+    const { userInput, location } = req.body;
 
     if (!userInput || typeof userInput !== 'string') {
       return res.status(400).json({ message: 'Invalid input' });
     }
 
-    const aiResult = await extractSearchData(userInput);
+    const aiResult = await extractSearchData(userInput, location);
 
     if (!aiResult.status) {
       return res.status(500).json({
@@ -99,7 +99,7 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
         category,
         culturalTags,
       },
-      location: typeof geo === 'string' ? geo : undefined,
+      location: typeof location === 'string' ? location : undefined,
       userId: req.userId,
     });
 
