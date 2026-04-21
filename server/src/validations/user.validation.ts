@@ -5,6 +5,11 @@ export const updateProfileSchema = z
   .object({
     name: z.string().trim().min(1, 'Name cannot be empty').optional(),
     avatarUrl: z.string().url('Invalid avatar URL').trim().optional(),
+    userBodyImageUrl: z
+      .string()
+      .url('Invalid user body image URL')
+      .trim()
+      .optional(),
     age: z.number().min(0).optional(),
     gender: z.string().optional(),
     location: z.string().optional(),
