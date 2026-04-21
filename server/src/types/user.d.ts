@@ -17,6 +17,7 @@ export type ReturnUserDto = {
   interests?: string[];
   emailVerified: boolean;
   isActive: boolean;
+  age?: number;
 };
 
 export type UpdateUserProfileDto = {
