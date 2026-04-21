@@ -64,6 +64,7 @@ model User {
   productSearches ProductSearch[]
   generationJobs  Job[]
   likes           Like[]
+  favorite        Favorite[]
   tryons          Tryon[]
 
   @@unique([oauthProvider, oauthId])
@@ -108,8 +109,8 @@ model Like {
 }
 
 model Tryon {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
   productIds String[] @map("product_id") @db.Uuid
 
   jobId     String @unique @map("job_id") @db.Uuid
@@ -125,8 +126,9 @@ model Tryon {
   createdAt DateTime  @default(now()) @map("created_at")
   deletedAt DateTime? @map("deleted_at")
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  products Product[]
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products  Product[]
+  favorites Favorite[]
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([userId, isFavorite])
@@ -246,3 +248,18 @@ model ProductVariant {
   @@index([productId])
   @@map("product_variants")
 }
+
+model Favorite {
+  id      String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId  String @map("user_id") @db.Uuid
+  tryonId String @map("tryon_id") @db.Uuid
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tryon Tryon @relation(fields: [tryonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tryonId])
+  @@index([userId])
+  @@index([tryonId])
+  @@map("favorites")
+}
+
