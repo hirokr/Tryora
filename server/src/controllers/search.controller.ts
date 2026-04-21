@@ -11,7 +11,6 @@ import {
 import {
   getProductById,
   getProductsByIds,
-  getProductsByfilters,
   getProductsBySearchID,
   updateTrendingScore,
 } from '#src/services/product.service.ts';

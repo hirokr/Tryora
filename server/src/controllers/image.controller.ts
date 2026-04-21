@@ -26,6 +26,7 @@ export const updateProductAppearance = async (
     if (!userPrompt || typeof userPrompt !== 'string') {
       return res.status(400).json({ message: 'Invalid user prompt' });
     }
+    console.log(req.params);
 
     if (!productId || typeof productId !== 'string') {
       return res.status(400).json({ message: 'Invalid product id' });
