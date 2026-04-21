@@ -134,4 +134,5 @@ export default function SearchPage() {
       </section>
     </main>
   );
-}
+} // End of file
+
