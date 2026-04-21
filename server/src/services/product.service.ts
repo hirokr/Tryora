@@ -1,4 +1,5 @@
 import prisma from '#src/config/database.ts';
+import type { Prisma } from '#src/generated/client.ts';
 import { Gender } from '#src/generated/enums.ts';
 import { ProductMetricAction } from '#src/types/product.js';
 import { calculateTrendingScore } from '#src/utils/search.ts';
@@ -51,9 +52,13 @@ const RECOMMENDATION_CANDIDATE_SELECT = {
 } as const;
 
 type ProductFilterInput = {
-  minPrice?: number;
-  maxPrice?: number;
+  minPrice?: number | string;
+  maxPrice?: number | string;
   source?: string;
+  category?: string;
+  subCategory?: string;
+
+  // Backward compatibility for existing API clients.
   catogory?: string;
   subCatogory?: string;
   brand?: string;
@@ -144,6 +149,19 @@ const parseNumericPrice = (price: string | null | undefined) => {
   const numericPrice = Number.parseFloat(numericText);
 
   return Number.isFinite(numericPrice) ? numericPrice : null;
+};
+
+const parseFilterPrice = (value: number | string | undefined) => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : undefined;
+  }
+
+  const parsed = Number.parseFloat(String(value).replace(/[^\d.]/g, ''));
+  return Number.isFinite(parsed) ? parsed : undefined;
 };
 
 const buildRecommendationScore = (params: {
@@ -285,49 +303,78 @@ export const getProductById = async (productId: string) => {
 };
 
 export const getProductsByfilters = async (filters: ProductFilterInput) => {
-  const where: any = {};
+  const where: Prisma.ProductWhereInput = {};
 
-  if (filters.source) {
-    where.source = filters.source;
-  }
+  const source = filters.source?.trim();
+  const category = (filters.category ?? filters.catogory)?.trim();
+  const subCategory = (filters.subCategory ?? filters.subCatogory)?.trim();
+  const title = filters.title?.trim();
 
-  if (filters.catogory) {
-    where.category = filters.catogory;
-  }
+  const minPrice = parseFilterPrice(filters.minPrice);
+  const maxPrice = parseFilterPrice(filters.maxPrice);
 
-  if (filters.title) {
-    where.title = {
-      contains: filters.title,
+  if (source) {
+    where.source = {
+      contains: source,
       mode: 'insensitive',
     };
   }
 
-  const tagFilters = [filters.subCatogory, filters.brand, filters.color].filter(
-    Boolean
-  ) as string[];
-  if (tagFilters.length) {
-    where.extarnalTags = { hasSome: tagFilters };
+  if (category) {
+    where.category = {
+      equals: category,
+      mode: 'insensitive',
+    };
   }
+
+  if (title) {
+    where.title = {
+      contains: title,
+      mode: 'insensitive',
+    };
+  }
+
+  const tagFilters = [subCategory, filters.brand?.trim(), filters.color?.trim()]
+    .filter((value): value is string => Boolean(value))
+    .map(normalizeText);
 
   const products = await prisma.product.findMany({ where });
 
-  const hasPriceFilter =
-    filters.minPrice !== undefined || filters.maxPrice !== undefined;
-  if (!hasPriceFilter) {
+  const hasPriceFilter = minPrice !== undefined || maxPrice !== undefined;
+  const hasTagFilter = tagFilters.length > 0;
+
+  if (!hasPriceFilter && !hasTagFilter) {
     return products;
   }
 
   return products.filter(product => {
+    if (hasTagFilter) {
+      const normalizedTags = [
+        ...product.extarnalTags,
+        ...product.culturalTags,
+      ].map(normalizeText);
+      const hasTagMatch = tagFilters.some(tag => normalizedTags.includes(tag));
+
+      if (!hasTagMatch) {
+        return false;
+      }
+    }
+
     const numericPrice = parseNumericPrice(product.price);
+
+    if (!hasPriceFilter) {
+      return true;
+    }
+
     if (numericPrice === null) {
       return false;
     }
 
-    if (filters.minPrice !== undefined && numericPrice < filters.minPrice) {
+    if (minPrice !== undefined && numericPrice < minPrice) {
       return false;
     }
 
-    if (filters.maxPrice !== undefined && numericPrice > filters.maxPrice) {
+    if (maxPrice !== undefined && numericPrice > maxPrice) {
       return false;
     }
 
