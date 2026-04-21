@@ -2,6 +2,8 @@ import {
   changePassword,
   deleteAccount,
   forgotPassword,
+  getFavoriteProducts,
+  getLikedProducts,
   getProfile,
   resendVerificationEmail,
   resetPassword,
@@ -325,5 +327,9 @@ router.post('/change-password', changePassword);
  *         description: Failed to delete account
  */
 router.delete('/delete-account', deleteAccount);
+
+router.get('/getFavorites', getFavoriteProducts);
+
+router.get('/getLikedProducts', getLikedProducts);
 
 export default router;

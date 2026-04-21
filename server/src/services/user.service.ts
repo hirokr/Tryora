@@ -182,3 +182,70 @@ export async function findUserByVerificationToken(token: any) {
     throw error;
   }
 }
+
+export async function getFavoriteProductsDB(
+  userId: string,
+  limit: number = 20,
+  offset: number = 0
+) {
+  try {
+    const favorites = await prisma.favorite.findMany({
+      where: { userId, status: true },
+      include: {
+        product: {
+          select: {
+            id: true,
+            title: true,
+            price: true,
+            defaultImageUrl: true,
+            likeCount: true,
+          },
+        },
+        tryon: {
+          select: {
+            id: true,
+            resultUrl: true,
+          },
+        },
+      },
+      skip: offset,
+      take: limit,
+    });
+
+    return favorites.map(fav => fav.product);
+  } catch (error) {
+    console.error('Error fetching favorite products:', error);
+    throw error;
+  }
+}
+
+
+export async function getLikedProductsDB(
+  userId: string,
+  limit: number = 20,
+  offset: number = 0
+) {
+  try {
+    const likes = await prisma.like.findMany({
+      where: { userId, status: true },
+      include: {
+        product: {
+          select: {
+            id: true,
+            title: true,
+            price: true,
+            defaultImageUrl: true,
+            likeCount: true,
+          },
+        },
+      },
+      skip: offset,
+      take: limit,
+    });
+
+    return likes.map(like => like.product);
+  } catch (error) {
+    console.error('Error fetching liked products:', error);
+    throw error;
+  }
+}
