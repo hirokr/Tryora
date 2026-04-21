@@ -243,8 +243,13 @@ export const getProductsService = async (
 };
 
 export const getProductDetailsById = async (productId: string) => {
-  return prisma.product.findUnique({
+  return prisma.product.update({
     where: { id: productId },
+    data: {
+      viewCount: {
+        increment: 1,
+      },
+    },
     select: PRODUCT_DETAILS_SELECT,
   });
 };
@@ -302,7 +307,11 @@ export const getProductById = async (productId: string) => {
   return prisma.product.findUnique({ where: { id: productId } });
 };
 
-export const getProductsByfilters = async (filters: ProductFilterInput) => {
+export const getProductsByfilters = async (
+  filters: ProductFilterInput,
+  limit: number,
+  skip: number
+) => {
   const where: Prisma.ProductWhereInput = {};
 
   const source = filters.source?.trim();
@@ -338,7 +347,12 @@ export const getProductsByfilters = async (filters: ProductFilterInput) => {
     .filter((value): value is string => Boolean(value))
     .map(normalizeText);
 
-  const products = await prisma.product.findMany({ where });
+  const products = await prisma.product.findMany({
+    where,
+    take: limit,
+    skip: skip,
+    orderBy: { createdAt: 'desc' },
+  });
 
   const hasPriceFilter = minPrice !== undefined || maxPrice !== undefined;
   const hasTagFilter = tagFilters.length > 0;
@@ -474,4 +488,61 @@ export const getRuntimeRecommendations = async (params: {
     .sort((a, b) => b.recommendationScore - a.recommendationScore);
 
   return rankedProducts.slice(safeSkip, safeSkip + safeLimit);
+};
+
+export const likeProductDB = async (productId: string, userId: string) => {
+  try {
+    const existingLike = await prisma.like.findUnique({
+      where: {
+        userId_productId: {
+          userId,
+          productId,
+        },
+      },
+    });
+
+    if (existingLike) {
+      return { message: 'Product already liked' };
+    }
+
+    await prisma.like.create({
+      data: {
+        userId,
+        productId,
+      },
+    });
+
+    await updateTrendingScore(productId, 'LIKE');
+
+    return { message: 'Product liked successfully' };
+  } catch (error) {
+    throw new Error('Failed to like product');
+  }
+};
+
+export const addFavoriteDB = async (
+  userId: string,
+  ids: { productId?: string; tryonId?: string }
+) => {
+  try {
+    const { productId, tryonId } = ids;
+
+    return await prisma.favorite.upsert({
+      where: {
+        userId_tryonId_productId: {
+          userId,
+          tryonId: tryonId ?? null,
+          productId: productId ?? null,
+        },
+      },
+      update: {}, // Do nothing if it exists
+      create: {
+        userId,
+        tryonId,
+        productId,
+      },
+    });
+  } catch (error) {
+    throw new Error('Failed to update favorites');
+  }
 };

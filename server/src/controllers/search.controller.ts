@@ -233,48 +233,6 @@ export const getProductsById = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// object: {filterQuery: {
-//   minPrice: 20;
-// maxPrice: 1000;
-// source: arong;
-// catogory: saree;
-// subCatogory: bangladeshi;
-// brand: arong;
-// title: saree;
-// color: red;
-// }}
-export const searchProductsByQuery = async (
-  req: AuthRequest,
-  res: Response
-) => {
-  try {
-    if (!req.userId) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-
-    const { filterQuery } = req.body;
-    if (!filterQuery || typeof filterQuery !== 'object') {
-      return res.status(400).json({ message: 'Invalid filter query' });
-    }
-
-    const products = await getProductsByfilters(filterQuery);
-    if (!products.length) {
-      return res.status(200).json({
-        status: 'empty',
-        results: [],
-      });
-    }
-
-    res.status(200).json({
-      status: 'success',
-      results: products,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      message: 'failed to fetch products for this search ',
-    });
-  }
-};
 
 export const updateProductMetrics = async (req: AuthRequest, res: Response) => {
   try {
