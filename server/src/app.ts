@@ -69,7 +69,7 @@ app.get('/api', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', usersRoutes);
-app.use('/api/tryon/', tryon);
+app.use('/api/tryon', tryon);
 app.use('/api/search', searchRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/recomendations', recommendationRoutes);
