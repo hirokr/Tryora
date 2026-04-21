@@ -13,6 +13,7 @@ export type ReturnUserDto = {
   avatar?: string;
   emailVerified: boolean;
   isActive: boolean;
+  age?: number;
 };
 
 export type UpdateUserProfileDto = {
