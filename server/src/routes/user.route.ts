@@ -328,8 +328,8 @@ router.post('/change-password', changePassword);
  */
 router.delete('/delete-account', deleteAccount);
 
-router.get('/getFavorites', getFavoriteProducts);
+router.get('/get-favorites', getFavoriteProducts);
 
-router.get('/getLikedProducts', getLikedProducts);
+router.get('/get-liked-products', getLikedProducts);
 
 export default router;
