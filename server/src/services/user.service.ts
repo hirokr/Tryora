@@ -124,6 +124,11 @@ export async function updateUserProfile(
       email: user.email,
       name: user.name,
       avatar: user.avatarUrl || undefined,
+      age: user.age || undefined,
+      gender: user.gender || undefined,
+      location: user.location || undefined,
+      interests: user.interests || undefined,
+
       emailVerified: user.emailVerified,
       isActive: user.isActive,
       userBodyImageUrl: user.userBodyImageUrl || undefined,
