@@ -490,7 +490,11 @@ export const getRuntimeRecommendations = async (params: {
   return rankedProducts.slice(safeSkip, safeSkip + safeLimit);
 };
 
-export const likeProductDB = async (productId: string, userId: string) => {
+export const likeProductDB = async (
+  productId: string,
+  userId: string,
+  status: boolean = true
+) => {
   try {
     const existingLike = await prisma.like.findUnique({
       where: {
@@ -509,6 +513,7 @@ export const likeProductDB = async (productId: string, userId: string) => {
       data: {
         userId,
         productId,
+        status,
       },
     });
 
@@ -520,37 +525,10 @@ export const likeProductDB = async (productId: string, userId: string) => {
   }
 };
 
-// export const addFavoriteDB = async (
-//   userId: string,
-//   ids: { productId?: string; tryonId?: string }
-// ) => {
-//   try {
-//     const { productId, tryonId } = ids;
-
-//     if (!productId && !tryonId) {
-//       throw new Error('At least a Product ID or Tryon ID must be provided');
-//     }
-
-//     await prisma.favorite.create({
-//       data: {
-//         userId,
-//         productId,
-//         tryonId,
-//       },
-//     });
-
-//     return { message: 'Added to favorites successfully' };
-//   } catch (error: any) {
-//     if (error.code === 'P2002') {
-//       return { message: 'Already in favorites' };
-//     }
-
-//     throw new Error('Failed to update favorites');
-//   }
-// };
 export const addFavoriteDB = async (
   userId: string,
-  ids: { productId?: string; tryonId?: string }
+  ids: { productId?: string; tryonId?: string },
+  status: boolean = true
 ) => {
   const { productId, tryonId } = ids;
 
@@ -572,6 +550,7 @@ export const addFavoriteDB = async (
         userId,
         productId,
         tryonId,
+        status,
       },
     });
 

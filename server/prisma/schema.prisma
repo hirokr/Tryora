@@ -101,6 +101,7 @@ model Like {
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  status Boolean @default(true) @map("status")
 
   @@unique([userId, productId])
   @@index([userId])
@@ -117,6 +118,7 @@ model Favorite {
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   tryon   Tryon?   @relation(fields: [tryonId], references: [id], onDelete: Cascade)
   product Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  status Boolean @default(true) @map("status")
 
   @@unique([userId, tryonId, productId])
   @@index([userId])
@@ -137,7 +139,7 @@ model Tryon {
   provider  PROVIDER?
 
   isFavorite Boolean @default(false) @map("is_favorite")
-  isPublic   Boolean @default(false) @map("is_public")
+  isPublic   Boolean @default(true) @map("is_public")
   viewCount  Int     @default(0) @map("view_count")
 
   createdAt DateTime  @default(now()) @map("created_at")

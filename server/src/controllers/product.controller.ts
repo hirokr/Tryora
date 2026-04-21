@@ -154,8 +154,6 @@ export const addFavoriteProduct = async (req: AuthRequest, res: Response) => {
   }
 };
 
-
-
 // object: {filterQuery: {
 //   minPrice: 20;
 // maxPrice: 1000;
@@ -196,6 +194,60 @@ export const searchProductsByQuery = async (
   } catch (error) {
     return res.status(500).json({
       message: 'failed to fetch products for this search ',
+    });
+  }
+};
+
+export const unlikeProduct = async (req: AuthRequest, res: Response) => {
+  try {
+    const { productId } = req.params;
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    if (!productId || typeof productId !== 'string') {
+      return res.status(400).json({ message: 'Invalid product id' });
+    }
+
+    const product = await likeProductDB(productId, req.userId, false);
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: product.message,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'failed to unlike product',
+    });
+  }
+};
+
+export const removeFavoriteProduct = async (
+  req: AuthRequest,
+  res: Response
+) => {
+  try {
+    const { productId } = req.params;
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    if (!productId || typeof productId !== 'string') {
+      return res.status(400).json({ message: 'Invalid product id' });
+    }
+
+    const favorite = await addFavoriteDB(req.userId, { productId }, false);
+
+    return res.status(200).json({
+      status: 'success',
+      message: favorite.message,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'failed to remove product from favorites',
     });
   }
 };
