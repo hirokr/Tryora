@@ -6,3 +6,4 @@ export const SEARCH_RECOMMENDATIONS_STORAGE_KEY = "tryora.search.recommendations
 export const TRYON_RESULT_STORAGE_KEY = "tryora.tryonResultId";
 export const TRYON_RESULT_STORAGE_KEY_ALT = "tryora.tryon.resultId";
 export const TRYON_RESULT_STORAGE_KEY_AVATAR = "tryora.avatar.tryonResultId";
+export const OUTFIT_COMPARISON_SELECTION_STORAGE_KEY = "tryora.outfitComparison.selectedPhotos";
