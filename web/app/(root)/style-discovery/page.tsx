@@ -112,3 +112,4 @@ export default function StyleDiscoveryPage() {
     </main>
   );
 }
+// End of file
