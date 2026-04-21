@@ -42,7 +42,7 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
 
     if (!aiResult.status) {
       return res.status(500).json({
-        message: aiResult.message || 'AI extraction failed',
+        message: 'AI extraction failed',
       });
     }
 
