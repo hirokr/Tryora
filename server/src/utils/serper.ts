@@ -2,7 +2,7 @@ import { Product } from '#src/types/product.js';
 
 const SERPER_API_KEY = process.env.SERPER_API_KEY!;
 
-export async function searchSerper(query: string, num = 20) {
+export async function searchSerper(query: string, num = 10) {
   const res = await fetch('https://google.serper.dev/shopping', {
     method: 'POST',
     headers: {

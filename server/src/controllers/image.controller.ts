@@ -20,13 +20,12 @@ export const updateProductAppearance = async (
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { productId, variantId } = req.params;
+    const { productId, variantId } = req.query;
     const { userPrompt } = req.body;
 
     if (!userPrompt || typeof userPrompt !== 'string') {
       return res.status(400).json({ message: 'Invalid user prompt' });
     }
-    console.log(req.params);
 
     if (!productId || typeof productId !== 'string') {
       return res.status(400).json({ message: 'Invalid product id' });

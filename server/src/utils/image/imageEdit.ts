@@ -1,7 +1,10 @@
 import fetch from 'node-fetch';
 import logger from '#src/config/logger.ts';
-import { ClaidApiResponse, ClaidImageEditRequest, claidStatus } from '#src/types/typesimage.ts';
-
+import {
+  ClaidApiResponse,
+  ClaidImageEditRequest,
+  claidStatus,
+} from '#src/types/typesimage.ts';
 
 const CLAID_API_KEY = process.env.CLAID_API_KEY;
 
@@ -29,21 +32,35 @@ export async function editProductImage({
           number_of_images: 1,
           format: 'png',
         },
-        input: {
-          productImageUrl,
-        },
+        // Claid AI Edit expects input as a string URL, not a nested object.
+        input: productImageUrl,
         options: {
           prompt: userPrompt,
-          aspect_ratio: '9:16',
         },
       }),
     });
-    const claidResponse = (await response.json()) as ClaidApiResponse;
+    const claidResponse = (await response.json()) as ClaidApiResponse & {
+      error_message?: string;
+      detail?: string;
+      message?: string;
+    };
 
-    const status = claidResponse.data?.status;
+    if (!response.ok) {
+      const apiError =
+        claidResponse.error_message ??
+        claidResponse.detail ??
+        claidResponse.message;
+      throw new Error(
+        `API Error: failed to edit image (${response.status} ${response.statusText})${
+          apiError ? ` - ${apiError}` : ''
+        }`
+      );
+    }
 
-    if (!response.ok && status !== claidStatus.accepted) {
-      throw new Error(`API Error: failed to edit image`);
+    if (claidResponse.data?.status !== claidStatus.accepted) {
+      throw new Error(
+        `API Error: unexpected Claid status: ${String(claidResponse.data?.status)}`
+      );
     }
 
     if (!claidResponse.data?.id) {
@@ -52,9 +69,10 @@ export async function editProductImage({
 
     return claidResponse;
   } catch (error) {
-    logger.error('Try-on generation failed', {
+    logger.error('Image edit request failed', {
       error: error instanceof Error ? error.message : String(error),
     });
     throw error;
   }
 }
+

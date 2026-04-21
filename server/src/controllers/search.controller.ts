@@ -18,10 +18,45 @@ import {
   getProductIdsByIntent,
   setProductIdsByIntent,
 } from '#src/utils/redis.ts';
+import { handleUrlUpload } from '#src/utils/uploadthings.ts';
 
 import { searchSerper } from '#src/utils/serper.ts';
 import { Product, type ProductMetricAction } from '#src/types/product.js';
 import { SearchData } from '#src/types/gorq.js';
+
+const uploadSerperProductImages = async (
+  products: Product[]
+): Promise<Product[]> => {
+  const uploadedProducts = await Promise.all(
+    products.map(async (product, index) => {
+      if (!product.defaultImageUrl) {
+        return product;
+      }
+
+      try {
+        const uploadResponse = await handleUrlUpload(
+          product.defaultImageUrl,
+          `serper-product-${product.searchProductId || index}.jpg`
+        );
+
+        const uploadedUrl = uploadResponse[0]?.data?.ufsUrl;
+
+        if (!uploadedUrl) {
+          return product;
+        }
+
+        return {
+          ...product,
+          defaultImageUrl: uploadedUrl,
+        };
+      } catch {
+        return product;
+      }
+    })
+  );
+
+  return uploadedProducts;
+};
 
 export const searchProducts = async (req: AuthRequest, res: Response) => {
   let searchRecordId: string | null = null;
@@ -118,7 +153,10 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
       new Map(flatProducts.map(p => [p.searchProductId, p])).values()
     );
 
-    await setProducts(searchRecord.id, uniqueProducts);
+    const productsWithUploadedImages =
+      await uploadSerperProductImages(uniqueProducts);
+
+    await setProducts(searchRecord.id, productsWithUploadedImages);
 
     const savedProducts = await getProductsBySearchID(searchRecord.id);
     if (savedProducts.length) {
@@ -132,7 +170,9 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
       status: 'fresh',
       intentKey,
       searchId: searchRecord.id,
-      results: savedProducts.length ? savedProducts : uniqueProducts,
+      results: savedProducts.length
+        ? savedProducts
+        : productsWithUploadedImages,
     });
   } catch (error: any) {
     console.error('Search Error:', error);
@@ -231,7 +271,6 @@ export const getProductsById = async (req: AuthRequest, res: Response) => {
     });
   }
 };
-
 
 export const updateProductMetrics = async (req: AuthRequest, res: Response) => {
   try {

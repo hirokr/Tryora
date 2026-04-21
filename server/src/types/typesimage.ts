@@ -1,4 +1,4 @@
-import { JobType } from "#src/generated/enums.ts";
+import { JobType } from '#src/generated/enums.ts';
 
 export type GeneratedImageStorageInput = {
   sourceUrl: string;
@@ -28,7 +28,7 @@ export enum claidStatus {
 export interface ClaidApiResponse {
   data?: {
     id: number;
-    status: claidStatus.accepted;
+    status: claidStatus;
     created_at: string;
     request: Record<string, unknown>;
     result_url: string;

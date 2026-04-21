@@ -34,7 +34,7 @@ From user input, extract:
 5. gender
 6. category
 7. culturalTags
-8. 3-5 Google shopping queries
+8. 1-2 Google shopping queries
 
 Rules:
 - intentKey must be reusable (e.g. wedding_saree_elegant)
