@@ -1,9 +1,20 @@
 import prisma from '#src/config/database.ts';
+import { Gender } from '#src/generated/enums.ts';
 import {
   CreateUserDto,
   ReturnUserDto,
   UpdateUserProfileDto,
 } from '#src/types/user.js';
+
+function toPrismaGender(gender: string): Gender | undefined {
+  const normalizedGender = gender.trim().toUpperCase();
+
+  if (normalizedGender === 'OTHER' || normalizedGender === 'UNSPECIFIED') {
+    return Gender.UNISEX;
+  }
+
+  return (Gender as Record<string, Gender>)[normalizedGender];
+}
 
 export async function findUserByEmail(email: string) {
   try {
@@ -63,14 +74,13 @@ export async function getUserBodyImageUrl(
 
 export async function createUser(data: CreateUserDto): Promise<ReturnUserDto> {
   try {
-    const { email, name, passwordHash, avatarUrl } = data;
+    const { email, name, passwordHash } = data;
     const user = await prisma.user.create({
       data: {
         email,
         name,
         passwordHash,
         verificationToken: data.verificationToken,
-        avatarUrl,
       },
     });
 
@@ -94,11 +104,17 @@ export async function updateUserProfile(
   data: UpdateUserProfileDto
 ): Promise<ReturnUserDto> {
   try {
-    const { userId, ...updateData } = data;
+    const { userId, gender, ...updateData } = data;
+    const prismaGender =
+      typeof gender === 'string'
+        ? toPrismaGender(gender) || (gender as Gender)
+        : undefined;
+
     const user = await prisma.user.update({
       where: { id: userId },
       data: {
         ...updateData,
+        ...(prismaGender ? { gender: prismaGender } : {}),
       },
     });
 
@@ -109,7 +125,12 @@ export async function updateUserProfile(
       avatar: user.avatarUrl || undefined,
       emailVerified: user.emailVerified,
       isActive: user.isActive,
-    };
+      userBodyImageUrl: user.userBodyImageUrl || undefined,
+      age: user.age || undefined,
+      gender: user.gender || undefined,
+      location: user.location || undefined,
+      interests: user.interests || undefined,
+    } as ReturnUserDto;
   } catch (err) {
     console.error('Error in updating user profile:', err);
     throw err;
