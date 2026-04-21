@@ -132,20 +132,20 @@ export const likeProduct = async (req: AuthRequest, res: Response) => {
 
 export const addFavoriteProduct = async (req: AuthRequest, res: Response) => {
   try {
+    const { productId } = req.params;
     if (!req.userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
-    const { productId } = req.params;
 
     if (!productId || typeof productId !== 'string') {
       return res.status(400).json({ message: 'Invalid product id' });
     }
 
-    await addFavoriteDB(req.userId, { productId });
+    const favorite = await addFavoriteDB(req.userId, { productId });
 
     return res.status(200).json({
       status: 'success',
-      message: 'Product added to favorites successfully',
+      message: favorite.message,
     });
   } catch (error) {
     return res.status(500).json({
@@ -153,6 +153,8 @@ export const addFavoriteProduct = async (req: AuthRequest, res: Response) => {
     });
   }
 };
+
+
 
 // object: {filterQuery: {
 //   minPrice: 20;
