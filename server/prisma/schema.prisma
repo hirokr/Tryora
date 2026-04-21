@@ -108,6 +108,23 @@ model Like {
   @@map("likes")
 }
 
+model Favorite {
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String  @map("user_id") @db.Uuid
+  tryonId   String? @map("tryon_id") @db.Uuid 
+  productId String? @map("product_id") @db.Uuid 
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tryon   Tryon?   @relation(fields: [tryonId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tryonId, productId])
+  @@index([userId])
+  @@index([tryonId])
+  @@index([productId])
+  @@map("favorites")
+}
+
 model Tryon {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId     String   @map("user_id") @db.Uuid
@@ -227,9 +244,10 @@ model Product {
 
   search ProductSearch? @relation(fields: [searchId], references: [id], onDelete: Cascade)
 
-  variants ProductVariant[]
-  likes    Like[]
-  tryon    Tryon[]
+  variants  ProductVariant[]
+  likes     Like[]
+  tryon     Tryon[]
+  favorites Favorite[]
 
   @@index([searchId])
   @@index([trendingScore])
@@ -248,18 +266,3 @@ model ProductVariant {
   @@index([productId])
   @@map("product_variants")
 }
-
-model Favorite {
-  id      String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId  String @map("user_id") @db.Uuid
-  tryonId String @map("tryon_id") @db.Uuid
-
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tryon Tryon @relation(fields: [tryonId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, tryonId])
-  @@index([userId])
-  @@index([tryonId])
-  @@map("favorites")
-}
-
