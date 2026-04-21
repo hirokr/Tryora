@@ -13,4 +13,4 @@ export default function PublicViewPage() {
       <PublicViewPanels />
     </div>
   );
-}
+}  // End of file
