@@ -1,25 +1,10 @@
-"use client";
+import { getSession } from "@/lib/auth/session";
 
-import { useState } from "react";
+import WardrobePageClient from "./_components/WardrobePageClient";
 
-import {
-  WardrobeGrid,
-  WardrobeToolbar,
-} from "@/components/utility/experience/WardrobeWorkspace";
+export default async function WardrobePage() {
+  const session = await getSession();
+  const userId = session?.user?.id ?? null;
 
-import { WARDROBE_ITEMS } from "@/constants/experience";
-
-import { WardrobeHeader } from "./_components/WardrobeHeader";
-
-export default function WardrobePage() {
-  const [activeTab, setActiveTab] = useState<"outfits" | "items">("outfits");
-
-  return (
-    <main className="mx-auto w-full max-w-7xl px-4 pb-14 pt-28 sm:px-6 lg:px-8">
-      <WardrobeHeader />
-
-      <WardrobeToolbar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <WardrobeGrid items={WARDROBE_ITEMS} />
-    </main>
-  );
+  return <WardrobePageClient userId={userId} />;
 }

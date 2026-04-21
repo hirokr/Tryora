@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export function WardrobeHeader() {
   return (
     <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -11,7 +13,12 @@ export function WardrobeHeader() {
             type="text"
           />
         </div>
-        <button className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90">+ Add New</button>
+        <Link
+          href="/marketplace"
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
+        >
+          + Add New
+        </Link>
       </div>
     </header>
   );

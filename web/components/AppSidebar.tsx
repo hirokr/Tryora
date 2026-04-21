@@ -13,6 +13,8 @@ const LINKS = [
   { href: "/search/history", label: "Search History", icon: "history" },
   { href: "/marketplace", label: "Marketplace", icon: "storefront" },
   { href: "/wardrobe", label: "Wardrobe", icon: "checkroom" },
+  { href: "/public-view", label: "Public View", icon: "language" },
+  { href: "/outfit-comparison", label: "Outfit Comparison", icon: "compare_arrows" },
   { href: "/settings", label: "Settings", icon: "settings" },
 ];
 

@@ -11,7 +11,16 @@ import { MarketplaceTopBar } from "./_components/MarketplaceTopBar";
 import { ProductGrid } from "./_components/ProductGrid";
 import type { FilterType, Product } from "../../../types/producttypes";
 
-const ACCESSORIES_CATEGORIES = new Set(["Footwear", "Jewelry", "Artisan"]);
+const SHOES_CATEGORIES = new Set(["Footwear", "Shoes", "Shoe", "Sneakers", "Boots", "Sandals"]);
+const ACCESSARIES_CATEGORIES = new Set([
+  "Accessories",
+  "Accessory",
+  "Jewelry",
+  "Artisan",
+  "Bag",
+  "Bags",
+  "Watch",
+]);
 
 type ProductApiResponse = {
   status?: string;
@@ -53,7 +62,21 @@ const mapApiProductToCard = (payload: ProductApiResponse["data"]): Product | nul
 };
 
 export default function MarketplacePage() {
-  const [activeFilter, setActiveFilter] = useState<FilterType>("All");
+  const [activeFilters, setActiveFilters] = useState<FilterType[]>(["All"]);
+    const toggleFilter = (filter: FilterType) => {
+      setActiveFilters((current) => {
+        if (filter === "All") {
+          return ["All"];
+        }
+
+        const withoutAll = current.filter((item) => item !== "All");
+        const exists = withoutAll.includes(filter);
+
+        const next = exists ? withoutAll.filter((item) => item !== filter) : [...withoutAll, filter];
+        return next.length > 0 ? next : ["All"];
+      });
+    };
+
   const [toastVisible, setToastVisible] = useState(true);
   const [productIdsInput, setProductIdsInput] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
@@ -235,16 +258,22 @@ export default function MarketplacePage() {
   };
 
   const filteredProducts = useMemo(() => {
-    if (activeFilter === "All") {
+    if (activeFilters.includes("All") || activeFilters.length === 0) {
       return products;
     }
 
-    if (activeFilter === "Accessories") {
-      return products.filter((product) => ACCESSORIES_CATEGORIES.has(product.category));
-    }
+    return products.filter((product) => {
+      const inShoes = SHOES_CATEGORIES.has(product.category);
+      const inAccessaries = ACCESSARIES_CATEGORIES.has(product.category);
+      const inCloth = !inAccessaries && !inShoes;
 
-    return products.filter((product) => !ACCESSORIES_CATEGORIES.has(product.category));
-  }, [activeFilter, products]);
+      return (
+        (activeFilters.includes("Shoes") && inShoes) ||
+        (activeFilters.includes("Accessaries") && inAccessaries) ||
+        (activeFilters.includes("Cloth") && inCloth)
+      );
+    });
+  }, [activeFilters, products]);
 
   return (
       <main className="flex min-h-screen flex-col overflow-hidden bg-background-light pt-24 dark:bg-background-dark">
@@ -252,7 +281,7 @@ export default function MarketplacePage() {
 
         <div className="flex-1 overflow-y-auto p-4 md:p-8 relative">
           <div className="max-w-7xl mx-auto">
-            <MarketplaceHero activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+            <MarketplaceHero activeFilters={activeFilters} onFilterToggle={toggleFilter} />
 
             <section className="mb-8 rounded-xl border border-primary/20 bg-white/70 p-4 dark:bg-primary/5">
               <p className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">

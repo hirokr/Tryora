@@ -7,7 +7,7 @@ export type Product = {
   alt: string;
 };
 
-export type FilterType = "All" | "Clothing" | "Accessories";
+export type FilterType = "All" | "Cloth" | "Accessaries" | "Shoes";
 
 export type NavItem = {
   icon: string;

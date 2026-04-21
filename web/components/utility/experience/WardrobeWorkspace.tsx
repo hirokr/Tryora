@@ -1,42 +1,95 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import type { WardrobeItem } from "@/types/experience";
 
 type WardrobeToolbarProps = {
-  activeTab: "outfits" | "items";
-  setActiveTab: (tab: "outfits" | "items") => void;
+  activeTab: "favourite" | "tryon";
+  setActiveTab: (tab: "favourite" | "tryon") => void;
+  activeCategories: Array<"All" | "Cloth" | "Accessaries" | "Shoes" | "Other">;
+  onCategoryToggle: (category: "All" | "Cloth" | "Accessaries" | "Shoes" | "Other") => void;
 };
 
-export function WardrobeToolbar({ activeTab, setActiveTab }: WardrobeToolbarProps) {
+const CATEGORY_OPTIONS: Array<"All" | "Cloth" | "Accessaries" | "Shoes" | "Other"> = [
+  "All",
+  "Cloth",
+  "Accessaries",
+  "Shoes",
+  "Other",
+];
+
+export function WardrobeToolbar({
+  activeTab,
+  setActiveTab,
+  activeCategories,
+  onCategoryToggle,
+}: WardrobeToolbarProps) {
+  const [showCategories, setShowCategories] = useState(false);
+
+  useEffect(() => {
+    if (!showCategories) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setShowCategories(false);
+    }, 10000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [showCategories, activeCategories]);
+
   return (
     <section className="mb-7 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex w-full gap-2 rounded-lg bg-surface p-1 sm:w-fit">
         <button
-          onClick={() => setActiveTab("outfits")}
+          onClick={() => setActiveTab("favourite")}
           className={`rounded-md px-5 py-2 text-sm font-medium ${
-            activeTab === "outfits" ? "bg-primary text-white" : "text-slate-400"
+            activeTab === "favourite" ? "bg-primary text-white" : "text-slate-400"
           }`}
         >
-          Saved Outfits
+          Favourite
         </button>
         <button
-          onClick={() => setActiveTab("items")}
+          onClick={() => setActiveTab("tryon")}
           className={`rounded-md px-5 py-2 text-sm font-medium ${
-            activeTab === "items" ? "bg-primary text-white" : "text-slate-400"
+            activeTab === "tryon" ? "bg-primary text-white" : "text-slate-400"
           }`}
         >
-          Individual Items
+          Try On
         </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <button className="rounded-lg border border-primary/20 bg-surface px-4 py-2 text-sm text-slate-300">
-          Category: All
+        <button
+          onClick={() => setShowCategories((current) => !current)}
+          className="rounded-lg border border-primary bg-primary px-4 py-2 text-sm font-bold text-white flex items-center gap-1.5"
+        >
+          <span className="material-symbols-outlined text-base">add</span>
+          Category
         </button>
-        <button className="rounded-lg border border-primary/20 bg-surface px-4 py-2 text-sm text-slate-300">
-          Sort: Recent
-        </button>
+
+        {showCategories ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {CATEGORY_OPTIONS.map((category) => (
+              <button
+                key={category}
+                onClick={() => onCategoryToggle(category)}
+                className={`rounded-lg border px-4 py-2 text-sm font-bold ${
+                  activeCategories.includes(category)
+                    ? "border-primary bg-primary text-white"
+                    : "border-primary/20 bg-surface text-slate-300"
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <span className="rounded-lg border border-primary/20 bg-surface px-4 py-2 text-sm text-slate-300">
+            {activeCategories.includes("All") ? "All" : activeCategories.join(", ")}
+          </span>
+        )}
       </div>
     </section>
   );
