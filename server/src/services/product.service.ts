@@ -520,29 +520,67 @@ export const likeProductDB = async (productId: string, userId: string) => {
   }
 };
 
+// export const addFavoriteDB = async (
+//   userId: string,
+//   ids: { productId?: string; tryonId?: string }
+// ) => {
+//   try {
+//     const { productId, tryonId } = ids;
+
+//     if (!productId && !tryonId) {
+//       throw new Error('At least a Product ID or Tryon ID must be provided');
+//     }
+
+//     await prisma.favorite.create({
+//       data: {
+//         userId,
+//         productId,
+//         tryonId,
+//       },
+//     });
+
+//     return { message: 'Added to favorites successfully' };
+//   } catch (error: any) {
+//     if (error.code === 'P2002') {
+//       return { message: 'Already in favorites' };
+//     }
+
+//     throw new Error('Failed to update favorites');
+//   }
+// };
 export const addFavoriteDB = async (
   userId: string,
   ids: { productId?: string; tryonId?: string }
 ) => {
-  try {
-    const { productId, tryonId } = ids;
+  const { productId, tryonId } = ids;
 
-    return await prisma.favorite.upsert({
-      where: {
-        userId_tryonId_productId: {
-          userId,
-          tryonId: tryonId ?? null,
-          productId: productId ?? null,
-        },
-      },
-      update: {}, // Do nothing if it exists
-      create: {
+  const existingFavorite = await prisma.favorite.findFirst({
+    where: {
+      userId,
+      productId: productId || null,
+      tryonId: tryonId || null,
+    },
+  });
+
+  if (existingFavorite) {
+    return { message: 'Product already in favorites' };
+  }
+
+  try {
+    await prisma.favorite.create({
+      data: {
         userId,
-        tryonId,
         productId,
+        tryonId,
       },
     });
-  } catch (error) {
-    throw new Error('Failed to update favorites');
+
+    return { message: 'Product added to favorites successfully' };
+  } catch (error: any) {
+    // Safety check for race conditions
+    if (error.code === 'P2002') {
+      return { message: 'Product already in favorites' };
+    }
+    throw new Error('Failed to add favorite');
   }
 };
