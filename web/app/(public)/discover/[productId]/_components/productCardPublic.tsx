@@ -1,5 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+
+import { useSelectedProductsStore } from "@/store/useSelectedProductsStore";
 
 export type ProductVariant = {
 	imageUrl: string | null;
@@ -36,6 +40,27 @@ const showText = (
 };
 
 export function ProductCardPublic({ product }: ProductCardProps) {
+	const toggleProduct = useSelectedProductsStore(
+		(state) => state.toggleProduct,
+	);
+	const isProductSelected = useSelectedProductsStore((state) =>
+		state.selectedProducts.some((item) => item.id === product.id),
+	);
+
+	const handleSelectProduct = () => {
+		if (!product.id || !product.defaultImageUrl) {
+			return;
+		}
+
+		toggleProduct({
+			id: product.id,
+			title: product.title,
+			imageUrl: product.defaultImageUrl,
+			source: product.source,
+			price: product.price,
+		});
+	};
+
 	return (
 		<article className='overflow-hidden rounded-2xl border border-primary/20 bg-white/5 text-white'>
 			<div className='relative aspect-video bg-black/30'>
@@ -126,6 +151,15 @@ export function ProductCardPublic({ product }: ProductCardProps) {
 					>
 						Back to discover
 					</Link>
+
+					<button
+						type='button'
+						onClick={handleSelectProduct}
+						disabled={!product.defaultImageUrl}
+						className='inline-flex items-center rounded-lg border border-primary/40 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60'
+					>
+						{isProductSelected ? "Selected" : "Select for try-on"}
+					</button>
 				</div>
 
 				<section>
