@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { BACKEND_URL } from "@/constants/constants";
 import { authFetch } from "@/lib/auth/authFetch";
-
+import { ProductCard } from "@/components/utility/product/ProductCard";
 import Loader from "@/components/ui/Loader";
 
 type UserLocation = {
@@ -145,13 +145,35 @@ export default function SearchPage() {
 		          {location?.longitude.toFixed(3)})
 		        </p>
 		      ) : null}
-		      
-
-		      
 		      {error ? <p className="mt-3 text-sm text-red-300">{error}</p> : null}
 			</div>
 			</div>
       </section>
+	  <section className="mt-8">
+                <h2 className="mb-4 text-lg font-semibold text-white">Products</h2>
+
+                {products.length === 0 ? (
+                    <p className="text-sm text-slate-300">No products yet. Run a search.</p>
+                ) : (
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {products.map((product, index) => (
+                            <ProductCard
+                                key={product.id || `${product.title}-${index}`}
+                                id={product.id}
+                                title={product.title}
+                                source={product.source}
+                                defaultImageUrl={product.defaultImageUrl}
+                                price={product.price}
+                                rating={product.rating}
+                                ratingCount={product.ratingCount}
+                                viewCount={product.viewCount}
+                                likeCount={product.likeCount}
+                                variants={product.variants}
+                            />
+                        ))}
+                    </div>
+                )}
+            </section>
     </main>
 	);
 }
