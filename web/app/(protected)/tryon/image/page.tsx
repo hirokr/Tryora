@@ -1,27 +1,31 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
-
 import { useSelectedProductsStore } from "@/store/useSelectedProductsStore";
 import { authFetch } from "@/lib/auth/authFetch";
-import { useState } from "react";
-import { ProductDetails } from "@/app/(public)/discover/[productId]/_components/productCardPublic";
+import { useEffect, useState } from "react";
+import { useTryonSocket } from "@/context/tryonSocket.context";
+import { Button } from "@/components/ui/button";
+
+type QueueJobResponse = {
+	jobId?: string;
+	message?: string;
+};
 
 export default function TryOnImagePage() {
-	const [tryonProducts, setTryonProducts] = useState<ProductDetails[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const { connectIfNeeded, subscribeToJob } = useTryonSocket();
 
 	const selectedProducts = useSelectedProductsStore(
 		(state) => state.selectedProducts,
 	);
-	const unselectProduct = useSelectedProductsStore(
-		(state) => state.unselectProduct,
-	);
 	const clearSelectedProducts = useSelectedProductsStore(
 		(state) => state.clearSelectedProducts,
 	);
+
+	useEffect(() => {
+		void connectIfNeeded();
+	}, [connectIfNeeded]);
 
 	const handleGenerateTryOn = async () => {
 		setIsLoading(true);
@@ -33,7 +37,7 @@ export default function TryOnImagePage() {
 				"Content-Type": "application/json",
 			},
 			body: JSON.stringify({
-				productIds: tryonProducts.map((product) => product.id),
+				productIds: selectedProducts.map((product) => product.id),
 			}),
 		});
 
@@ -43,24 +47,39 @@ export default function TryOnImagePage() {
 			return;
 		}
 
-		const { tryonResultId } = await jobPayload.json();
+		const payload = (await jobPayload
+			.json()
+			.catch(() => ({}))) as QueueJobResponse;
+		const jobId = typeof payload.jobId === "string" ? payload.jobId : "";
 
-		if (!tryonResultId) {
+		if (!jobId) {
 			setError("Failed to generate try-on.");
 			setIsLoading(false);
 			return;
 		}
 
-		// Store the try-on result ID in localStorage for retrieval on the result page
-		localStorage.setItem("tryonResultId", tryonResultId);
-
-		// Navigate to the try-on result page
-		window.location.href = `/tryon/result/${tryonResultId}`;
-		// Clear selected products after generating try-on
+		await subscribeToJob(jobId);
 		clearSelectedProducts();
+		setIsLoading(false);
 	};
 
 	return (
-		<div className='mx-auto min-h-screen w-full max-w-7xl px-4 pb-16 pt-24 sm:px-6 lg:px-8'></div>
+		<div className='mx-auto min-h-screen w-full max-w-7xl px-4 pb-16 pt-24 sm:px-6 lg:px-8'>
+			<div className='rounded-xl border border-white/10 bg-black/20 p-6 text-white'>
+				<p className='text-sm text-slate-300'>
+					Selected products: {selectedProducts.length}
+				</p>
+				<Button
+					className='mt-4'
+					onClick={() => {
+						void handleGenerateTryOn();
+					}}
+					disabled={isLoading || selectedProducts.length === 0}
+				>
+					{isLoading ? "Queuing..." : "Start image try-on"}
+				</Button>
+				{error ? <p className='mt-3 text-sm text-red-300'>{error}</p> : null}
+			</div>
+		</div>
 	);
 }

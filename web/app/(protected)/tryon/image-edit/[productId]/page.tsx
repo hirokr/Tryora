@@ -7,6 +7,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Loader from "@/components/ui/Loader";
 import { authFetch } from "@/lib/auth/clientAuthFetch";
+import { useTryonSocket } from "@/context/tryonSocket.context";
 import {
 	ImageEditJobPayload,
 	useImageEditJobStore,
@@ -49,11 +50,24 @@ export default function ProductImageEditPage() {
 	const [prompt, setPrompt] = useState("");
 	const [submitError, setSubmitError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const { connectIfNeeded, subscribeToJob } = useTryonSocket();
 
 	const saveJob = useImageEditJobStore((state) => state.saveJob);
 	const savedProductJob = useImageEditJobStore((state) =>
 		productId ? state.jobsByProductId[productId] : undefined,
 	);
+
+	useEffect(() => {
+		void connectIfNeeded();
+	}, [connectIfNeeded]);
+
+	useEffect(() => {
+		if (!savedProductJob?.jobId) {
+			return;
+		}
+
+		void subscribeToJob(savedProductJob.jobId);
+	}, [savedProductJob?.jobId, subscribeToJob]);
 
 	useEffect(() => {
 		if (!productId) {
@@ -150,6 +164,7 @@ export default function ProductImageEditPage() {
 			}
 
 			saveJob(productId, parsedJob);
+			await subscribeToJob(parsedJob.jobId);
 			setPrompt("");
 		} catch (error) {
 			setSubmitError(
