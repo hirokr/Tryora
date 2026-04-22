@@ -170,6 +170,8 @@ export const signin = async (req: Request, res: Response) => {
     avatar: user.avatarUrl || undefined,
     emailVerified: user.emailVerified,
     isActive: user.isActive,
+    userBodyImageUrl: user.userBodyImageUrl || undefined,
+    age: user.age || undefined,
   };
 
   res.status(200).json({ message: 'Signin successful', user: secureUser });
@@ -256,7 +258,7 @@ export const googleAuthCallback = [
       });
 
       return res.redirect(
-        `${frontend}/api/auth/google/callback?id=${user.id}&email=${user.email}&name=${user.name}&avatar=${user.avatar || ''}&emailVerified=${user.emailVerified}&isActive=${user.isActive}&accessToken=${accessToken}&refreshToken=${refreshToken}`
+        `${frontend}/api/auth/google/callback?id=${user.id}&email=${user.email}&name=${user.name}&avatar=${user.avatar || ''}&emailVerified=${user.emailVerified}&isActive=${user.isActive}&accessToken=${accessToken}&refreshToken=${refreshToken}&userBodyImageUrl=${user.userBodyImageUrl || ''}&age=${user.age || ''}`
       );
     } catch (error) {
       console.error('Error in Google auth callback:', error);

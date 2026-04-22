@@ -23,7 +23,7 @@ export default function TryOnImagePage() {
 	>([]);
 	const { connectIfNeeded, subscribeToJob } = useTryonSocket();
 	const { user } = useAuth();
-
+	console.log(user);
 	const selectedProducts = useSelectedProductsStore(
 		(state) => state.selectedProducts,
 	);
@@ -102,7 +102,7 @@ export default function TryOnImagePage() {
 					<div className='relative aspect-square bg-black/40'>
 						{user?.avatarUrl || user?.userBodyImageUrl ? (
 							<Image
-								src={user.avatarUrl || user.userBodyImageUrl || ""}
+								src={user.userBodyImageUrl || ""}
 								alt={user?.name ? `${user.name} profile image` : "User image"}
 								fill
 								sizes='(max-width: 1024px) 100vw, 320px'
