@@ -209,4 +209,4 @@ export function ProductCardPublic({ product }: ProductCardProps) {
 			</div>
 		</article>
 	);
-}
+} // This component, `ProductCardPublic`, is responsible for displaying detailed information about a specific product on the public product details page. It shows the product's image, title, ID, source, price, rating, like count, and view count. It also provides links to the Google listing (if available) and a button to select the product for try-on. The component uses the `useSelectedProductsStore` to manage the selection state of products for try-on. Additionally, it displays any variants of the product with their respective images and data. The UI is styled with a dark theme consistent with the overall design of the Tryora website.
