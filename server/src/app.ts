@@ -27,7 +27,7 @@ const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: ['http://localhost:3000', 'http://localhost:3001'],
     credentials: true,
   })
 );
