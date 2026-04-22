@@ -132,11 +132,7 @@ export default function UpdatePicsPage() {
 				return;
 			}
 
-			if (response.ok) {
-				localStorage.removeItem(MODEL_3D_STATE_STORAGE_KEY);
-				router.push("/style-discovery");
-				return;
-			}
+			
 
 			setUploadError(
 				payload.message || "Failed to upload body images. Please try again.",
