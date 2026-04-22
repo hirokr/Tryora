@@ -89,6 +89,12 @@ export async function getTryOnsByUserId(userId: string) {
   return await prisma.tryon.findMany({
     where: { userId, tryonType: JobType.IMAGE_TRYON },
     orderBy: { createdAt: 'desc' },
+    select:{
+      id: true,
+      resultUrl: true,
+      productIds: true,
+      tryonType: true,
+    }
   });
 }
 
