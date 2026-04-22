@@ -2,7 +2,7 @@ import {
   getProductsBySearchId,
   getUserSearchHistory,
   searchProducts,
-  updateProductMetrics,
+  // updateProductMetrics,
 } from '#src/controllers/search.controller.ts';
 import { authMiddleware } from '#src/middlewares/authenticate.middleware.ts';
 import { Router } from 'express';
@@ -649,6 +649,6 @@ router.get('/:searchId/products', getProductsBySearchId);
  *                   type: string
  *                   example: failed to update product metrics
  */
-router.post('/product-metric/:productId', updateProductMetrics);
+// router.post('/product-metric/:productId', updateProductMetrics);
 
 export default router;
