@@ -42,4 +42,4 @@ export default async function RootLayout({
       </body>
     </html>
   );
-}
+}  // Main layout provider for the entire application, including authentication context
