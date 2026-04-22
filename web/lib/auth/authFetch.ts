@@ -1,3 +1,4 @@
+import { BACKEND_URL } from "@/constants/constants";
 import { refreshToken } from "./auth";
 import { getSession } from "./session";
 
@@ -15,7 +16,8 @@ export const authFetch = async (
 		...options.headers,
 		Authorization: `Bearer ${session?.accessToken}`,
 	};
-	let response = await fetch(url, options);
+
+	let response = await fetch(`${BACKEND_URL}${url}`, options);
 	console.log({
 		STATUS: response.status,
 	});
@@ -29,7 +31,7 @@ export const authFetch = async (
 
 		if (newAccessToken) {
 			options.headers.Authorization = `Bearer ${newAccessToken}`;
-			response = await fetch(url, options);
+			response = await fetch(`${BACKEND_URL}${url}`, options);
 		}
 	}
 	return response;
