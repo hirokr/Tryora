@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { authFetch } from "@/lib/auth/clientAuthFetch";
+import { authFetch } from "@/lib/auth/authFetch";
 import { ProductCard } from "@/components/utility/product/ProductCard";
 // "status": "cached",
 // "results": [
