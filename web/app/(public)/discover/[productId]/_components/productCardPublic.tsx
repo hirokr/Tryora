@@ -82,13 +82,14 @@ export function ProductCardPublic({
 	return (
 		<article className='overflow-hidden rounded-2xl border border-primary/20 bg-white/5 text-white'>
 			<div
-				className={`relative bg-black/30 ${compact ? "aspect-auto" : "aspect-video"}`}
+				className={`relative bg-black/30 aspect-square`}
 			>
 				{product.defaultImageUrl ? (
 					<Image
 						src={product.defaultImageUrl}
 						alt={product.title}
-						fill
+						width={800}
+						height={600}
 						sizes={
 							compact
 								? "(max-width: 1024px) 50vw, 33vw"
