@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
 		remotePatterns: [
 			{
 				protocol: "https",
+				hostname: "**.ufs.sh",
+			},
+			{
+				protocol: "https",
 				hostname: "**", // Allows all HTTPS domains
 			},
 			{

@@ -22,9 +22,13 @@ import searchRoutes from './routes/search.route.ts';
 
 const app = express();
 app.use(helmet());
+
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
+
 app.use(
   cors({
     origin: ['http://localhost:3000', 'http://localhost:3001'],
+    credentials: true,
   })
 );
 app.use(express.json());

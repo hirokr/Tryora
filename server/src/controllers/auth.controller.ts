@@ -94,7 +94,7 @@ export const signup = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: 'Email, password and name are required' });
     }
-
+    
     const user = await findUserByEmail(email);
     if (user) {
       return res.status(409).json({ message: 'User already exists' });

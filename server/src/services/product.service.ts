@@ -1,7 +1,6 @@
 import prisma from '#src/config/database.ts';
 import type { Prisma } from '#src/generated/client.ts';
 import { Gender } from '#src/generated/enums.ts';
-import { ProductMetricAction } from '#src/types/product.js';
 import { calculateTrendingScore } from '#src/utils/search.ts';
 
 const PRODUCT_LIST_SELECT = {
@@ -286,7 +285,27 @@ export const getTopTrending = async (limit: number = 20, skip: number = 0) => {
 };
 
 export const getProductsBySearchID = async (searchId: string) => {
-  return prisma.product.findMany({ where: { searchId } });
+  return prisma.product.findMany({
+    where: { searchId },
+    select: {
+      id: true,
+      title: true,
+      source: true,
+      defaultImageUrl: true,
+      price: true,
+      rating: true,
+      ratingCount: true,
+      viewCount: true,
+      likeCount: true,
+      variants: {
+        select: {
+          id: true,
+          imageUrl: true,
+          variantData: true,
+        },
+      },
+    },
+  });
 };
 
 export const getProductsByIds = async (productIds: string[]) => {
@@ -398,7 +417,7 @@ export const getProductsByfilters = async (
 
 export const updateTrendingScore = async (
   productId: string,
-  action: ProductMetricAction
+  action: 'VIEW' | 'LIKE' | 'CLICK'
 ) => {
   return prisma.$transaction(async tx => {
     const updatedMetrics = await tx.product.update({
