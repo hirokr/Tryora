@@ -4,9 +4,9 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import Loader from "@/components/ui/Loader";
-import { BACKEND_URL } from "@/constants/constants";
 
-import { ProductCard, type ProductDetails } from "./_components/productCard";
+import { ProductCardPublic, type ProductDetails } from "./_components/productCardPublic";
+import { authFetch } from "@/lib/auth/authFetch";
 
 type ProductDetailsResponse = {
 	status?: string;
@@ -30,8 +30,7 @@ export default function ProductIDPage() {
 				setIsLoading(true);
 				setError(null);
 
-				const response = await fetch(
-					`${BACKEND_URL}/api/products/${productId}`,
+				const response = await authFetch(`/api/products/${productId}`,
 					{
 						method: "GET",
 					},
@@ -75,7 +74,7 @@ export default function ProductIDPage() {
 				</div>
 			) : null}
 
-			{product ? <ProductCard product={product} /> : null}
+			{product ? <ProductCardPublic product={product} /> : null}
 		</main>
 	);
 }

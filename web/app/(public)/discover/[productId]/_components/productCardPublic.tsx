@@ -35,7 +35,7 @@ const showText = (
 	return String(value);
 };
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCardPublic({ product }: ProductCardProps) {
 	return (
 		<article className='overflow-hidden rounded-2xl border border-primary/20 bg-white/5 text-white'>
 			<div className='relative aspect-video bg-black/30'>
