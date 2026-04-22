@@ -26,7 +26,7 @@ export default function TrendingSearchPage() {
   useEffect(() => {
     const loadTrending = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/api/search/trending`, {
+        const response = await fetch(`${BACKEND_URL}/api/products/discover`, {
           method: "GET",
           credentials: "include",
         });

@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { authFetch } from "@/lib/auth/clientAuthFetch";
+
 import type { SearchProduct } from "@/types/search";
 
 type ProductResponse = {
@@ -25,7 +25,7 @@ export default function ProductDetailsPage() {
 
     const loadProduct = async () => {
       try {
-        const response = await authFetch(`/api/products/${productId}`, { method: "GET" });
+        const response = await fetch(`/api/products/${productId}`, { method: "GET" });
         const payload = (await response.json().catch(() => ({}))) as ProductResponse;
 
         if (!response.ok) {
@@ -41,9 +41,9 @@ export default function ProductDetailsPage() {
     void loadProduct();
   }, [productId]);
 
-  const sendMetric = async (action: "VIEW" | "LIKE" | "ORDER") => {
+  const sendMetric = async (action: "VIEW" | "LIKE" | "CLICK") => {
     try {
-      const response = await authFetch(`/api/search/product-metric/${productId}`, {
+      const response = await fetch(`/api/search/product-metric/${productId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),
@@ -91,10 +91,10 @@ export default function ProductDetailsPage() {
                 Track like
               </button>
               <button
-                onClick={() => sendMetric("ORDER")}
+                onClick={() => sendMetric("CLICK")}
                 className="rounded-lg border border-primary/40 px-3 py-2 text-sm font-semibold text-primary hover:bg-primary/10"
               >
-                Track order
+                Track click
               </button>
               {product.productUrl || product.link ? (
                 <a

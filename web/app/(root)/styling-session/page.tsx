@@ -21,7 +21,7 @@ import {
   STYLING_AVATAR_BY_CATEGORY,
   STYLING_PRODUCTS,
 } from "@/constants/experience";
-import { authFetch } from "@/lib/auth/clientAuthFetch";
+
 import type { StylingCategory, StylingProduct } from "@/types/experience";
 import type { SearchProduct, SearchResponse } from "@/types/search";
 
@@ -133,7 +133,7 @@ export default function StylingSessionPage() {
   };
 
   const fetchTrendingProducts = async () => {
-    const response = await authFetch("/api/products/product?limit=24&skip=0", { method: "GET" });
+    const response = await fetch("/api/products/product?limit=24&skip=0", { method: "GET" });
     const payload = (await response.json().catch(() => ({}))) as SearchResponse;
 
     if (!response.ok) {
@@ -144,7 +144,7 @@ export default function StylingSessionPage() {
   };
 
   const fetchHistoryProducts = async () => {
-    const historyResponse = await authFetch("/api/search/history", { method: "GET" });
+    const historyResponse = await fetch("/api/search/history", { method: "GET" });
     const historyPayload = (await historyResponse.json().catch(() => ({}))) as SearchHistoryResponse;
 
     if (!historyResponse.ok) {
@@ -157,7 +157,7 @@ export default function StylingSessionPage() {
       return;
     }
 
-    const productsResponse = await authFetch(`/api/search/${latestSearchId}/products`, {
+    const productsResponse = await fetch(`/api/search/${latestSearchId}/products`, {
       method: "GET",
     });
     const productsPayload = (await productsResponse.json().catch(() => ({}))) as SearchResponse;
@@ -184,7 +184,7 @@ export default function StylingSessionPage() {
       throw new Error("Add prompt or style to run query filter.");
     }
 
-    const response = await authFetch("/api/search/search-filter", {
+    const response = await fetch("/api/search/search-filter", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -239,7 +239,7 @@ export default function StylingSessionPage() {
     setProductsError(null);
 
     try {
-      const response = await authFetch(`/api/products/${productId}`, {
+      const response = await fetch(`/api/products/${productId}`, {
         method: "GET",
       });
       const payload = (await response.json().catch(() => ({}))) as ProductDetailResponse;
@@ -273,7 +273,7 @@ export default function StylingSessionPage() {
         (product) => product.id && selectedProductIds.includes(product.id),
       );
 
-      const response = await authFetch("/api/tryon/image/generate", {
+      const response = await fetch("/api/tryon/image/generate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

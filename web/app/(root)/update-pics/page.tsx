@@ -13,7 +13,6 @@ import {
 } from "@/constants/flow";
 
 import { UPDATE_PICS_REFERENCE_IMAGES } from "@/constants/experience";
-import { authFetch } from "@/lib/auth/clientAuthFetch";
 
 import { UpdatePicsIntro } from "./_components/UpdatePicsIntro";
 
@@ -111,7 +110,7 @@ export default function UpdatePicsPage() {
 				}),
 			);
 
-			const response = await authFetch("/api/profile/body-images", {
+			const response = await fetch("/api/profile/body-images", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

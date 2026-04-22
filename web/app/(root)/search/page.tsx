@@ -139,7 +139,7 @@ export default function SearchPage() {
         credentials: "include",
         body: JSON.stringify({
           userInput: prompt,
-          location: userLocation,
+          geo: userLocation,
         }),
       });
 
@@ -169,20 +169,18 @@ export default function SearchPage() {
     setError(null);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/search/search-filter`, {
+      const response = await fetch(`${BACKEND_URL}/api/products/search-filter`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          userInput: prompt,
-          query: prompt,
-          category: filters.category || undefined,
-          color: filters.color || undefined,
-          budget: {
-            min: filters.minBudget ? Number(filters.minBudget) : undefined,
-            max: filters.maxBudget ? Number(filters.maxBudget) : undefined,
+          filterQuery: {
+            title: prompt.trim() || undefined,
+            category: filters.category || undefined,
+            color: filters.color || undefined,
+            minPrice: filters.minBudget ? Number(filters.minBudget) : undefined,
+            maxPrice: filters.maxBudget ? Number(filters.maxBudget) : undefined,
           },
-          location: userLocation,
         }),
       });
 

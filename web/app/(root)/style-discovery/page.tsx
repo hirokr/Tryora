@@ -14,7 +14,7 @@ import {
 } from "@/constants/flow";
 
 import { useStyleDiscovery } from "@/hooks";
-import { authFetch } from "@/lib/auth/clientAuthFetch";
+
 import type { SearchResponse } from "@/types/search";
 
 import { DiscoverFeedSection } from "./_components/DiscoverFeedSection";
@@ -147,7 +147,7 @@ export default function StyleDiscoveryPage() {
     const endpoint = `/api/search/product-metric/${productId}`;
     const body = JSON.stringify({ action });
 
-    let response = await authFetch(endpoint, {
+    let response = await fetch(endpoint, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -156,7 +156,7 @@ export default function StyleDiscoveryPage() {
     });
 
     if (response.status === 404 || response.status === 405) {
-      response = await authFetch(endpoint, {
+      response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -202,12 +202,12 @@ export default function StyleDiscoveryPage() {
       notificationPrefs: true,
     };
 
-    const profileResponse = await authFetch("/api/profile/profile", {
+    const profileResponse = await fetch("/api/profile/profile", {
       method: "GET",
     });
     const method = profileResponse.ok ? "PUT" : "POST";
 
-    await authFetch("/api/profile/preferences", {
+    await fetch("/api/profile/preferences", {
       method,
       headers: {
         "Content-Type": "application/json",
@@ -238,7 +238,7 @@ export default function StyleDiscoveryPage() {
         // Continue recommendation generation for guest users even if profile update fails.
       }
 
-      const searchResponse = await authFetch("/api/search/search", {
+      const searchResponse = await fetch("/api/search/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -272,7 +272,7 @@ export default function StyleDiscoveryPage() {
       setIsRecommendationsLoading(true);
 
       try {
-        const response = await authFetch("/api/recommendations?limit=10&skip=0", {
+        const response = await fetch("/api/recommendations?limit=10&skip=0", {
           method: "GET",
         });
 
@@ -316,7 +316,7 @@ export default function StyleDiscoveryPage() {
 
       try {
         const skip = discoverPage * DISCOVER_PAGE_SIZE;
-        const response = await authFetch(
+        const response = await fetch(
           `/api/products/discover?limit=${DISCOVER_PAGE_SIZE}&skip=${skip}`,
           {
             method: "GET",
@@ -386,7 +386,7 @@ export default function StyleDiscoveryPage() {
       setTrendingError(null);
 
       try {
-        const response = await authFetch("/api/tryon/trending?limit=10&skip=0", {
+        const response = await fetch("/api/tryon/trending?limit=10&skip=0", {
           method: "GET",
         });
 
