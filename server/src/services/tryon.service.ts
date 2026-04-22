@@ -44,10 +44,6 @@ export async function getTryOnImage(id: string) {
       outputresultUrl: true,
     },
   });
-<<<<<<< HEAD
-=======
-
->>>>>>> toha
   return tryonImage?.outputresultUrl;
 }
 
@@ -113,17 +109,11 @@ export async function getTryOnById(id: string) {
     select: {
       id: true,
       userId: true,
-<<<<<<< HEAD
-      jobId: true,
-      outputresultUrl: true,
-      productIds: true,
-=======
       productId: true,
       jobType: true,
       thirdPartyTaskId: true,
       outputresultUrl: true,
       createdAt: true,
->>>>>>> toha
     },
   });
   console.log(`Fetched try-on job for id ${id}:`, job);
