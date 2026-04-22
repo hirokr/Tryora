@@ -23,4 +23,4 @@ const Footer = () => {
 	);
 };
 
-export default Footer;
+export default Footer; // Footer component with a modern, sleek design and social media links
