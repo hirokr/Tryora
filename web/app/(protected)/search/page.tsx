@@ -1,23 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { BACKEND_URL } from "@/constants/constants";
-import type { SearchResponse } from "@/types/search";
 import { authFetch } from "@/lib/auth/authFetch";
 
-type FilterState = {
-	category: string;
-	color: string;
-	minBudget: string;
-	maxBudget: string;
-};
+import Loader from "@/components/ui/Loader";
 
 type UserLocation = {
 	latitude: number;
 	longitude: number;
 	country: string;
+};
+
+type resutls = {
+	id: string;
+	searchId: string;
+	title: string;
+	source: string;
+	googlelink: string;
+	price: string;
+	defaultImageUrl: string;
+	rating: number;
+	ratingCount: number;
+};
+
+type searchResponse = {
+	status: string;
+	intentKey: string;
+	searchId: string;
+	results: resutls[];
 };
 
 export default function SearchPage() {
@@ -46,7 +59,7 @@ export default function SearchPage() {
 				throw new Error("Search failed");
 			}
 
-			const data = (await response.json()) as SearchResponse;
+			const data = (await response.json()) as searchResponse;
 			// Handle search results (e.g., navigate to results page or display results)
 			console.log("Search results:", data);
 		} catch (searchError) {
@@ -91,9 +104,9 @@ export default function SearchPage() {
 		);
 	}, [location]);
 
-  useEffect(() => {
-    void handleDetectLocation();
-  }, [handleDetectLocation]);
+	useEffect(() => {
+		void handleDetectLocation();
+	}, [handleDetectLocation]);
 
 	return (
 		// <main className="mx-auto min-h-screen w-full max-w-7xl px-4 pb-32 pt-24 sm:px-6 sm:pb-36 lg:px-8">
