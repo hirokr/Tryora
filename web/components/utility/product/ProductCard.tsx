@@ -170,14 +170,15 @@ export function ProductCard({
 
 	return (
 		<article className='group overflow-hidden rounded-2xl border border-primary/20 bg-white/5 transition hover:-translate-y-0.5 hover:border-primary/35'>
-			<div className='relative aspect-4/3 bg-black/30'>
+			<div className='relative aspect-square bg-black/30'>
 				{defaultImageUrl ? (
 					<Image
 						src={defaultImageUrl}
 						alt={title}
 						fill
 						sizes='(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'
-						className='h-full w-full object-cover'
+						className='object-cover'
+						
 					/>
 				) : (
 					<div className='flex h-full items-center justify-center text-sm text-slate-400'>
