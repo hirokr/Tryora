@@ -1,6 +1,7 @@
 "use client";
 
 import { UploadButton } from "@/utils/uploadthing";
+import { toast } from "sonner";
 
 export default function Uploader() {
 	return (
@@ -9,12 +10,13 @@ export default function Uploader() {
 				endpoint='imageUploader'
 				onClientUploadComplete={(res) => {
 					// Do something with the response
-					console.log("Files: ", res);
-					alert("Upload Completed");
+					// console.log("Files: ", res);
+					// alert("Upload Completed");
+					toast.success("Upload Completed");
 				}}
 				onUploadError={(error: Error) => {
 					// Do something with the error.
-					alert(`ERROR! ${error.message}`);
+					toast.error(`ERROR! ${error.message}`);
 				}}
 			/>
 		</div>
