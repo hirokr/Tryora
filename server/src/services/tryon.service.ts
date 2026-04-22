@@ -94,13 +94,11 @@ export async function getTryon(limit: number, skip: number) {
       userId: true,
       productId: true,
       jobType: true,
-      thirdPartyTaskId: true,
       outputresultUrl: true,
       createdAt: true,
     },
   });
-  console.log('Fetched try-on jobs:', jobs);
-  return jobs.map((job) => mapJobToTryonRecord(job));
+  return jobs;
 }
 
 export async function getTryOnById(id: string) {
