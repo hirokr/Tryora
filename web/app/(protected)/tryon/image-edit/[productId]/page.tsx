@@ -11,6 +11,7 @@ import {
 	ImageEditJobPayload,
 	useImageEditJobStore,
 } from "@/store/useImageEditJobStore";
+import { useTryonSocket } from "@/context/tryonSocket.context";
 
 type ProductDetails = {
 	id: string;
