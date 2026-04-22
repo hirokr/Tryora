@@ -1,4 +1,4 @@
-//** 
+//**
 "use client";
 
 import Image from "next/image";
@@ -43,7 +43,10 @@ const showText = (
 	return String(value);
 };
 
-export function ProductCardPublic({ product, compact = false }: ProductCardProps) {
+export function ProductCardPublic({
+	product,
+	compact = false,
+}: ProductCardProps) {
 	const { isAuthenticated } = useAuth();
 	const router = useRouter();
 	const pathname = usePathname();
@@ -79,15 +82,19 @@ export function ProductCardPublic({ product, compact = false }: ProductCardProps
 	return (
 		<article className='overflow-hidden rounded-2xl border border-primary/20 bg-white/5 text-white'>
 			<div
-				className={`relative bg-black/30 ${compact ? "aspect-[2/1]" : "aspect-video"}`}
+				className={`relative bg-black/30 ${compact ? "aspect-auto" : "aspect-video"}`}
 			>
 				{product.defaultImageUrl ? (
 					<Image
 						src={product.defaultImageUrl}
 						alt={product.title}
 						fill
-						sizes={compact ? "(max-width: 1024px) 50vw, 33vw" : "(max-width: 1024px) 100vw, 1024px"}
-						className='h-full w-full object-cover'
+						sizes={
+							compact
+								? "(max-width: 1024px) 50vw, 33vw"
+								: "(max-width: 1024px) 100vw, 1024px"
+						}
+						className='h-full w-full object-contain'
 					/>
 				) : (
 					<div className='flex h-full items-center justify-center text-sm text-slate-400'>
@@ -116,13 +123,17 @@ export function ProductCardPublic({ product, compact = false }: ProductCardProps
 				<dl
 					className={`grid text-slate-200 ${compact ? "grid-cols-2 gap-2 text-xs" : "grid-cols-1 gap-3 text-sm sm:grid-cols-2"}`}
 				>
-					<div className={`rounded-lg border border-white/10 bg-black/20 ${compact ? "p-2" : "p-3"}`}>
+					<div
+						className={`rounded-lg border border-white/10 bg-black/20 ${compact ? "p-2" : "p-3"}`}
+					>
 						<dt className='text-xs uppercase tracking-wider text-slate-400'>
 							Source
 						</dt>
 						<dd className='mt-1 font-medium'>{showText(product.source)}</dd>
 					</div>
-					<div className={`rounded-lg border border-white/10 bg-black/20 ${compact ? "p-2" : "p-3"}`}>
+					<div
+						className={`rounded-lg border border-white/10 bg-black/20 ${compact ? "p-2" : "p-3"}`}
+					>
 						<dt className='text-xs uppercase tracking-wider text-slate-400'>
 							Price
 						</dt>
@@ -130,40 +141,40 @@ export function ProductCardPublic({ product, compact = false }: ProductCardProps
 					</div>
 					{compact ? null : (
 						<div className='rounded-lg border border-white/10 bg-black/20 p-3'>
-						<dt className='text-xs uppercase tracking-wider text-slate-400'>
-							Rating
-						</dt>
-						<dd className='mt-1 font-medium'>{showText(product.rating)}</dd>
+							<dt className='text-xs uppercase tracking-wider text-slate-400'>
+								Rating
+							</dt>
+							<dd className='mt-1 font-medium'>{showText(product.rating)}</dd>
 						</div>
 					)}
 					{compact ? null : (
 						<div className='rounded-lg border border-white/10 bg-black/20 p-3'>
-						<dt className='text-xs uppercase tracking-wider text-slate-400'>
-							Rating Count
-						</dt>
-						<dd className='mt-1 font-medium'>
-							{showText(product.ratingCount)}
-						</dd>
+							<dt className='text-xs uppercase tracking-wider text-slate-400'>
+								Rating Count
+							</dt>
+							<dd className='mt-1 font-medium'>
+								{showText(product.ratingCount)}
+							</dd>
 						</div>
 					)}
 					{compact ? null : (
 						<div className='rounded-lg border border-white/10 bg-black/20 p-3'>
-						<dt className='text-xs uppercase tracking-wider text-slate-400'>
-							Like Count
-						</dt>
-						<dd className='mt-1 font-medium'>
-							{showText(product.likeCount, "0")}
-						</dd>
+							<dt className='text-xs uppercase tracking-wider text-slate-400'>
+								Like Count
+							</dt>
+							<dd className='mt-1 font-medium'>
+								{showText(product.likeCount, "0")}
+							</dd>
 						</div>
 					)}
 					{compact ? null : (
 						<div className='rounded-lg border border-white/10 bg-black/20 p-3'>
-						<dt className='text-xs uppercase tracking-wider text-slate-400'>
-							View Count
-						</dt>
-						<dd className='mt-1 font-medium'>
-							{showText(product.viewCount, "0")}
-						</dd>
+							<dt className='text-xs uppercase tracking-wider text-slate-400'>
+								View Count
+							</dt>
+							<dd className='mt-1 font-medium'>
+								{showText(product.viewCount, "0")}
+							</dd>
 						</div>
 					)}
 				</dl>
@@ -201,48 +212,48 @@ export function ProductCardPublic({ product, compact = false }: ProductCardProps
 
 				{compact ? null : (
 					<section>
-					<h2 className='text-lg font-semibold'>
-						Variants ({product.variants.length})
-					</h2>
+						<h2 className='text-lg font-semibold'>
+							Variants ({product.variants.length})
+						</h2>
 
-					{product.variants.length === 0 ? (
-						<p className='mt-2 text-sm text-slate-300'>
-							No variant details available.
-						</p>
-					) : (
-						<div className='mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2'>
-							{product.variants.map((variant, index) => (
-								<div
-									key={`${variant.imageUrl || "variant"}-${index}`}
-									className='overflow-hidden rounded-xl border border-white/10 bg-black/20'
-								>
-									<div className='relative aspect-4/3 bg-black/40'>
-										{variant.imageUrl ? (
-											<Image
-												src={variant.imageUrl}
-												alt={`${product.title} variant ${index + 1}`}
-												fill
-												sizes='(max-width: 640px) 100vw, 50vw'
-												className='h-full w-full object-cover'
-											/>
-										) : (
-											<div className='flex h-full items-center justify-center text-xs text-slate-400'>
-												No variant image
-											</div>
-										)}
+						{product.variants.length === 0 ? (
+							<p className='mt-2 text-sm text-slate-300'>
+								No variant details available.
+							</p>
+						) : (
+							<div className='mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2'>
+								{product.variants.map((variant, index) => (
+									<div
+										key={`${variant.imageUrl || "variant"}-${index}`}
+										className='overflow-hidden rounded-xl border border-white/10 bg-black/20'
+									>
+										<div className='relative aspect-4/3 bg-black/40'>
+											{variant.imageUrl ? (
+												<Image
+													src={variant.imageUrl}
+													alt={`${product.title} variant ${index + 1}`}
+													fill
+													sizes='(max-width: 640px) 100vw, 50vw'
+													className='h-full w-full object-cover'
+												/>
+											) : (
+												<div className='flex h-full items-center justify-center text-xs text-slate-400'>
+													No variant image
+												</div>
+											)}
+										</div>
+										<div className='p-3 text-sm text-slate-200'>
+											<p className='text-xs uppercase tracking-wide text-slate-400'>
+												Variant data
+											</p>
+											<p className='mt-1 wrap-break-word'>
+												{showText(variant.variantData)}
+											</p>
+										</div>
 									</div>
-									<div className='p-3 text-sm text-slate-200'>
-										<p className='text-xs uppercase tracking-wide text-slate-400'>
-											Variant data
-										</p>
-										<p className='mt-1 wrap-break-word'>
-											{showText(variant.variantData)}
-										</p>
-									</div>
-								</div>
-							))}
-						</div>
-					)}
+								))}
+							</div>
+						)}
 					</section>
 				)}
 			</div>

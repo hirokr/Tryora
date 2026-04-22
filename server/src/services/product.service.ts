@@ -289,6 +289,7 @@ export const getProductsBySearchID = async (searchId: string) => {
   return prisma.product.findMany({
     where: { searchId },
     select: {
+      search: true,
       id: true,
       title: true,
       source: true,
