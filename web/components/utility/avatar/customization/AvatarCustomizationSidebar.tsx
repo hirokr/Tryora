@@ -127,4 +127,4 @@ export function AvatarCustomizationSidebar({
       </div>
     </aside>
   );
-}
+} // This component, `AvatarCustomizationSidebar`, is responsible for rendering the sidebar of the avatar customization page. It provides users with controls to fine-tune their digital avatar's body measurements and appearance. The sidebar includes sections for adjusting body sliders (such as height, weight, etc.) and selecting skin tones and hair styles. Each section is visually distinct with icons and headings, and the controls are designed to be intuitive and responsive. The component also includes a manual fallback notice at the bottom, informing users about the confidence score of the AI extraction and allowing them to make manual adjustments if needed. The overall design is consistent with the futuristic and immersive aesthetic of the Tryora platform.
