@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import MainProvider from "@/providers/Provider";
+import { getSession } from "@/lib/auth/session";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -20,11 +21,13 @@ export const metadata: Metadata = {
 
 <meta name='apple-mobile-web-app-title' content='Tryora' />;
 
-export default function RootLayout({
+export default async function RootLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
+	const session = await getSession();
+
 	return (
 		<html lang='en' suppressHydrationWarning>
 			<body
@@ -32,7 +35,9 @@ export default function RootLayout({
 				className={`${geistSans.variable} 
 				${geistMono.variable} antialiased dark`}
 			>
-				<MainProvider>{children}</MainProvider>
+				<MainProvider initialUser={session?.user ?? null}>
+					{children}
+				</MainProvider>
 			</body>
 		</html>
 	);
