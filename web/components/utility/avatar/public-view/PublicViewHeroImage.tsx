@@ -1,9 +1,10 @@
+//***** */
 type PublicViewHeroImageProps = {
   imageUrl: string;
   imageError: string | null;
 };
 
-export function PublicViewHeroImage({ imageUrl, imageError }: PublicViewHeroImageProps) {
+export function  PublicViewHeroImage({ imageUrl, imageError }: PublicViewHeroImageProps) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center p-6">
       <div className="relative h-[420px] w-full max-w-4xl overflow-hidden rounded-3xl border border-primary/10 md:h-[500px] lg:h-[560px]">
