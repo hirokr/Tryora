@@ -93,6 +93,7 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
     }
 
     const { userInput, location } = req.body;
+    console.log(userInput)
 
     if (!userInput || typeof userInput !== 'string') {
       return res.status(400).json({ message: 'Invalid input' });

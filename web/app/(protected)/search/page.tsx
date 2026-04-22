@@ -50,7 +50,7 @@ export default function SearchPage() {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
-					prompt,
+					userInput: prompt,
 					location: location?.country,
 				}),
 			});
@@ -109,51 +109,48 @@ export default function SearchPage() {
 	}, [handleDetectLocation]);
 
 	return (
-		<main className="mx-auto min-h-screen w-full max-w-7xl px-4 pb-32 pt-24 sm:px-6 sm:pb-36 lg:px-8">
-			<section className="rounded-2xl border border-primary/20 bg-[#191022] p-6 text-white shadow-lg shadow-black/20 sm:p-8">
-				<p className="text-xs uppercase tracking-[0.2em] text-primary">AI Search</p>
-				<h1 className="mt-2 text-3xl font-bold">Find styles instantly</h1>
-				<p className="mt-2 text-sm text-slate-300">
+		<main className='mx-auto min-h-screen w-full max-w-7xl px-4 pb-32 pt-24 sm:px-6 sm:pb-36 lg:px-8'>
+			<section className='rounded-2xl border border-primary/20 bg-[#191022] p-6 text-white shadow-lg shadow-black/20 sm:p-8'>
+				<p className='text-xs uppercase tracking-[0.2em] text-primary'>
+					AI Search
+				</p>
+				<h1 className='mt-2 text-3xl font-bold'>Find styles instantly</h1>
+				<p className='mt-2 text-sm text-slate-300'>
 					Search with prompt + your location for better local recommendations.
 				</p>
 
-				<div className="mt-6 space-y-3">
+				<div className='mt-6 space-y-3'>
 					<textarea
-					value={prompt}
-					onChange={(event) => setPrompt(event.target.value)}
-					placeholder="Try: modern black cocktail dress under 150"
-					className="min-h-40 w-full rounded-xl border border-primary/20 bg-black/20 px-4 py-4 text-base text-white outline-none focus:border-primary"
+						value={prompt}
+						onChange={(event) => setPrompt(event.target.value)}
+						placeholder='Try: modern black cocktail dress under 150'
+						className='min-h-40 w-full rounded-xl border border-primary/20 bg-black/20 px-4 py-4 text-base text-white outline-none focus:border-primary'
 					/>
 
-					<div className="flex flex-wrap items-center gap-3">
-					<button
-						type="button"
-						onClick={handleSearch}
-						disabled={loading || !prompt.trim()}
-						className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-					>
-						{loading ? "Searching..." : "Run AI Search"}
-					</button>
+					<div className='flex flex-wrap items-center gap-3'>
+						<button
+							type='button'
+							onClick={handleSearch}
+							disabled={loading || !prompt.trim()}
+							className='rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60'
+						>
+							{loading ? "Searching..." : "Run AI Search"}
+						</button>
 
+						{location ? (
+							<p className='mt-3 text-xs text-emerald-300'>
+								Location: {location?.country || "Unknown country"} (
+								{location?.latitude.toFixed(3)},{" "}
+								{location?.longitude.toFixed(3)})
+							</p>
+						) : null}
 
-					
- 
-
-		      {location ? (
-		        <p className="mt-3 text-xs text-emerald-300">
-		          Location: {location?.country || "Unknown country"} ({location?.latitude.toFixed(3)},{" "}
-		          {location?.longitude.toFixed(3)})
-		        </p>
-		      ) : null}
-		      
-
-		      
-		      {error ? <p className="mt-3 text-sm text-red-300">{error}</p> : null}
-			</div>
-			</div>
-      </section>
-    </main>
+						{error ? (
+							<p className='mt-3 text-sm text-red-300'>{error}</p>
+						) : null}
+					</div>
+				</div>
+			</section>
+		</main>
 	);
 }
-
-
