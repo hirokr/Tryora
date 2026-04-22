@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useEffectEvent, useState } from "react";
+import { useCallback, useEffectEvent, useState } from "react";
 
-import { Product } from "@/types/product";
 import { BACKEND_URL } from "@/constants/constants";
 import Loader from "@/components/ui/Loader";
 

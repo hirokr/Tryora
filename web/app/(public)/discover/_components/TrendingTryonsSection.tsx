@@ -1,6 +1,9 @@
 import { SearchProductCard } from "@/components/utility/search/SearchProductCard";
 
-import type { FeedCardHandlers, FeedProduct } from "../../../../types/feedTypes";
+import type {
+  FeedCardHandlers,
+  FeedProduct,
+} from "../../../../types/feedTypes";
 
 type TrendingTryonsSectionProps = {
   show: boolean;
@@ -44,6 +47,7 @@ export function TrendingTryonsSection({
           <SearchProductCard
             key={product.id || `${product.title}-${index}`}
             product={product}
+            detailsHref={product.id ? `/discover/${product.id}` : undefined}
             likeCount={likeCounts[product.id || ""]}
             viewCount={viewCounts[product.id || ""]}
             isFavorited={Boolean(favourites[product.id || ""])}
