@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-
-import { BACKEND_URL } from "@/constants/constants";
 import { authFetch } from "@/lib/auth/authFetch";
 
 import Loader from "@/components/ui/Loader";
@@ -102,7 +100,7 @@ export default function SearchPage() {
 				);
 			},
 		);
-	}, [location]);
+	}, []);
 
 	useEffect(() => {
 		void handleDetectLocation();
