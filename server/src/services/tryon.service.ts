@@ -60,6 +60,7 @@ export async function getTryOnById(id: string) {
     where: { id },
     select: {
       id: true,
+      userId: true,
       resultUrl: true,
       productIds: true,
       tryonType: true,
@@ -89,10 +90,14 @@ export async function getTryOnsByUserId(userId: string) {
   return await prisma.tryon.findMany({
     where: { userId, tryonType: JobType.IMAGE_TRYON },
     orderBy: { createdAt: 'desc' },
-    select:{
+    select: {
       id: true,
+      userId: true,
       resultUrl: true,
+      productIds: true,
       tryonType: true,
+      provider: true,
+      createdAt: true,
     }
   });
 }

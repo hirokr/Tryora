@@ -3,6 +3,13 @@ export type UserProfile = {
   name?: string;
   email?: string;
   avatarUrl?: string;
+  age?: number | null;
+  gender?: string;
+  location?: string | null;
+  emailVerified?: boolean;
+  isActive?: boolean;
+  interests?: string[];
+  userBodyImageUrl?: string | null;
   demographics?: {
     ageRange?: string;
     gender?: string;
