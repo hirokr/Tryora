@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { ProductCard } from "@/components/utility/product/ProductCard";
@@ -40,12 +41,37 @@ type SearchResponse = {
 	results: SearchResult[];
 };
 
+type SearchHistoryItem = {
+	id: string;
+	intentKey: string;
+};
+
+type SearchHistoryResponse = {
+	status: string;
+	results: SearchHistoryItem[];
+};
+
+const getShortIntentKey = (value: string) => {
+	if (!value) return "Unknown";
+	const parts = value
+		.split("|")
+		.map((item) => item.trim())
+		.filter(Boolean);
+
+	if (!parts.length) return "Unknown";
+	const shortened = parts.slice(0, 3).join(" | ");
+	return parts.length > 3 ? `${shortened}...` : shortened;
+};
+
 export default function SearchPage() {
+	const router = useRouter();
 	const [prompt, setPrompt] = useState("");
 	const [location, setLocation] = useState<UserLocation | null>(null);
 	const [loading, setLoading] = useState(false);
+	const [historyLoading, setHistoryLoading] = useState(false);
 	const [error, setError] = useState("");
 	const [products, setProducts] = useState<SearchResult[]>([]);
+	const [searchHistory, setSearchHistory] = useState<SearchHistoryItem[]>([]);
 
 	const handleSearch = useCallback(async () => {
 		if (!prompt.trim()) return;
@@ -98,6 +124,27 @@ export default function SearchPage() {
 		}
 	}, [prompt, location]);
 
+	const loadSearchHistory = useCallback(async () => {
+		setHistoryLoading(true);
+
+		try {
+			const response = await authFetch("/api/search/history", {
+				method: "GET",
+			});
+
+			const data = (await response.json().catch(() => ({}))) as SearchHistoryResponse;
+
+			if (!response.ok || !Array.isArray(data.results)) {
+				setSearchHistory([]);
+				return;
+			}
+
+			setSearchHistory(data.results);
+		} finally {
+			setHistoryLoading(false);
+		}
+	}, []);
+
 	const handleDetectLocation = useCallback(async () => {
 		if (!navigator.geolocation) {
 			setError("Geolocation is not supported by your browser");
@@ -129,7 +176,8 @@ export default function SearchPage() {
 
 	useEffect(() => {
 		void handleDetectLocation();
-	}, [handleDetectLocation]);
+		void loadSearchHistory();
+	}, [handleDetectLocation, loadSearchHistory]);
 
 	return (
 		<main className='mx-auto min-h-screen w-full max-w-7xl px-4 pb-32 pt-24 sm:px-6 sm:pb-36 lg:px-8'>
@@ -142,7 +190,7 @@ export default function SearchPage() {
 					Search with prompt + your location for better local recommendations.
 				</p>
 
-				<div className='mt-6 space-y-3'>
+				<div className='mt-6 space-y-4'>
 					<textarea
 						value={prompt}
 						onChange={(event) => setPrompt(event.target.value)}
@@ -150,12 +198,43 @@ export default function SearchPage() {
 						className='min-h-40 w-full rounded-xl border border-primary/20 bg-black/20 px-4 py-4 text-base text-white outline-none focus:border-primary'
 					/>
 
-					<div className='flex flex-wrap items-center gap-3'>
+					<div>
+						<p className='mb-2 text-xs uppercase tracking-[0.2em] text-slate-400'>
+							Recent Intent Keys
+						</p>
+						<div className='overflow-x-auto pb-1'>
+							<div className='flex min-w-max items-center gap-2'>
+								{historyLoading ? (
+									<p className='rounded-full border border-white/20 px-3 py-1.5 text-xs text-slate-300'>
+										Loading...
+									</p>
+								) : searchHistory.length === 0 ? (
+									<p className='rounded-full border border-white/20 px-3 py-1.5 text-xs text-slate-300'>
+										No search history
+									</p>
+								) : (
+									searchHistory.slice(0, 20).map((item) => (
+										<button
+											key={item.id}
+											type='button'
+											onClick={() => router.push(`/search/${item.id}/products`)}
+											className='shrink-0 rounded-full border border-primary/35 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20'
+											title={item.intentKey}
+										>
+											{getShortIntentKey(item.intentKey)}
+										</button>
+									))
+								)}
+							</div>
+						</div>
+					</div>
+
+					<div className='flex items-center justify-center'>
 						<button
 							type='button'
 							onClick={handleSearch}
 							disabled={loading || !prompt.trim()}
-							className='rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60'
+							className='rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60'
 						>
 							{loading ? "Searching..." : "Run AI Search"}
 						</button>

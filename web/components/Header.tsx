@@ -18,7 +18,7 @@ const Header = async () => {
           <nav className="hidden md:flex items-center gap-10">
             <Link href="/dashboard" className="text-slate-300 hover:text-primary transition-colors text-sm font-medium">Platform</Link>
             <Link href="/search" className="text-slate-300 hover:text-primary transition-colors text-sm font-medium">Search</Link>
-            <Link href="/style-discovery" className="text-slate-300 hover:text-primary transition-colors text-sm font-medium">Style Discovery</Link>
+            <Link href="/discover" className="text-slate-300 hover:text-primary transition-colors text-sm font-medium">Style Discovery</Link>
           </nav>
           <div className="flex items-center gap-4">
       {isAuthenticated ? (

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/context/auth.context";
-import { authFetch } from "@/lib/auth/clientAuthFetch";
+import { authFetch } from "@/lib/auth/authFetch";
 import { Product } from "@/types/product";
 import { BACKEND_URL } from "@/constants/constants";
 import Loader from "@/components/ui/Loader";
