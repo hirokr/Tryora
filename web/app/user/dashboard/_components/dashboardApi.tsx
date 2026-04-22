@@ -8,6 +8,14 @@ import type {
   UserProfile,
 } from "../../../../types/dashboardtypes";
 
+export type ProfileUpdatePayload = {
+  name: string;
+  gender: string;
+  age?: number;
+  interests?: string[];
+  avatarUrl?: string;
+};
+
 async function readJsonSafely(response: Response): Promise<Record<string, unknown>> {
   return (await response.clone().json().catch(() => ({}))) as Record<string, unknown>;
 }
@@ -207,7 +215,7 @@ export async function fetchDashboardData(): Promise<DashboardData> {
   };
 }
 
-export async function updateProfile(payload: { name: string; gender: string }) {
+export async function updateProfile(payload: ProfileUpdatePayload) {
   return authFetch("/api/user/me", {
     method: "PATCH",
     headers: {

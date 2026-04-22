@@ -8,6 +8,7 @@ import { deleteAccount, fetchDashboardData, updateProfile } from "./_components/
 import { MeAndMyselfSection } from "./_components/MeAndMyselfSection";
 import { Profile } from "./_components/Profile";
 import type { DashboardMetrics as DashboardMetricsData, MeAndMyselfImage, UserProfile } from "../../../types/dashboardtypes";
+import type { ProfileUpdatePayload } from "./_components/dashboardApi";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -45,10 +46,7 @@ export default function DashboardPage() {
     void load();
   }, []);
 
-  const handleSaveProfile = async (payload: {
-    name: string;
-    gender: string;
-  }) => {
+  const handleSaveProfile = async (payload: ProfileUpdatePayload): Promise<boolean> => {
     setIsBusy(true);
     setError(null);
 
@@ -57,7 +55,7 @@ export default function DashboardPage() {
 
       if (!response.ok) {
         setError("Failed to update profile.");
-        return;
+        return false;
       }
 
       setProfile((current) => {
@@ -67,8 +65,16 @@ export default function DashboardPage() {
           ...current,
           name: payload.name,
           gender: payload.gender,
+          age: typeof payload.age === "number" ? payload.age : current.age,
+          interests: Array.isArray(payload.interests) ? payload.interests : current.interests,
+          avatarUrl: payload.avatarUrl || current.avatarUrl,
         };
       });
+
+      return true;
+    } catch {
+      setError("Failed to update profile.");
+      return false;
     } finally {
       setIsBusy(false);
     }
@@ -98,7 +104,7 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen overflow-y-auto bg-[#0f0a1b] pt-20 text-slate-100">
       <div className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-12 sm:px-6 lg:px-8">
-        <header className="rounded-3xl border border-white/10 bg-gradient-to-r from-[#1b1327] via-[#22163b] to-[#1e2d3a] p-6 sm:p-8">
+        <header className="rounded-3xl border border-white/10 bg-linear-to-r from-[#1b1327] via-[#22163b] to-[#1e2d3a] p-6 sm:p-8">
           <p className="text-xs uppercase tracking-[0.24em] text-amber-200">Dashboard</p>
           <h1 className="mt-3 font-serif text-3xl sm:text-4xl">Welcome back, {profile?.name || "User"}</h1>
           <p className="mt-2 text-sm text-slate-200">Your dashboard now focuses on favourites, try-ons, wardrobe usage, profile update, and Me &amp; Myself images.</p>
