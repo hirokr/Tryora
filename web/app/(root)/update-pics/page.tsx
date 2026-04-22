@@ -125,6 +125,13 @@ export default function UpdatePicsPage() {
 				message?: string;
 			};
 
+			if (!response.ok) {
+				setUploadError(
+					payload.message || "Failed to upload body images. Please try again.",
+				);
+				return;
+			}
+
 			if (response.ok) {
 				localStorage.removeItem(MODEL_3D_STATE_STORAGE_KEY);
 				router.push("/style-discovery");
