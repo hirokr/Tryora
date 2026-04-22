@@ -16,4 +16,4 @@ export default async function MainProvider({
 			<RootLayoutShell enableSidebar={isAuthenticated}>{children}</RootLayoutShell>
 		</>
 	);
-}
+} // Main layout provider for user pages

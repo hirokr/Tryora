@@ -18,4 +18,4 @@ export const useSceneStore = create<SceneState>((set) => ({
 	setHovered: (hovered) => set({ isHovered: hovered }),
 	setActiveColor: (color) => set({ activeColor: color }),
 	setRotationSpeed: (speed) => set({ rotationSpeed: speed }),
-}));
+})); // Zustand store for scene management

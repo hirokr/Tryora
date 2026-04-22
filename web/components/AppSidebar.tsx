@@ -52,3 +52,4 @@ export default function AppSidebar() {
     </aside>
   );
 }
+// This component, `AppSidebar`, is responsible for rendering a sidebar navigation menu for the Tryora application. It uses Next.js's `Link` component for client-side navigation and `usePathname` to determine the current active route. The sidebar includes links to various sections of the app, such as Dashboard, Style Discovery, Search, Trending, Search History, Marketplace, Wardrobe, Public View, and Outfit Comparison. The active link is highlighted with a different background and text color. The sidebar is designed to be responsive and only appears on larger screens (hidden on smaller screens).

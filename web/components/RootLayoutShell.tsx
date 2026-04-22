@@ -19,4 +19,4 @@ export default function RootLayoutShell({ enableSidebar, children }: RootLayoutS
       <div className={showSidebar ? "xl:pl-72" : ""}>{children}</div>
     </>
   );
-}
+} // Layout shell that conditionally renders the sidebar based on the current route and authentication status

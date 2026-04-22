@@ -73,3 +73,4 @@ export default function StyleDiscoveryPage() {
 		</section>
 	);
 }
+// This file defines a React component for the "Style Discovery" page of the Tryora website. It fetches and displays trending try-on products from the backend API. The component manages loading and error states, and provides a button to refresh the product list. The UI is styled with a dark theme and includes a header and a call-to-action button for refreshing the products.

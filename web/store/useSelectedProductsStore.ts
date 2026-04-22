@@ -76,4 +76,4 @@ export const useSelectedProductsStore = create<SelectedProductsState>()(
       partialize: (state) => ({ selectedProducts: state.selectedProducts }),
     },
   ),
-);
+); // Zustand store for managing selected products in the try-on flow, with persistence in localStorage

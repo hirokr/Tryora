@@ -84,4 +84,4 @@ export function AvatarCustomizationViewport({
       </div>
     </div>
   );
-}
+} // This component, `AvatarCustomizationViewport`, is responsible for rendering the main viewport of the avatar customization page. It displays a 3D human avatar model with a shoulder pivot point highlighted. The viewport includes buttons for zooming, refreshing, and toggling grid view, as well as a section for testing different motion modes. The motion modes are displayed as buttons that allow users to switch between different animations or poses for the avatar. The overall design is consistent with the futuristic and immersive aesthetic of the Tryora platform, using a dark color scheme with neon accents and blurred backgrounds to create depth and focus on the avatar.
