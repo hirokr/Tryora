@@ -53,4 +53,4 @@ export function AvatarStudioWorkspace({
 			/>
 		</div>
 	);
-}
+} // This component, `AvatarStudioWorkspace`, is responsible for rendering the main workspace of the Avatar Studio feature in the Tryora application. It displays a 3D environment where users can see a preview of their avatar as it initializes. The component includes a background with a radial gradient and a central image representing the avatar. It also shows a loading message while the 3D environment is initializing. The component handles avatar load success and error events, and it integrates the `AvatarStudioNotifications` component to display any relevant notifications to the user, such as errors or status updates. The overall design is consistent with the futuristic and immersive aesthetic of the Tryora platform, using a dark color scheme with neon accents to create an engaging user experience.
