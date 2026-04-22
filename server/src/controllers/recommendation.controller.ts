@@ -1,3 +1,4 @@
+//2
 import { AuthRequest } from '#src/types/authRequest.js';
 import { Response } from 'express';
 import { getRuntimeRecommendations } from '#src/services/product.service.ts';
@@ -20,8 +21,8 @@ export const getRuntimeProductRecommendations = async (
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const limit = parseNumberQuery(req.query.limit, 20);
-    const skip = parseNumberQuery(req.query.skip, 0);
+    const limit  = parseNumberQuery(req.query.limit, 20);
+    const skip  = parseNumberQuery(req.query.skip, 0);
     const category =
       typeof req.query.category === 'string' ? req.query.category : undefined;
 
