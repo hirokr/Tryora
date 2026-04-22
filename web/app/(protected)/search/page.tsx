@@ -1,18 +1,24 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { authFetch } from "@/lib/auth/authFetch";
 
-import Loader from "@/components/ui/Loader";
+import { ProductCard } from "@/components/utility/product/ProductCard";
+import { authFetch } from "@/lib/auth/authFetch";
 
 type UserLocation = {
 	latitude: number;
 	longitude: number;
-	country: string;
+	country: string | null;
 };
 
-type resutls = {
+type ProductVariant = {
+	id: string;
+	title: string;
+	price: string;
+	imageUrl: string;
+};
+
+type SearchResult = {
 	id: string;
 	searchId: string;
 	title: string;
@@ -22,13 +28,16 @@ type resutls = {
 	defaultImageUrl: string;
 	rating: number;
 	ratingCount: number;
+	viewCount?: number;
+	likeCount?: number;
+	variants?: ProductVariant[];
 };
 
-type searchResponse = {
+type SearchResponse = {
 	status: string;
 	intentKey: string;
 	searchId: string;
-	results: resutls[];
+	results: SearchResult[];
 };
 
 export default function SearchPage() {
@@ -36,6 +45,7 @@ export default function SearchPage() {
 	const [location, setLocation] = useState<UserLocation | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
+	const [products, setProducts] = useState<SearchResult[]>([]);
 
 	const handleSearch = useCallback(async () => {
 		if (!prompt.trim()) return;
@@ -44,7 +54,7 @@ export default function SearchPage() {
 		setError("");
 
 		try {
-			const response = await authFetch(`/api/search/search`, {
+			const response = await authFetch("/api/search/search", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({
@@ -53,13 +63,30 @@ export default function SearchPage() {
 				}),
 			});
 
+			const data = (await response.json().catch(() => ({}))) as
+				| SearchResponse
+				| { message?: string };
+
 			if (!response.ok) {
-				throw new Error("Search failed");
+				throw new Error(
+					"message" in data && data.message
+						? data.message
+						: `Search failed (${response.status})`,
+				);
 			}
 
-			const data = (await response.json()) as searchResponse;
-			// Handle search results (e.g., navigate to results page or display results)
-			console.log("Search results:", data);
+			if (!("results" in data) || !Array.isArray(data.results)) {
+				throw new Error("Invalid search response");
+			}
+
+			const normalizedProducts = data.results.map((item: SearchResult) => ({
+				...item,
+				viewCount: item.viewCount ?? 0,
+				likeCount: item.likeCount ?? 0,
+				variants: item.variants ?? [],
+			}));
+
+			setProducts(normalizedProducts);
 		} catch (searchError) {
 			setError(
 				searchError instanceof Error
@@ -87,9 +114,7 @@ export default function SearchPage() {
 				);
 
 				const data = await res.json();
-
 				const country = data.address?.country || null;
-				// For simplicity, we'll just use the coordinates as the "country"
 				setLocation({ latitude, longitude, country });
 			},
 			(geoError) => {
@@ -134,20 +159,43 @@ export default function SearchPage() {
 						>
 							{loading ? "Searching..." : "Run AI Search"}
 						</button>
-
-						{location ? (
-							<p className='mt-3 text-xs text-emerald-300'>
-								Location: {location?.country || "Unknown country"} (
-								{location?.latitude.toFixed(3)},{" "}
-								{location?.longitude.toFixed(3)})
-							</p>
-						) : null}
-
-						{error ? (
-							<p className='mt-3 text-sm text-red-300'>{error}</p>
-						) : null}
 					</div>
+
+					{location ? (
+						<p className='mt-3 text-xs text-emerald-300'>
+							Location: {location.country || "Unknown country"} (
+							{location.latitude.toFixed(3)}, {location.longitude.toFixed(3)})
+						</p>
+					) : null}
+
+					{error ? <p className='mt-3 text-sm text-red-300'>{error}</p> : null}
 				</div>
+			</section>
+
+			<section className='mt-8'>
+				<h2 className='mb-4 text-lg font-semibold text-white'>Products</h2>
+
+				{products.length === 0 ? (
+					<p className='text-sm text-slate-300'>No products yet. Run a search.</p>
+				) : (
+					<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+						{products.map((product, index) => (
+							<ProductCard
+								key={product.id || `${product.title}-${index}`}
+								id={product.id}
+								title={product.title}
+								source={product.source}
+								defaultImageUrl={product.defaultImageUrl}
+								price={product.price}
+								rating={product.rating}
+								ratingCount={product.ratingCount}
+								viewCount={product.viewCount ?? 0}
+								likeCount={product.likeCount ?? 0}
+								variants={product.variants ?? []}
+							/>
+						))}
+					</div>
+				)}
 			</section>
 		</main>
 	);

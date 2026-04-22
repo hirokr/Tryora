@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { authFetch } from "@/lib/auth/clientAuthFetch";
+import { authFetch } from "@/lib/auth/authFetch";
 import type { FeedProduct } from "@/types/feedTypes";
 import { useSelectedProductsStore } from "@/store/useSelectedProductsStore";
 
