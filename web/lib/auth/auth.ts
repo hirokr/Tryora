@@ -101,6 +101,12 @@ export async function signIn(
 	state: FormState,
 	formData: FormData,
 ): Promise<FormState> {
+	const redirectToRaw = formData.get("redirectTo");
+	const redirectTo =
+		typeof redirectToRaw === "string" && redirectToRaw.startsWith("/")
+			? redirectToRaw
+			: "/";
+
 	const validatedFields = LoginFormSchema.safeParse({
 		email: formData.get("email"),
 		password: formData.get("password"),
@@ -160,7 +166,7 @@ export async function signIn(
 			accessToken: tokens.accessToken,
 			refreshToken: tokens.refreshToken,
 		});
-		redirect("/");
+		redirect(redirectTo);
 	} else {
 		return {
 			message: data?.message || response.statusText,

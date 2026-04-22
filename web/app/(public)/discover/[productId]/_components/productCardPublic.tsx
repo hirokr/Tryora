@@ -2,7 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import { useAuth } from "@/context/auth.context";
 import { useSelectedProductsStore } from "@/store/useSelectedProductsStore";
 
 export type ProductVariant = {
@@ -26,6 +28,7 @@ export type ProductDetails = {
 
 type ProductCardProps = {
 	product: ProductDetails;
+	compact?: boolean;
 };
 
 const showText = (
@@ -39,7 +42,11 @@ const showText = (
 	return String(value);
 };
 
-export function ProductCardPublic({ product }: ProductCardProps) {
+export function ProductCardPublic({ product, compact = false }: ProductCardProps) {
+	const { isAuthenticated } = useAuth();
+	const router = useRouter();
+	const pathname = usePathname();
+	const searchParams = useSearchParams();
 	const toggleProduct = useSelectedProductsStore(
 		(state) => state.toggleProduct,
 	);
@@ -48,6 +55,13 @@ export function ProductCardPublic({ product }: ProductCardProps) {
 	);
 
 	const handleSelectProduct = () => {
+		if (!isAuthenticated) {
+			const query = searchParams.toString();
+			const currentPath = query ? `${pathname}?${query}` : pathname;
+			router.push(`/auth/signin?redirectTo=${encodeURIComponent(currentPath)}`);
+			return;
+		}
+
 		if (!product.id || !product.defaultImageUrl) {
 			return;
 		}
@@ -63,13 +77,15 @@ export function ProductCardPublic({ product }: ProductCardProps) {
 
 	return (
 		<article className='overflow-hidden rounded-2xl border border-primary/20 bg-white/5 text-white'>
-			<div className='relative aspect-video bg-black/30'>
+			<div
+				className={`relative bg-black/30 ${compact ? "aspect-[2/1]" : "aspect-video"}`}
+			>
 				{product.defaultImageUrl ? (
 					<Image
 						src={product.defaultImageUrl}
 						alt={product.title}
 						fill
-						sizes='(max-width: 1024px) 100vw, 1024px'
+						sizes={compact ? "(max-width: 1024px) 50vw, 33vw" : "(max-width: 1024px) 100vw, 1024px"}
 						className='h-full w-full object-cover'
 					/>
 				) : (
@@ -79,62 +95,80 @@ export function ProductCardPublic({ product }: ProductCardProps) {
 				)}
 			</div>
 
-			<div className='flex flex-col gap-6 p-6'>
+			<div className={`flex flex-col ${compact ? "gap-3 p-3" : "gap-6 p-6"}`}>
 				<div>
-					<p className='text-xs uppercase tracking-[0.2em] text-primary'>
-						Product Details
-					</p>
-					<h1 className='mt-2 text-2xl font-bold'>{product.title}</h1>
-					<p className='mt-1 text-sm text-slate-300'>ID: {product.id}</p>
+					{compact ? null : (
+						<p className='text-xs uppercase tracking-[0.2em] text-primary'>
+							Product Details
+						</p>
+					)}
+					<h1
+						className={`font-bold ${compact ? "line-clamp-1 text-sm" : "mt-2 text-2xl"}`}
+					>
+						{product.title}
+					</h1>
+					{compact ? null : (
+						<p className='mt-1 text-sm text-slate-300'>ID: {product.id}</p>
+					)}
 				</div>
 
-				<dl className='grid grid-cols-1 gap-3 text-sm text-slate-200 sm:grid-cols-2'>
-					<div className='rounded-lg border border-white/10 bg-black/20 p-3'>
+				<dl
+					className={`grid text-slate-200 ${compact ? "grid-cols-2 gap-2 text-xs" : "grid-cols-1 gap-3 text-sm sm:grid-cols-2"}`}
+				>
+					<div className={`rounded-lg border border-white/10 bg-black/20 ${compact ? "p-2" : "p-3"}`}>
 						<dt className='text-xs uppercase tracking-wider text-slate-400'>
 							Source
 						</dt>
 						<dd className='mt-1 font-medium'>{showText(product.source)}</dd>
 					</div>
-					<div className='rounded-lg border border-white/10 bg-black/20 p-3'>
+					<div className={`rounded-lg border border-white/10 bg-black/20 ${compact ? "p-2" : "p-3"}`}>
 						<dt className='text-xs uppercase tracking-wider text-slate-400'>
 							Price
 						</dt>
 						<dd className='mt-1 font-medium'>{showText(product.price)}</dd>
 					</div>
-					<div className='rounded-lg border border-white/10 bg-black/20 p-3'>
+					{compact ? null : (
+						<div className='rounded-lg border border-white/10 bg-black/20 p-3'>
 						<dt className='text-xs uppercase tracking-wider text-slate-400'>
 							Rating
 						</dt>
 						<dd className='mt-1 font-medium'>{showText(product.rating)}</dd>
-					</div>
-					<div className='rounded-lg border border-white/10 bg-black/20 p-3'>
+						</div>
+					)}
+					{compact ? null : (
+						<div className='rounded-lg border border-white/10 bg-black/20 p-3'>
 						<dt className='text-xs uppercase tracking-wider text-slate-400'>
 							Rating Count
 						</dt>
 						<dd className='mt-1 font-medium'>
 							{showText(product.ratingCount)}
 						</dd>
-					</div>
-					<div className='rounded-lg border border-white/10 bg-black/20 p-3'>
+						</div>
+					)}
+					{compact ? null : (
+						<div className='rounded-lg border border-white/10 bg-black/20 p-3'>
 						<dt className='text-xs uppercase tracking-wider text-slate-400'>
 							Like Count
 						</dt>
 						<dd className='mt-1 font-medium'>
 							{showText(product.likeCount, "0")}
 						</dd>
-					</div>
-					<div className='rounded-lg border border-white/10 bg-black/20 p-3'>
+						</div>
+					)}
+					{compact ? null : (
+						<div className='rounded-lg border border-white/10 bg-black/20 p-3'>
 						<dt className='text-xs uppercase tracking-wider text-slate-400'>
 							View Count
 						</dt>
 						<dd className='mt-1 font-medium'>
 							{showText(product.viewCount, "0")}
 						</dd>
-					</div>
+						</div>
+					)}
 				</dl>
 
 				<div className='flex flex-wrap items-center gap-2'>
-					{product.googlelink ? (
+					{product.googlelink && !compact ? (
 						<a
 							href={product.googlelink}
 							target='_blank'
@@ -145,12 +179,14 @@ export function ProductCardPublic({ product }: ProductCardProps) {
 						</a>
 					) : null}
 
-					<Link
-						href='/discover'
-						className='inline-flex items-center rounded-lg border border-primary/40 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10'
-					>
-						Back to discover
-					</Link>
+					{compact ? null : (
+						<Link
+							href='/discover'
+							className='inline-flex items-center rounded-lg border border-primary/40 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10'
+						>
+							Back to discover
+						</Link>
+					)}
 
 					<button
 						type='button'
@@ -162,7 +198,8 @@ export function ProductCardPublic({ product }: ProductCardProps) {
 					</button>
 				</div>
 
-				<section>
+				{compact ? null : (
+					<section>
 					<h2 className='text-lg font-semibold'>
 						Variants ({product.variants.length})
 					</h2>
@@ -205,7 +242,8 @@ export function ProductCardPublic({ product }: ProductCardProps) {
 							))}
 						</div>
 					)}
-				</section>
+					</section>
+				)}
 			</div>
 		</article>
 	);
