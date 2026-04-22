@@ -10,8 +10,8 @@ const LINKS = [
   { href: "/search", label: "Search", icon: "search" },
   { href: "/trending", label: "Trending", icon: "trending_up" },
   { href: "/search/history", label: "Search History", icon: "history" },
-  { href: "/marketplace", label: "Marketplace", icon: "storefront" },
-  { href: "/wardrobe", label: "Wardrobe", icon: "checkroom" },
+  { href: "/user/favourite", label: "Favourites", icon: "favorite" },
+  { href: "/user/liked", label: "Liked Items", icon: "thumb_up" },
   { href: "/public-view", label: "Public View", icon: "language" },
   { href: "/outfit-comparison", label: "Outfit Comparison", icon: "compare_arrows" },
   

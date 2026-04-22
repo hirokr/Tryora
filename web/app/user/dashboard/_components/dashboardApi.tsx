@@ -1,4 +1,4 @@
-import { authFetch } from "@/lib/auth/clientAuthFetch";
+import { authFetch } from "@/lib/auth/authFetch";
 
 import type {
   DashboardData,
@@ -8,13 +8,24 @@ import type {
   UserProfile,
 } from "../../../../types/dashboardtypes";
 
+async function readJsonSafely(response: Response): Promise<Record<string, unknown>> {
+  return (await response.clone().json().catch(() => ({}))) as Record<string, unknown>;
+}
+
 function normalizeProfile(payload: unknown): UserProfile | null {
   if (!payload || typeof payload !== "object") return null;
 
   const source = payload as Record<string, unknown>;
-  const base = (source.data && typeof source.data === "object"
+  const sourceData = (source.data && typeof source.data === "object"
     ? source.data
     : source) as Record<string, unknown>;
+  const base = (sourceData.user && typeof sourceData.user === "object"
+    ? sourceData.user
+    : sourceData) as Record<string, unknown>;
+  const demographics =
+    base.demographics && typeof base.demographics === "object"
+      ? (base.demographics as Record<string, unknown>)
+      : null;
 
   if (typeof base.id !== "string") return null;
 
@@ -23,10 +34,32 @@ function normalizeProfile(payload: unknown): UserProfile | null {
     name: typeof base.name === "string" ? base.name : undefined,
     email: typeof base.email === "string" ? base.email : undefined,
     avatarUrl: typeof base.avatarUrl === "string" ? base.avatarUrl : undefined,
-    demographics:
-      base.demographics && typeof base.demographics === "object"
-        ? (base.demographics as UserProfile["demographics"])
-        : undefined,
+    age: typeof base.age === "number" ? base.age : null,
+    gender:
+      typeof base.gender === "string"
+        ? base.gender
+        : typeof demographics?.gender === "string"
+          ? demographics.gender
+          : undefined,
+    location:
+      typeof base.location === "string"
+        ? base.location
+        : typeof demographics?.location === "string"
+          ? demographics.location
+          : null,
+    emailVerified: typeof base.emailVerified === "boolean" ? base.emailVerified : undefined,
+    isActive: typeof base.isActive === "boolean" ? base.isActive : undefined,
+    interests: Array.isArray(base.interests)
+      ? (base.interests.filter((interest) => typeof interest === "string") as string[])
+      : [],
+    userBodyImageUrl: typeof base.userBodyImageUrl === "string" ? base.userBodyImageUrl : null,
+    demographics: demographics
+      ? {
+          ageRange: typeof demographics.ageRange === "string" ? demographics.ageRange : undefined,
+          gender: typeof demographics.gender === "string" ? demographics.gender : undefined,
+          location: typeof demographics.location === "string" ? demographics.location : undefined,
+        }
+      : undefined,
   };
 }
 
@@ -82,7 +115,8 @@ function buildMetrics(records: Array<TryonRecord & { resolvedProductIds: string[
 
 export async function fetchDashboardData(): Promise<DashboardData> {
   const profileResponse = await authFetch("/api/user/me", { method: "GET" });
-  const profilePayload = await profileResponse.json().catch(() => ({}));
+
+  const profilePayload = await readJsonSafely(profileResponse);
   const profile = profileResponse.ok ? normalizeProfile(profilePayload) : null;
 
   if (!profile?.id) {
@@ -115,7 +149,7 @@ export async function fetchDashboardData(): Promise<DashboardData> {
     };
   }
 
-  const tryonPayload = await tryonResponse.json().catch(() => ({}));
+  const tryonPayload = await readJsonSafely(tryonResponse);
   const tryonRecords = normalizeTryonCollection(tryonPayload);
 
   const enriched = await Promise.all(
@@ -173,16 +207,7 @@ export async function fetchDashboardData(): Promise<DashboardData> {
   };
 }
 
-export async function updateProfile(payload: {
-  name: string;
-  email: string;
-  avatarUrl: string;
-  demographics: {
-    ageRange: string;
-    gender: string;
-    location: string;
-  };
-}) {
+export async function updateProfile(payload: { name: string; gender: string }) {
   return authFetch("/api/user/me", {
     method: "PATCH",
     headers: {

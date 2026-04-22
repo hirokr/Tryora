@@ -13,9 +13,7 @@ export default async function MainProvider({
 
 	return (
 		<>
-			<Header />
 			<RootLayoutShell enableSidebar={isAuthenticated}>{children}</RootLayoutShell>
-			<Footer />
 		</>
 	);
 }

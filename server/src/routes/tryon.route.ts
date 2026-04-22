@@ -5,11 +5,11 @@ import {
   updateProductAppearance,
 } from '#src/controllers/image.controller.ts';
 import {
-  deleteTryOn,
-  getTryOnById,
-  getTryOnsByUserId,
-} from '#src/services/tryon.service.ts';
-import { discoverTryOns } from '#src/controllers/tryon.controller.ts';
+  deleteTryOnByIdController,
+  discoverTryOns,
+  getTryOnByIdController,
+  getTryOnsByUserIdController,
+} from '#src/controllers/tryon.controller.ts';
 import { generateModelTryon } from '#src/controllers/model.controller.ts';
 import { getTryonJobStatus } from '#src/controllers/job.controller.ts';
 
@@ -319,7 +319,7 @@ router.post('/image/edit', updateProductAppearance);
  *             schema:
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
-router.get(`/user/:userId`, getTryOnsByUserId);
+router.get(`/user/:userId`, getTryOnsByUserIdController);
 
 /**
  * @swagger
@@ -366,7 +366,7 @@ router.get(`/user/:userId`, getTryOnsByUserId);
  *             schema:
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
-router.get('/item/:tryonId', getTryOnById);
+router.get('/item/:tryonId', getTryOnByIdController);
 
 /**
  * @swagger
@@ -413,6 +413,6 @@ router.get('/item/:tryonId', getTryOnById);
  *             schema:
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
-router.delete('/item/:tryonId', deleteTryOn);
+router.delete('/item/:tryonId', deleteTryOnByIdController);
 
 export default router;

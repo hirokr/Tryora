@@ -47,13 +47,7 @@ export default function DashboardPage() {
 
   const handleSaveProfile = async (payload: {
     name: string;
-    email: string;
-    avatarUrl: string;
-    demographics: {
-      ageRange: string;
-      gender: string;
-      location: string;
-    };
+    gender: string;
   }) => {
     setIsBusy(true);
     setError(null);
@@ -72,9 +66,7 @@ export default function DashboardPage() {
         return {
           ...current,
           name: payload.name,
-          email: payload.email,
-          avatarUrl: payload.avatarUrl,
-          demographics: payload.demographics,
+          gender: payload.gender,
         };
       });
     } finally {
