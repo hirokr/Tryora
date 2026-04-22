@@ -231,9 +231,9 @@ export const getUserSearchHistory = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const products = await getSearchesByUserId(req.userId);
+    const searches = await getSearchesByUserId(req.userId);
 
-    if (!products.length) {
+    if (!searches.length) {
       return res.status(200).json({
         status: 'empty',
         results: [],
@@ -242,7 +242,7 @@ export const getUserSearchHistory = async (req: AuthRequest, res: Response) => {
 
     res.status(200).json({
       status: 'cached',
-      results: products,
+      results: searches,
     });
   } catch (error) {
     return res.status(500).json({
