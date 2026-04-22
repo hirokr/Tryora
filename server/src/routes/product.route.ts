@@ -74,7 +74,7 @@ router.get('/discover', getTopTrendingProducts);
  * @swagger
  * /api/products:
  *   get:
- *     summary: Get products feed
+ *     summary: -Get products feed
  *     description: |
  *       Returns a paginated list of products ordered by creation date (latest first).
  *       Requires authentication.
@@ -124,7 +124,7 @@ router.get('/discover', getTopTrendingProducts);
  */
 router.get('/', getProducts);
 
-/**
+/***
  * @swagger
  * /api/products/{productId}:
  *   get:
