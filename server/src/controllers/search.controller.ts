@@ -21,41 +21,67 @@ import {
 import { handleUrlUpload } from '#src/utils/uploadthings.ts';
 
 import { searchSerper } from '#src/utils/serper.ts';
-import { Product, type ProductMetricAction } from '#src/types/product.js';
+import { Product } from '#src/types/product.js';
 import { SearchData } from '#src/types/gorq.js';
+
+const uploadSingleImage = async (
+  url: string,
+  filename: string,
+  retries = 2
+): Promise<string | null> => {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await handleUrlUpload(url, filename);
+      const uploaded = res?.[0]?.data?.ufsUrl;
+
+      if (uploaded) return uploaded;
+    } catch (err) {
+      if (attempt === retries) {
+        console.error(`❌ Upload failed: ${url}`);
+      }
+    }
+  }
+
+  return null;
+};
 
 const uploadSerperProductImages = async (
   products: Product[]
 ): Promise<Product[]> => {
-  const uploadedProducts = await Promise.all(
-    products.map(async (product, index) => {
-      if (!product.defaultImageUrl) {
-        return product;
-      }
+  const CONCURRENCY = 5;
+  const results: Product[] = [];
 
-      try {
-        const uploadResponse = await handleUrlUpload(
+  // 🔥 Deduplicate by image BEFORE upload
+  const uniqueProducts = Array.from(
+    new Map(products.map(p => [p.defaultImageUrl, p])).values()
+  );
+
+  for (let i = 0; i < uniqueProducts.length; i += CONCURRENCY) {
+    const chunk = uniqueProducts.slice(i, i + CONCURRENCY);
+
+    const processed = await Promise.all(
+      chunk.map(async (product, index) => {
+        if (!product.defaultImageUrl) return null;
+
+        const uploadedUrl = await uploadSingleImage(
           product.defaultImageUrl,
-          `serper-product-${product.searchProductId || index}.jpg`
+          `serper-product-${product.searchProductId || i + index}.jpg`
         );
 
-        const uploadedUrl = uploadResponse[0]?.data?.ufsUrl;
-
-        if (!uploadedUrl) {
-          return product;
-        }
+        // 🚨 STRICT MODE: DROP if upload fails
+        if (!uploadedUrl) return null;
 
         return {
           ...product,
           defaultImageUrl: uploadedUrl,
         };
-      } catch {
-        return product;
-      }
-    })
-  );
+      })
+    );
 
-  return uploadedProducts;
+    results.push(...(processed.filter(Boolean) as Product[]));
+  }
+
+  return results;
 };
 
 export const searchProducts = async (req: AuthRequest, res: Response) => {
@@ -90,31 +116,36 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
       culturalTags,
       queries,
     } = aiResult.data as SearchData;
-    const cached = await checkIntent(intentKey);
 
+    // 🔁 Redis Cache Check
     const redisProductIds = await getProductIdsByIntent(intentKey);
     if (redisProductIds?.length) {
       const cachedProducts = await getProductsByIds(redisProductIds);
+
       if (cachedProducts.length) {
-        const productById = new Map(
-          cachedProducts.map(item => [item.id, item])
-        );
-        const orderedProducts = redisProductIds
-          .map(productId => productById.get(productId))
+        const productMap = new Map(cachedProducts.map(p => [p.id, p]));
+
+        const ordered = redisProductIds
+          .map(id => productMap.get(id))
           .filter(Boolean);
 
         return res.status(200).json({
           status: 'cached',
           intentKey,
-          results: orderedProducts,
+          results: ordered,
         });
       }
     }
 
+    // 🔁 DB Intent Cache
+    const cached = await checkIntent(intentKey);
     if (cached.status === 'cached') {
       const cachedResults = cached.results ?? [];
-      const cachedProductIds = cachedResults.map(item => item.id);
-      await setProductIdsByIntent(intentKey, cachedProductIds);
+
+      await setProductIdsByIntent(
+        intentKey,
+        cachedResults.map(p => p.id)
+      );
 
       return res.status(200).json({
         status: 'cached',
@@ -122,6 +153,8 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
         results: cachedResults,
       });
     }
+
+    // 🆕 Create Search Record
     const searchRecord = await createSearch({
       prompt: userInput,
       intentKey,
@@ -139,6 +172,7 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
 
     searchRecordId = searchRecord.id;
 
+    // 🌐 Fetch from Serper
     const serperResults = await Promise.allSettled(
       queries.map((q: string) => searchSerper(q))
     );
@@ -149,20 +183,30 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
 
     const flatProducts: Product[] = successfulResults;
 
-    const uniqueProducts = Array.from(
-      new Map(flatProducts.map(p => [p.searchProductId, p])).values()
-    );
+    if (!flatProducts.length) {
+      return res.status(404).json({
+        message: 'No products found from search',
+      });
+    }
 
-    const productsWithUploadedImages =
-      await uploadSerperProductImages(uniqueProducts);
+    // 🚀 Upload ALL images (STRICT MODE)
+    const uploadedProducts = await uploadSerperProductImages(flatProducts);
 
-    await setProducts(searchRecord.id, productsWithUploadedImages);
+    if (!uploadedProducts.length) {
+      return res.status(500).json({
+        message: 'All image uploads failed. No valid products.',
+      });
+    }
+
+    // 💾 Save to DB
+    await setProducts(searchRecord.id, uploadedProducts);
 
     const savedProducts = await getProductsBySearchID(searchRecord.id);
+
     if (savedProducts.length) {
       await setProductIdsByIntent(
         intentKey,
-        savedProducts.map(item => item.id)
+        savedProducts.map(p => p.id)
       );
     }
 
@@ -170,9 +214,7 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
       status: 'fresh',
       intentKey,
       searchId: searchRecord.id,
-      results: savedProducts.length
-        ? savedProducts
-        : productsWithUploadedImages,
+      results: savedProducts,
     });
   } catch (error: any) {
     console.error('Search Error:', error);
@@ -189,9 +231,9 @@ export const getUserSearchHistory = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const products = await getSearchesByUserId(req.userId);
+    const searches = await getSearchesByUserId(req.userId);
 
-    if (!products.length) {
+    if (!searches.length) {
       return res.status(200).json({
         status: 'empty',
         results: [],
@@ -200,7 +242,7 @@ export const getUserSearchHistory = async (req: AuthRequest, res: Response) => {
 
     res.status(200).json({
       status: 'cached',
-      results: products,
+      results: searches,
     });
   } catch (error) {
     return res.status(500).json({
@@ -272,39 +314,39 @@ export const getProductsById = async (req: AuthRequest, res: Response) => {
   }
 };
 
-export const updateProductMetrics = async (req: AuthRequest, res: Response) => {
-  try {
-    if (!req.userId) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-    const { productId } = req.params;
+// export const updateProductMetrics = async (req: AuthRequest, res: Response) => {
+//   try {
+//     if (!req.userId) {
+//       return res.status(401).json({ message: 'Unauthorized' });
+//     }
+//     const { productId } = req.params;
 
-    if (!productId || typeof productId !== 'string') {
-      return res.status(400).json({ message: 'Invalid product id' });
-    }
+//     if (!productId || typeof productId !== 'string') {
+//       return res.status(400).json({ message: 'Invalid product id' });
+//     }
 
-    const { action } = req.body as { action?: string };
-    const normalizedAction = action?.toUpperCase();
+//     const { action } = req.body as { action?: string };
+//     const normalizedAction = action?.toUpperCase();
 
-    if (
-      !normalizedAction ||
-      !['VIEW', 'CLICK', 'LIKE'].includes(normalizedAction)
-    ) {
-      return res.status(400).json({ message: 'Invalid action type' });
-    }
+//     if (
+//       !normalizedAction ||
+//       !['VIEW', 'CLICK', 'LIKE'].includes(normalizedAction)
+//     ) {
+//       return res.status(400).json({ message: 'Invalid action type' });
+//     }
 
-    const updatedProduct = await updateTrendingScore(
-      productId,
-      normalizedAction as ProductMetricAction
-    );
+//     const updatedProduct = await updateTrendingScore(
+//       productId,
+//       normalizedAction as ProductMetricAction
+//     );
 
-    return res.status(200).json({
-      status: 'success',
-      data: updatedProduct,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      message: 'failed to update product metrics',
-    });
-  }
-};
+//     return res.status(200).json({
+//       status: 'success',
+//       data: updatedProduct,
+//     });
+//   } catch (error) {
+//     return res.status(500).json({
+//       message: 'failed to update product metrics',
+//     });
+//   }
+// };

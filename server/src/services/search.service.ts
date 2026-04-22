@@ -80,5 +80,10 @@ export const getSearchesByUserId = async (userId: string) => {
   return prisma.productSearch.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      prompt: true,
+      intentKey: true,
+    }
   });
 };

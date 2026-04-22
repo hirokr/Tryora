@@ -9,4 +9,3 @@ export type Product = {
   searchProductId: string | null;
 };
 
-export type ProductMetricAction = 'VIEW' | 'CLICK' | 'LIKE';

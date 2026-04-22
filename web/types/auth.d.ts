@@ -4,8 +4,13 @@ export type Session = {
 		name: string;
 		email: string;
 		avatarUrl?: string;
-		emailVerified: boolean;
+		emailVerified?: boolean;
 		isActive: boolean;
+		userBodyImageUrl?: string | null;
+		age?: number | null;
+		gender?: string | null;
+		location?: string | null;
+		interests?: string[] | null;
 	};
 	accessToken: string;
 	refreshToken: string;

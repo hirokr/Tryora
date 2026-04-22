@@ -5,17 +5,16 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/dashboard", label: "Dashboard", icon: "dashboard" },
-  { href: "/avatar-studio", label: "Avatar Studio", icon: "view_in_ar" },
-  { href: "/style-discovery", label: "Style Discovery", icon: "palette" },
-  { href: "/styling-session", label: "Styling Session", icon: "auto_awesome" },
+  
+  { href: "/discover", label: "Style Discovery", icon: "palette" },
   { href: "/search", label: "Search", icon: "search" },
-  { href: "/search/trending", label: "Trending", icon: "trending_up" },
+  { href: "/trending", label: "Trending", icon: "trending_up" },
   { href: "/search/history", label: "Search History", icon: "history" },
   { href: "/marketplace", label: "Marketplace", icon: "storefront" },
   { href: "/wardrobe", label: "Wardrobe", icon: "checkroom" },
   { href: "/public-view", label: "Public View", icon: "language" },
   { href: "/outfit-comparison", label: "Outfit Comparison", icon: "compare_arrows" },
-  { href: "/settings", label: "Settings", icon: "settings" },
+  
 ];
 
 export default function AppSidebar() {

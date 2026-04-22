@@ -4,7 +4,6 @@ import { Session } from "@/types/auth";
 import { jwtVerify, SignJWT } from "jose";
 
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 function getEncodedKey() {
 	const secretKey = process.env.SESSION_SECRET_KEY;
@@ -47,9 +46,10 @@ export async function getSession() {
 		});
 
 		return payload as Session;
-	} catch (err) {
-		console.error("Failed to verify the session", err);
-		redirect("/auth/signin");
+	} catch {
+		// console.error("Failed to verify the session", err);
+		// redirect("/auth/signin");
+		return null;
 	}
 }
 
