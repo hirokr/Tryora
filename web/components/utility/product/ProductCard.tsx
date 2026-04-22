@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { authFetch } from "@/lib/auth/authFetch";
 import type { FeedProduct } from "@/types/feedTypes";
+import { useSelectedProductsStore } from "@/store/useSelectedProductsStore";
 
 type ProductVariant = {
 	id: string;
@@ -79,6 +80,12 @@ export function ProductCard({
 	likeCount,
 	viewCount,
 }: SearchHistoryItem) {
+	const toggleProduct = useSelectedProductsStore(
+		(state) => state.toggleProduct,
+	);
+	const isProductSelected = useSelectedProductsStore((state) =>
+		id ? state.selectedProducts.some((item) => item.id === id) : false,
+	);
 	const [isLiked, setIsLiked] = useState(false);
 	const [isFavorited, setIsFavorited] = useState(false);
 	const [resolvedLikeCount, setResolvedLikeCount] = useState(likeCount ?? 0);
@@ -136,6 +143,20 @@ export function ProductCard({
 	};
 
 	const destination = id ? `/discover/${id}` : undefined;
+
+	const handleSelectProduct = () => {
+		if (!id || !defaultImageUrl) {
+			return;
+		}
+
+		toggleProduct({
+			id,
+			title,
+			imageUrl: defaultImageUrl,
+			source,
+			price,
+		});
+	};
 
 	return (
 		<article className='group overflow-hidden rounded-2xl border border-primary/20 bg-white/5 transition hover:-translate-y-0.5 hover:border-primary/35'>
@@ -217,6 +238,14 @@ export function ProductCard({
 					>
 						{isFavorited ? "Saved" : "Bookmark"}
 					</button>
+					<button
+						type='button'
+						onClick={handleSelectProduct}
+						disabled={!id || !defaultImageUrl}
+						className='inline-flex items-center rounded-lg border border-primary/40 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60'
+					>
+						{isProductSelected ? "Selected" : "Select"}
+					</button>
 				</div>
 			</div>
 		</article>
@@ -234,6 +263,14 @@ export function SearchProductCard({
 	onLike,
 	onFavoriteToggle,
 }: SearchProductCardProps) {
+	const toggleProduct = useSelectedProductsStore(
+		(state) => state.toggleProduct,
+	);
+	const isProductSelected = useSelectedProductsStore((state) =>
+		product.id
+			? state.selectedProducts.some((item) => item.id === product.id)
+			: false,
+	);
 	const [isLiked, setIsLiked] = useState(false);
 	const [resolvedLikeCount, setResolvedLikeCount] = useState(
 		likeCount ?? product.likeCount ?? 0,
@@ -311,6 +348,23 @@ export function SearchProductCard({
 
 	const handleViewed = () => {
 		void onViewed?.(product);
+	};
+
+	const handleSelectProduct = () => {
+		if (!product.id || !product.image) {
+			return;
+		}
+
+		toggleProduct({
+			id: product.id,
+			title: product.title,
+			imageUrl: product.image,
+			source: product.source,
+			price:
+				product.price !== null && product.price !== undefined
+					? getDisplayPrice(product.price, product.currency)
+					: null,
+		});
 	};
 
 	return (
@@ -397,6 +451,14 @@ export function SearchProductCard({
 						className='inline-flex items-center rounded-lg border border-slate-500/50 px-3 py-1.5 text-xs font-semibold text-slate-200 hover:border-slate-400 disabled:cursor-not-allowed disabled:opacity-60'
 					>
 						{favoriteState ? "Saved" : "Bookmark"}
+					</button>
+					<button
+						type='button'
+						onClick={handleSelectProduct}
+						disabled={!product.id || !product.image}
+						className='inline-flex items-center rounded-lg border border-primary/40 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60'
+					>
+						{isProductSelected ? "Selected" : "Select"}
 					</button>
 					{buyUrl !== "#" ? (
 						<a
