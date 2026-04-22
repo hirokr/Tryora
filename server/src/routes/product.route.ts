@@ -6,9 +6,9 @@ import {
   getProducts,
   getTopTrendingProducts,
   likeProduct,
-  removeFavoriteProduct,
+  // removeFavoriteProduct,
   searchProductsByQuery,
-  unlikeProduct,
+  // unlikeProduct,
 } from '#src/controllers/product.controller.ts';
 import { authMiddleware } from '#src/middlewares/authenticate.middleware.ts';
 
@@ -383,8 +383,8 @@ router.post('/like/:productId', likeProduct);
 
 router.post('/favourite/:productId', addFavoriteProduct);
 
-router.post('/unlike/:productId', unlikeProduct);
+// router.post('/unlike/:productId', unlikeProduct);
 
-router.post('/remove-favorite/:productId', removeFavoriteProduct);
+// router.post('/remove-favorite/:productId', removeFavoriteProduct);
 
 export default router;

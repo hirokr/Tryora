@@ -1,4 +1,4 @@
-import { SearchProductCard } from "@/components/utility/search/SearchProductCard";
+import { SearchProductCard } from "@/components/utility/product/ProductCard";
 
 import type {
 	FeedCardHandlers,
