@@ -3,13 +3,13 @@ import { JobType, PROVIDER } from '#src/generated/enums.ts';
 import { TryOnUpdateDataType } from '#src/types/tryon.js';
 
 export async function getTryOnImage(id: string) {
-  const tryonImage = await prisma.tryon.findUnique({
+  const tryonImage = await prisma.job.findUnique({
     where: { id },
     select: {
-      resultUrl: true,
+      outputresultUrl: true,
     },
   });
-  return tryonImage?.resultUrl;
+  return tryonImage?.outputresultUrl;
 }
 
 export async function createTryOn(
@@ -56,15 +56,14 @@ export async function getTryon(limit: number, skip: number) {
 }
 
 export async function getTryOnById(id: string) {
-  return await prisma.tryon.findUnique({
+  return await prisma.job.findUnique({
     where: { id },
     select: {
       id: true,
-      resultUrl: true,
+      userId: true,
+      jobId: true,
+      outputresultUrl: true,
       productIds: true,
-      tryonType: true,
-      provider: true,
-      createdAt: true,
     },
   });
 }

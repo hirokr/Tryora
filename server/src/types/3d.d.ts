@@ -2,9 +2,11 @@ import type { JobType } from '#src/generated/enums.ts';
 
 // Types to add to your #src/types/3d.ts
 export interface HunyuanStartRequestPayload {
-  input_image_url: string;
-  prompt: string;
-  face_count: number;
+  model: 'tripo3d-v2-5' | string; // Add model field
+  texture: 'standard' | string;
+  texture_alignment: 'original_image' | string;
+  orientation: 'default' | string;
+  image_url: string;
 }
 
 export interface HunyuanStatusResponse {

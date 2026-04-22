@@ -8,8 +8,9 @@ import {
   getPixazoBaseUrl,
 } from '#src/utils/generateModel.ts';
 
-const HUNYUAN_START_ENDPOINT = 'hunyuan3d-3-0-api-request';
+const HUNYUAN_START_ENDPOINT = 'tripo3d-v2-5-request';
 const HUNYUAN_STATUS_ENDPOINT =
+  process.env.TRIPO_REQUEST_STATUS_URL ||
   process.env.PIXAZO_REQUEST_STATUS_URL ||
   'https://gateway.pixazo.ai/v2/requests/status';
 

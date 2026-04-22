@@ -2,9 +2,15 @@ import logger from '#src/config/logger.ts';
 import { getHunyuanStatus } from '#src/client/hunyuan3d.client.ts';
 
 const PIXAZO_POLL_INTERVAL_MS =
-  Number(process.env.PIXAZO_3D_POLL_INTERVAL_MS) || 10_000;
+  Number(
+    process.env.TRIPO_3D_POLL_INTERVAL_MS ||
+      process.env.PIXAZO_3D_POLL_INTERVAL_MS
+  ) || 10_000;
 const PIXAZO_MAX_POLL_ATTEMPTS =
-  Number(process.env.PIXAZO_3D_MAX_POLL_ATTEMPTS) || 30;
+  Number(
+    process.env.TRIPO_3D_MAX_POLL_ATTEMPTS ||
+      process.env.PIXAZO_3D_MAX_POLL_ATTEMPTS
+  ) || 30;
 
 const sleep = (ms: number): Promise<void> =>
   new Promise(resolve => setTimeout(resolve, ms));
