@@ -18,4 +18,4 @@ export default async function MainProvider({
 			<Footer />
 		</>
 	);
-}
+} // Main layout provider for user pages
