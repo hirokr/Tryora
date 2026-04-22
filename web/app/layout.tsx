@@ -1,44 +1,47 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import MainProvider from "@/providers/Provider";
-import { getSession } from "@/lib/auth/session";
 
-const geistSans = Geist({
-	variable: "--font-geist-sans",
-	subsets: ["latin"],
-});
+import Header from "./../components/Header";
+import Footer from "./../components/Footer";
 
-const geistMono = Geist_Mono({
-	variable: "--font-geist-mono",
-	subsets: ["latin"],
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-	title: "Tryora",
-	description: "First Try then Buy",
+  title: "Tryora - Future of Digital Fashion",
+  description: "AI-driven 3D reconstruction and cinematic try-on experiences.",
 };
 
-<meta name='apple-mobile-web-app-title' content='Tryora' />;
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en" className="dark">
+      <head>
+        {/* Google icons */}
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
+        />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap"
+        />
+      </head>
 
-export default async function RootLayout({
-	children,
-}: Readonly<{
-	children: React.ReactNode;
-}>) {
-	const session = await getSession();
+      {/* ⚠️ EVERYTHING visual must be inside BODY */}
+      <body>
+        {/* Global Header */}
+        <Header />
 
-	return (
-		<html lang='en' suppressHydrationWarning>
-			<body
-				suppressHydrationWarning
-				className={`${geistSans.variable} 
-				${geistMono.variable} antialiased dark`}
-			>
-				<MainProvider initialUser={session?.user ?? null}>
-					{children}
-				</MainProvider>
-			</body>
-		</html>
-	);
+        {/* Page Content */}
+        <main className="pt-20">{children}</main>
+
+        {/* Global Footer */}
+        <Footer />
+      </body>
+    </html>
+  );
 }

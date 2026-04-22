@@ -4,7 +4,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { SearchProductCard } from "@/components/utility/search/SearchProductCard";
-import { authFetch } from "@/lib/auth/clientAuthFetch";
+import { authFetch } from "@/lib/auth/authFetch";
 import type { SearchResponse } from "@/types/search";
 
 export default function SearchProductsPage() {
