@@ -24,7 +24,7 @@ export function ProductPreview({
 						alt={product.title}
 						fill
 						sizes='(max-width: 768px) 100vw, 384px'
-						className='object-cover'
+						className='object-contain'
 					/>
 				</div>
 			</div>
