@@ -12,7 +12,7 @@ export default function TryOnImagePage() {
 	const [tryonProducts, setTryonProducts] = useState<ProductDetails[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	
+
 	const selectedProducts = useSelectedProductsStore(
 		(state) => state.selectedProducts,
 	);
@@ -23,13 +23,11 @@ export default function TryOnImagePage() {
 		(state) => state.clearSelectedProducts,
 	);
 
-
 	const handleGenerateTryOn = async () => {
 		setIsLoading(true);
 		setError(null);
 
-
-		const jobPayload = await authFetch("/api/tryon/generate", {
+		const jobPayload = await authFetch("/api/tryon/image/generate", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -60,11 +58,9 @@ export default function TryOnImagePage() {
 		window.location.href = `/tryon/result/${tryonResultId}`;
 		// Clear selected products after generating try-on
 		clearSelectedProducts();
-	}
+	};
 
 	return (
-		<div className='mx-auto min-h-screen w-full max-w-7xl px-4 pb-16 pt-24 sm:px-6 lg:px-8'>
-
-		</div>
+		<div className='mx-auto min-h-screen w-full max-w-7xl px-4 pb-16 pt-24 sm:px-6 lg:px-8'></div>
 	);
 }

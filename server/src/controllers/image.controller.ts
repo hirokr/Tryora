@@ -111,16 +111,26 @@ export const fuseProductImages = async (req: AuthRequest, res: Response) => {
     //   Promise.all(productIds.map((id: string) => findProductById(id))),
     // ]);
 
-    const [tryonImageUrl, products] = await Promise.all([
+    const [tryonUser, products] = await Promise.all([
       findUserById(req.userId),
       Promise.all(productIds.map((id: string) => findProductById(id))),
     ]);
 
-    const productImageUrls = products.map(product => product?.defaultImageUrl);
+    if (!tryonUser?.userBodyImageUrl) {
+      return res.status(400).json({ message: 'User body image not found' });
+    }
+
+    const productImageUrls = products
+      .map(product => product?.defaultImageUrl)
+      .filter((url): url is string => Boolean(url));
+
+    if (productImageUrls.length === 0) {
+      return res.status(400).json({ message: 'No valid product images found' });
+    }
 
     const fuseImage = await tryOnImageClaid(
-      tryonImageUrl.userBodyImageUrl as string,
-      productImageUrls as string[]
+      tryonUser.userBodyImageUrl,
+      productImageUrls
     );
 
     if (!fuseImage || !fuseImage.data) {
@@ -143,8 +153,8 @@ export const fuseProductImages = async (req: AuthRequest, res: Response) => {
       generationJobId: jobStart.jobId,
       productId: productIds[0],
       params: {
-        productImageUrls: productImageUrls as string[],
-        baseImageUrl: tryonImageUrl as string,
+        productImageUrls,
+        baseImageUrl: tryonUser.userBodyImageUrl,
       },
     });
 

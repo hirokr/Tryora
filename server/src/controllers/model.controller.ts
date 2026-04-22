@@ -17,7 +17,7 @@ export const generateModelTryon = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { tryonId, prompt } = req.body;
+    const { tryonId, prompt = "" } = req.body;
 
     if (!tryonId || typeof tryonId !== 'string') {
       return res.status(400).json({ message: 'Invalid tryonId' });

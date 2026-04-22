@@ -92,7 +92,6 @@ export async function getTryOnsByUserId(userId: string) {
     select:{
       id: true,
       resultUrl: true,
-      productIds: true,
       tryonType: true,
     }
   });
