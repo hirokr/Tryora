@@ -1,4 +1,4 @@
-/**
+/****
  * Swagger schema definitions related to products and recommendations.
  */
 export const productSchemas: Record<string, object> = {
