@@ -8,6 +8,7 @@ export const getTryonJobStatus = async (req: AuthRequest, res: Response) => {
     }
 
     const { jobId } = req.params;
+    console.log(jobId);
     if (!jobId || typeof jobId !== 'string') {
       return res.status(400).json({ message: 'Invalid job id' });
     }

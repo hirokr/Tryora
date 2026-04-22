@@ -1,19 +1,33 @@
 import fetch from 'node-fetch';
 import logger from '#src/config/logger.ts';
-import { ClaidApiResponse, claidStatus } from '#src/types/typesimage.js';
+import { ClaidApiResponse, claidStatus } from '#src/types/typesimage.ts';
 
 const CLAID_API_KEY = process.env.CLAID_API_KEY;
 
 export async function tryOnImageClaid(
-  modelImage: String,
-  productImagePaths: String[]
-): Promise<ClaidApiResponse | undefined> {
+  modelImage: string,
+  productImagePaths: string[]
+): Promise<ClaidApiResponse> {
   try {
     if (!CLAID_API_KEY) {
       throw new Error('CLAID_API_KEY is not configured.');
     }
-    if (!productImagePaths || productImagePaths.length === 0) {
+
+    const normalizedModelImage = modelImage?.trim();
+    const normalizedProductImagePaths = productImagePaths
+      .map(path => path?.trim())
+      .filter(Boolean);
+
+    if (!normalizedModelImage) {
+      throw new Error('Model image is required.');
+    }
+
+    if (!normalizedProductImagePaths.length) {
       throw new Error('At least one product image path is required.');
+    }
+
+    if (normalizedProductImagePaths.length > 5) {
+      throw new Error('A maximum of 5 product image paths is supported.');
     }
 
     const response = await fetch(
@@ -30,8 +44,8 @@ export async function tryOnImageClaid(
             format: 'png',
           },
           input: {
-            model: modelImage,
-            clothing: productImagePaths,
+            model: normalizedModelImage,
+            clothing: normalizedProductImagePaths,
           },
           options: {
             background: 'minimalistic studio background',
@@ -41,12 +55,30 @@ export async function tryOnImageClaid(
         }),
       }
     );
-    const claidResponse = (await response.json()) as ClaidApiResponse;
+    const claidResponse = (await response.json()) as ClaidApiResponse & {
+      error_message?: string;
+      detail?: string;
+      message?: string;
+      error_code?: string;
+      error_type?: string;
+    };
 
-    const status = claidResponse.data?.status;
+    if (!response.ok) {
+      const apiError =
+        claidResponse.error_message ??
+        claidResponse.detail ??
+        claidResponse.message;
+      throw new Error(
+        `API Error: failed to start image fusion (${response.status} ${response.statusText})${
+          apiError ? ` - ${apiError}` : ''
+        }`
+      );
+    }
 
-    if (!response.ok && status !== claidStatus.accepted) {
-      throw new Error(`API Error: failed to edit image`);
+    if (claidResponse.data?.status !== claidStatus.accepted) {
+      throw new Error(
+        `API Error: unexpected Claid status: ${String(claidResponse.data?.status)}`
+      );
     }
 
     if (!claidResponse.data?.id) {
@@ -55,9 +87,10 @@ export async function tryOnImageClaid(
 
     return claidResponse;
   } catch (error) {
-    logger.error('Try-on generation failed', {
+    logger.error('Image fusion request failed', {
       error: error instanceof Error ? error.message : String(error),
     });
+    console.log(error);
     throw error;
   }
 }

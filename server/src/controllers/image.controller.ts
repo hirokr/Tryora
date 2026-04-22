@@ -6,6 +6,7 @@ import {
   findVariantById,
 } from '#src/services/product.service.ts';
 import { getTryOnImage } from '#src/services/tryon.service.ts';
+import { findUserById } from '#src/services/user.service.ts';
 import { AuthRequest, Response } from '#src/types/authRequest.js';
 import { JobResponseType } from '#src/types/jobs.js';
 import { editProductImage } from '#src/utils/image/imageEdit.ts';
@@ -20,13 +21,12 @@ export const updateProductAppearance = async (
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { productId, variantId } = req.params;
+    const { productId, variantId } = req.query;
     const { userPrompt } = req.body;
 
     if (!userPrompt || typeof userPrompt !== 'string') {
       return res.status(400).json({ message: 'Invalid user prompt' });
     }
-    console.log(req.params);
 
     if (!productId || typeof productId !== 'string') {
       return res.status(400).json({ message: 'Invalid product id' });
@@ -106,15 +106,20 @@ export const fuseProductImages = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Invalid product ids' });
     }
 
+    // const [tryonImageUrl, products] = await Promise.all([
+    //   getTryOnImage(req.userId),
+    //   Promise.all(productIds.map((id: string) => findProductById(id))),
+    // ]);
+
     const [tryonImageUrl, products] = await Promise.all([
-      getTryOnImage(req.userId),
+      findUserById(req.userId),
       Promise.all(productIds.map((id: string) => findProductById(id))),
     ]);
 
     const productImageUrls = products.map(product => product?.defaultImageUrl);
 
     const fuseImage = await tryOnImageClaid(
-      tryonImageUrl as string,
+      tryonImageUrl.userBodyImageUrl as string,
       productImageUrls as string[]
     );
 
@@ -150,6 +155,7 @@ export const fuseProductImages = async (req: AuthRequest, res: Response) => {
       jobId: jobStart.jobId,
     });
   } catch (error) {
+    console.log(error);
     return res.status(500).json({
       success: false,
       message: 'Failed to fuse product images',
