@@ -35,18 +35,19 @@ export default function StyleDiscoveryPage() {
 		setError("");
 
 		try {
-			const response = await fetch(`${BACKEND_URL}/api/products`, {
+			const response = await fetch(`${BACKEND_URL}/api/products/discover`, {
 				method: "GET",
 			});
 
 			if (!response.ok) {
 				throw new Error("Failed to fetch products");
 			}
+			console.log(response);
 
 			const data = (await response.json().catch(() => ({}))) as {
-				products?: Product[];
+				results?: Product[];
 			};
-			setProducts(data.products ?? []);
+			setProducts(data.results ?? []);
 		} catch {
 			setError("An error occurred while fetching products");
 		} finally {
