@@ -4,7 +4,12 @@ import Image from "next/image";
 import { authFetch } from "@/lib/auth/authFetch";
 
 type TryonItemResponse = {
+	success?: boolean;
 	status?: string;
+	jobId?: string;
+	jobType?: string;
+	outputresultUrl?: string;
+	outputResultUrl?: string;
 	data?: {
 		id?: string;
 		userId?: string;
@@ -13,9 +18,48 @@ type TryonItemResponse = {
 		tryonType?: string;
 		provider?: string | null;
 		createdAt?: string;
+		outputResultUrl?: string | null;
+		tryonData?: {
+			id?: string;
+			resultUrl?: string | null;
+			productIds?: string[];
+			tryonType?: string;
+			provider?: string | null;
+			createdAt?: string;
+		};
 	};
 	message?: string;
 };
+
+function resolveTryonImageUrl(payload: TryonItemResponse | null) {
+	if (!payload) return null;
+
+	const data = payload.data || {};
+	const tryonData = data.tryonData || {};
+
+	return (
+		data.outputResultUrl ||
+		payload.outputresultUrl ||
+		payload.outputResultUrl ||
+		tryonData.resultUrl ||
+		data.resultUrl ||
+		null
+	);
+}
+
+function resolveTryonRecord(payload: TryonItemResponse | null) {
+	const data = payload?.data;
+	const tryonData = data?.tryonData;
+
+	return {
+		id: tryonData?.id || data?.id,
+		userId: data?.userId,
+		productIds: tryonData?.productIds || data?.productIds || [],
+		tryonType: tryonData?.tryonType || data?.tryonType,
+		provider: tryonData?.provider || data?.provider,
+		createdAt: tryonData?.createdAt || data?.createdAt,
+	};
+}
 
 type TryonDetailsPageProps = {
 	params: Promise<{
@@ -23,39 +67,45 @@ type TryonDetailsPageProps = {
 	}>;
 };
 
+
+
 export default async function TryonDetailsPage({
 	params,
 }: TryonDetailsPageProps) {
 	const { tryonId } = await params;
 
-	let tryon: TryonItemResponse["data"] | null = null;
+	let tryon: TryonItemResponse | null = null;
 	let requestError: string | null = null;
 
 	try {
-		const response = await authFetch(`/api/tryon/item/${tryonId}`, {
+		const response = await authFetch(`/api/tryon/jobs/${tryonId}`, {
 			method: "GET",
 			cache: "no-store",
 		});
+		const payload = (await response.json().catch(() => ({}))) as TryonItemResponse;
 
 		if (!response.ok) {
-			const payload = (await response.json().catch(() => ({}))) as TryonItemResponse;
 			requestError = payload.message || "Could not load try-on result.";
 		} else {
-			const payload = (await response.json().catch(() => ({}))) as TryonItemResponse;
-			tryon = payload.data || null;
+			tryon = payload;
 		}
 	} catch {
 		requestError = "Could not load try-on details.";
 	}
 
-	const createdAtLabel = tryon?.createdAt
+	const tryonRecord = resolveTryonRecord(tryon);
+	const imageUrl = resolveTryonImageUrl(tryon);
+	const productCount = tryonRecord.productIds.length;
+	const createdAtLabel = tryonRecord.createdAt
 		? new Intl.DateTimeFormat("en", {
-			dateStyle: "medium",
-			timeStyle: "short",
-		}).format(new Date(tryon.createdAt))
+			month: "short",
+			day: "numeric",
+			year: "numeric",
+			hour: "numeric",
+			minute: "2-digit",
+		}).format(new Date(tryonRecord.createdAt))
 		: "Unknown date";
 
-	const productCount = tryon?.productIds?.length || 0;
 
 	return (
 			<main className='mx-auto min-h-screen w-full max-w-7xl px-4 pb-16 pt-24 sm:px-6 lg:px-8'>
@@ -71,14 +121,14 @@ export default async function TryonDetailsPage({
 						</p>
 					</div>
 					<div className='flex flex-wrap gap-2'>
-						{tryon?.tryonType ? (
+						{tryonRecord.tryonType ? (
 							<span className='rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]'>
-								{tryon.tryonType}
+								{tryonRecord.tryonType}
 							</span>
 						) : null}
-						{tryon?.provider ? (
+						{tryonRecord.provider ? (
 							<span className='rounded-full border border-cyan-300/25 bg-cyan-300/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-100'>
-								{tryon.provider}
+								{tryonRecord.provider}
 							</span>
 						) : null}
 					</div>
@@ -93,15 +143,15 @@ export default async function TryonDetailsPage({
 				{tryon ? (
 					<section className='mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]'>
 						<article className='overflow-hidden rounded-3xl border border-white/10 bg-black/20'>
-							<div className='relative aspect-[4/3] bg-black/30'>
-								{tryon.resultUrl ? (
+							<div className='relative aspect-4/3 bg-black/30'>
+								{imageUrl ? (
 									<Image
-										src={tryon.resultUrl}
+										src={imageUrl}
 										alt='Try-on result preview'
-										width={1200}
-										height={1200}
+										width={480}
+										height={560}
 										unoptimized
-										className='h-full w-full object-cover'
+										className=' object-fill'
 									/>
 								) : (
 									<div className='flex h-full items-center justify-center px-6 text-center text-sm text-slate-300'>
@@ -117,10 +167,10 @@ export default async function TryonDetailsPage({
 									Created: <span className='font-semibold text-white'>{createdAtLabel}</span>
 								</p>
 								<p className='mt-2 text-sm text-slate-300'>
-									Try-on ID: <span className='break-all font-semibold text-white'>{tryon.id || tryonId}</span>
+									Try-on ID: <span className='break-all font-semibold text-white'>{tryonRecord.id || tryonId}</span>
 								</p>
 								<p className='mt-2 text-sm text-slate-300'>
-									User ID: <span className='break-all font-semibold text-white'>{tryon.userId || "-"}</span>
+									User ID: <span className='break-all font-semibold text-white'>{tryonRecord.userId || "-"}</span>
 								</p>
 							</div>
 						</article>
@@ -131,9 +181,9 @@ export default async function TryonDetailsPage({
 								<h2 className='mt-2 text-xl font-semibold text-white'>Linked item IDs</h2>
 							</div>
 
-							{tryon.productIds && tryon.productIds.length > 0 ? (
+							{tryonRecord.productIds.length > 0 ? (
 								<div className='flex flex-wrap gap-2'>
-									{tryon.productIds.map((productId) => (
+									{tryonRecord.productIds.map((productId) => (
 										<span
 											key={productId}
 											className='rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs text-slate-200'

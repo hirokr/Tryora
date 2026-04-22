@@ -9,10 +9,6 @@ import redis from 'redis';
 import session from 'express-session';
 import passport from 'passport';
 
-import swaggerUi from 'swagger-ui-express';
-import swaggerJsdoc from 'swagger-jsdoc';
-import { swaggerOptions } from './docs/swagger/index.ts';
-
 import authRoutes from './routes/auth.route.ts';
 import productRoutes from './routes/product.route.ts';
 import recommendationRoutes from './routes/recomendation.route.ts';
@@ -83,9 +79,6 @@ app.use('/api/products', productRoutes);
 app.use('/api/recomendations', recommendationRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 
-const openapiSpecification = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openapiSpecification));
-
 // Redis session store setup (commented out for now)
 export const redisClient = redis.createClient({
   username: 'default',
@@ -99,7 +92,7 @@ export const redisClient = redis.createClient({
 app.use((req, res) => {
   res
     .status(404)
-    .json({ succes: false, error: 'Route not found', redirect: '/api-docs' });
+    .json({ succes: false, error: 'Route not found' });
 });
 
 export default app;

@@ -24,6 +24,8 @@ export async function discoverTryOns(req: AuthRequest, res: Response) {
       data: tryons,
     });
   } catch (error) {
+    console.log(error);
+    
     return res.status(500).json({
       message: 'failed to fetch tryons ',
     });
@@ -43,6 +45,7 @@ export async function getTryOnsByUserIdController(req: AuthRequest, res: Respons
     }
 
     const tryons = await getTryOnsByUserId(userId);
+    console.log(tryons)
 
     return res.status(200).json({
       status: 'success',
