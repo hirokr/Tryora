@@ -1,3 +1,5 @@
+//6
+
 import type { SidebarProduct } from "@/types/publicView";
 
 type PublicViewProductListProps = {
