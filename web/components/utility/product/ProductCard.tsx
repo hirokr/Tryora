@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { authFetch } from "@/lib/auth/authFetch";
@@ -80,6 +81,7 @@ export function ProductCard({
 	likeCount,
 	viewCount,
 }: SearchHistoryItem) {
+	const router = useRouter();
 	const toggleProduct = useSelectedProductsStore(
 		(state) => state.toggleProduct,
 	);
@@ -156,6 +158,14 @@ export function ProductCard({
 			source,
 			price,
 		});
+	};
+
+	const handleEditProduct = () => {
+		if (!id || !defaultImageUrl) {
+			return;
+		}
+
+		router.push(`/tryon/image-edit/${id}`);
 	};
 
 	return (
@@ -246,6 +256,15 @@ export function ProductCard({
 					>
 						{isProductSelected ? "Selected" : "Select"}
 					</button>
+					<button
+						type='button'
+						onClick={handleEditProduct}
+						disabled={!id || !defaultImageUrl}
+						className='inline-flex items-center rounded-lg border border-primary/40 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-60'
+					>
+						Edit product
+					</button>
+					
 				</div>
 			</div>
 		</article>
@@ -263,6 +282,7 @@ export function SearchProductCard({
 	onLike,
 	onFavoriteToggle,
 }: SearchProductCardProps) {
+	const router = useRouter();
 	const toggleProduct = useSelectedProductsStore(
 		(state) => state.toggleProduct,
 	);
@@ -367,6 +387,14 @@ export function SearchProductCard({
 		});
 	};
 
+	const EditProduct = () => {
+		if (!product.id || !product.image) {
+			return;
+		}
+
+		router.push(`/tryon/image-edit/${product.id}`);
+	};
+
 	return (
 		<article
 			onMouseEnter={handleViewed}
@@ -460,6 +488,7 @@ export function SearchProductCard({
 					>
 						{isProductSelected ? "Selected" : "Select"}
 					</button>
+					
 					{buyUrl !== "#" ? (
 						<a
 							href={buyUrl}

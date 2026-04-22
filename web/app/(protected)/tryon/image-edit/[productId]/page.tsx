@@ -6,8 +6,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import Loader from "@/components/ui/Loader";
-import { authFetch } from "@/lib/auth/clientAuthFetch";
-import { useTryonSocket } from "@/context/tryonSocket.context";
+import { authFetch } from "@/lib/auth/authFetch";
 import {
 	ImageEditJobPayload,
 	useImageEditJobStore,

@@ -10,6 +10,7 @@ import SubmitButton from "@/components/ui/submitButton";
 type SignInFormProps = {
 	state: any;
 	action: (formData: FormData) => void;
+	redirectTo: string;
 	showPassword: boolean;
 	onTogglePassword: () => void;
 	emailInputRef: RefObject<HTMLInputElement | null>;
@@ -19,6 +20,7 @@ type SignInFormProps = {
 const SignInForm = ({
 	state,
 	action,
+	redirectTo,
 	showPassword,
 	onTogglePassword,
 	emailInputRef,
@@ -43,6 +45,7 @@ const SignInForm = ({
 						action={action}
 						onSubmit={onPersistEmail}
 					>
+						<input type='hidden' name='redirectTo' value={redirectTo} />
 						{state?.message && (
 							<p className='text-sm text-red-400'>{state.message}</p>
 						)}
