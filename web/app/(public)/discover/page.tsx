@@ -6,6 +6,7 @@ import { useAuth } from "@/context/auth.context";
 import { authFetch } from "@/lib/auth/clientAuthFetch";
 import { Product } from "@/types/product";
 import { BACKEND_URL } from "@/constants/constants";
+import Loader from "@/components/ui/Loader";
 
 export default function StyleDiscoveryPage() {
 	const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
@@ -64,6 +65,10 @@ export default function StyleDiscoveryPage() {
 	const refreshProducts = () => {
 		void fetchProducts();
 	};
+
+	if (isLoading) {
+		return <Loader />;
+	}
 
 	return (
 		<section className='relative mx-auto w-full max-w-5xl px-4 pb-14 pt-28 sm:px-6 lg:px-8'>
