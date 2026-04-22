@@ -48,8 +48,8 @@ export async function tryOnImageClaid(
             clothing: normalizedProductImagePaths,
           },
           options: {
-            background: 'minimalistic studio background',
-            pose: 'full body, front view, neutral stance, arms relaxed',
+            background: 'minimalistic studio background, clean white backdrop',
+            pose: 'full body, front view, neutral stance, arms relaxed, model wearing the provided clothing items, extract garments only from clothing images and ignore any human figures present in them',
             aspect_ratio: '9:16',
           },
         }),
