@@ -20,13 +20,14 @@ import { ProductCard } from "@/components/utility/product/ProductCard";
 //         "variants": []
 //     },
 
+// TypeScript type for product variations
 type variant = {
 	id: string;
 	title: string;
 	price: string;
 	imageUrl: string;
 };
-
+// TypeScript type for an individual product object from the API
 type SearchHistoryItem = {
 	id: string;
 	title: string;
@@ -39,40 +40,46 @@ type SearchHistoryItem = {
 	likeCount: number;
 	variants: variant[];
 };
-
+// TypeScript type for the full API response structure
 type SearchHistoryResponse = {
 	status: string;
 	search: string;
-	results: SearchHistoryItem[];
+	results: SearchHistoryItem[];  // Array of products found
 };
 
 export default function SearchProductsPage() {
+	//Extracts 'searchId' from the URL
 	const params = useParams<{ searchId: string }>();
 	const searchId = params.searchId;
+	//State to store the API response (initialized with empty values)
 	const [results, setResults] = useState<SearchHistoryResponse>({
 		status: "",
 		search: "",
 		results: [],
 	});
+	// State to store any error messages during the fetch process
 	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
+		// Exit early if searchId is not present
 		if (!searchId) return;
 
 		const loadProducts = async () => {
 			try {
+				// Fetching products from the API using the searchId
 				const response = await authFetch(`/api/search/${searchId}/products`, {
 					method: "GET",
 				});
+				// Parse the JSON response; if it fails, default to an empty object
 				const payload = (await response
 					.json()
 					.catch(() => ({}))) as SearchHistoryResponse;
 
-				if (!response.ok) {
+				if (!response.ok) {   // If the HTTP status is not 2xx, throw an error
 					throw new Error("Failed to load products from search id");
 				}
 
-				setResults(payload);
+				setResults(payload);  // Update the state with the fetched data
 			} catch (err) {
 				setError(
 					err instanceof Error ? err.message : "Failed to load products",

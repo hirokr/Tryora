@@ -1,9 +1,9 @@
-"use client";
+"use client";  //// Directs Next.js to render this on the client side
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation"; //// Allows programmatic navigation between pages
 import { useCallback, useEffect, useState } from "react";
 
-import { ProductCard } from "@/components/utility/product/ProductCard";
+import { ProductCard } from "@/components/utility/product/ProductCard"; //// Component to display individual item UI
 import { authFetch } from "@/lib/auth/authFetch";
 
 type UserLocation = {
@@ -54,9 +54,9 @@ type SearchHistoryResponse = {
 const getShortIntentKey = (value: string) => {
 	if (!value) return "Unknown";
 	const parts = value
-		.split("|")
-		.map((item) => item.trim())
-		.filter(Boolean);
+		.split("|")  //// Split by pipe character
+		.map((item) => item.trim())  //// Remove whitespace
+		.filter(Boolean);  //// Remove empty values
 
 	if (!parts.length) return "Unknown";
 	const shortened = parts.slice(0, 3).join(" | ");
@@ -64,7 +64,7 @@ const getShortIntentKey = (value: string) => {
 };
 
 export default function SearchPage() {
-	const router = useRouter();
+	const router = useRouter();   //// Hook to redirect users
 	const [prompt, setPrompt] = useState("");
 	const [location, setLocation] = useState<UserLocation | null>(null);
 	const [loading, setLoading] = useState(false);
@@ -76,8 +76,8 @@ export default function SearchPage() {
 	const handleSearch = useCallback(async () => {
 		if (!prompt.trim()) return;
 
-		setLoading(true);
-		setError("");
+		setLoading(true); //// Start loading UI
+		setError("");  //// Clear previous errors
 
 		try {
 			const response = await authFetch("/api/search/search", {
@@ -112,7 +112,7 @@ export default function SearchPage() {
 				variants: item.variants ?? [],
 			}));
 
-			setProducts(normalizedProducts);
+			setProducts(normalizedProducts);  //// Update state with products
 		} catch (searchError) {
 			setError(
 				searchError instanceof Error
