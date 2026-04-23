@@ -1,3 +1,4 @@
+//-
 "use client";
 
 import { useParams } from "next/navigation";
@@ -45,7 +46,7 @@ type SearchHistoryResponse = {
 	results: SearchHistoryItem[];
 };
 
-export default function SearchProductsPage() {
+export default function SearchProductsPage() { 
 	const params = useParams<{ searchId: string }>();
 	const searchId = params.searchId;
 	const [results, setResults] = useState<SearchHistoryResponse>({
