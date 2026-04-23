@@ -258,4 +258,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
 // This file is the main landing page for the Tryora website. It includes multiple sections showcasing the features and benefits of the Tryora platform, such as AI-driven 3D try-on, distributed wardrobe, and AI scene generation. The page is designed with a futuristic aesthetic, using a dark color scheme with neon accents and high-quality images to create an immersive experience for visitors.
