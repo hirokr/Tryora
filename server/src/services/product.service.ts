@@ -164,6 +164,166 @@ const parseFilterPrice = (value: number | string | undefined) => {
   return Number.isFinite(parsed) ? parsed : undefined;
 };
 
+const toSearchTermList = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map(item => normalizeText(item))
+    .filter(Boolean);
+};
+
+const toSearchTerm = (value: unknown): string | null => {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const normalized = normalizeText(value);
+  return normalized || null;
+};
+
+const tokenizePrompt = (prompt: string) => {
+  return normalizeText(prompt)
+    .split(/[^a-z0-9]+/)
+    .map(token => token.trim())
+    .filter(token => token.length >= 3);
+};
+
+const getKeywordOverlapCount = (title: string, keywords: Set<string>) => {
+  if (!keywords.size) {
+    return 0;
+  }
+
+  const titleTokens = new Set(tokenizePrompt(title));
+  let overlap = 0;
+
+  for (const token of titleTokens) {
+    if (keywords.has(token)) {
+      overlap += 1;
+    }
+  }
+
+  return overlap;
+};
+
+const buildSearchPreferenceProfile = (
+  searches: {
+    prompt: string;
+    parsedParams: Prisma.JsonValue | null;
+  }[]
+) => {
+  const recentSearches = searches.slice(0, 20);
+  const categoryWeights = new Map<string, number>();
+  const tagWeights = new Map<string, number>();
+  const keywordWeights = new Map<string, number>();
+
+  recentSearches.forEach((search, index) => {
+    const recencyWeight = Math.max(1, recentSearches.length - index);
+
+    for (const token of tokenizePrompt(search.prompt)) {
+      keywordWeights.set(
+        token,
+        (keywordWeights.get(token) ?? 0) + recencyWeight * 0.08
+      );
+    }
+
+    if (!search.parsedParams || typeof search.parsedParams !== 'object') {
+      return;
+    }
+
+    const parsed = search.parsedParams as Record<string, unknown>;
+    const parsedCategory = toSearchTerm(parsed.category);
+    if (parsedCategory) {
+      categoryWeights.set(
+        parsedCategory,
+        (categoryWeights.get(parsedCategory) ?? 0) + recencyWeight
+      );
+    }
+
+    const parsedTags = toSearchTermList(parsed.culturalTags);
+    for (const tag of parsedTags) {
+      tagWeights.set(tag, (tagWeights.get(tag) ?? 0) + recencyWeight * 0.75);
+    }
+
+    const parsedProduct = toSearchTerm(parsed.product);
+    if (parsedProduct) {
+      keywordWeights.set(
+        parsedProduct,
+        (keywordWeights.get(parsedProduct) ?? 0) + recencyWeight * 0.35
+      );
+    }
+
+    const parsedStyle = toSearchTerm(parsed.style);
+    if (parsedStyle) {
+      keywordWeights.set(
+        parsedStyle,
+        (keywordWeights.get(parsedStyle) ?? 0) + recencyWeight * 0.25
+      );
+    }
+
+    const parsedOccasion = toSearchTerm(parsed.occasion);
+    if (parsedOccasion) {
+      keywordWeights.set(
+        parsedOccasion,
+        (keywordWeights.get(parsedOccasion) ?? 0) + recencyWeight * 0.22
+      );
+    }
+  });
+
+  return {
+    categoryWeights,
+    tagWeights,
+    keywords: new Set(
+      [...keywordWeights.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 30)
+        .map(([keyword]) => keyword)
+    ),
+  };
+};
+
+const buildSearchHistoryScore = (params: {
+  profile: ReturnType<typeof buildSearchPreferenceProfile>;
+  product: {
+    title: string;
+    category: string | null;
+    culturalTags: string[];
+    extarnalTags: string[];
+  };
+}) => {
+  const { profile, product } = params;
+  let score = 0;
+
+  const normalizedCategory = product.category
+    ? normalizeText(product.category)
+    : null;
+  if (normalizedCategory) {
+    const categoryWeight = profile.categoryWeights.get(normalizedCategory) ?? 0;
+    score += Math.min(categoryWeight * 0.14, 2.1);
+  }
+
+  const productTags = [...product.culturalTags, ...product.extarnalTags].map(
+    normalizeText
+  );
+
+  for (const tag of productTags) {
+    const tagWeight = profile.tagWeights.get(tag) ?? 0;
+    if (tagWeight > 0) {
+      score += Math.min(tagWeight * 0.07, 0.7);
+    }
+  }
+
+  const keywordOverlapCount = getKeywordOverlapCount(
+    product.title,
+    profile.keywords
+  );
+  score += Math.min(keywordOverlapCount * 0.3, 1.2);
+
+  return Number(score.toFixed(6));
+};
+
 const buildRecommendationScore = (params: {
   userAge: number | null;
   userGender: (typeof Gender)[keyof typeof Gender];
@@ -475,6 +635,22 @@ export const getRuntimeRecommendations = async (params: {
     return [];
   }
 
+  const recentSearches = await prisma.productSearch.findMany({
+    where: {
+      userId: params.userId,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+    take: 20,
+    select: {
+      prompt: true,
+      parsedParams: true,
+    },
+  });
+
+  const searchPreferenceProfile = buildSearchPreferenceProfile(recentSearches);
+
   const candidateWindow = Math.min(
     500,
     Math.max((safeLimit + safeSkip) * 6, 60)
@@ -490,22 +666,33 @@ export const getRuntimeRecommendations = async (params: {
   });
 
   const rankedProducts = candidates
-    .map(product => ({
-      id: product.id,
-      title: product.title,
-      source: product.source,
-      defaultImageUrl: product.defaultImageUrl,
-      price: product.price,
-      viewCount: product.viewCount,
-      likeCount: product.likeCount,
-      recommendationScore: buildRecommendationScore({
+    .map(product => {
+      const demographicScore = buildRecommendationScore({
         userAge: user.age,
         userGender: user.gender,
         userInterests: user.interests,
         userLocation: user.location,
         product,
-      }),
-    }))
+      });
+
+      const searchHistoryScore = buildSearchHistoryScore({
+        profile: searchPreferenceProfile,
+        product,
+      });
+
+      return {
+        id: product.id,
+        title: product.title,
+        source: product.source,
+        defaultImageUrl: product.defaultImageUrl,
+        price: product.price,
+        viewCount: product.viewCount,
+        likeCount: product.likeCount,
+        recommendationScore: Number(
+          (demographicScore + searchHistoryScore).toFixed(6)
+        ),
+      };
+    })
     .sort((a, b) => b.recommendationScore - a.recommendationScore);
 
   return rankedProducts.slice(safeSkip, safeSkip + safeLimit);

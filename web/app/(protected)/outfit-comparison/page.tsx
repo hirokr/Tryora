@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import ReactCompareImage from "react-compare-image";
 
 import { OUTFIT_COMPARISON_SELECTION_STORAGE_KEY } from "@/constants/flow";
 import { useSelectedProductsStore } from "@/store/useSelectedProductsStore";
 
 import { ComparisonActions } from "./_components/ComparisonActions";
-import { ComparisonImagePanel } from "./_components/ComparisonImagePanel";
 import type { OutfitSelectionPayload } from "./_components/types";
 
 async function loadBitmap(url: string): Promise<ImageBitmap> {
@@ -38,6 +38,11 @@ export default function OutfitComparisonPage() {
 	);
 
 	const [selection, setSelection] = useState<OutfitSelectionPayload | null>(
+		null,
+	);
+	const [leftImageUrl, setLeftImageUrl] = useState<string | null>(null);
+	const [rightImageUrl, setRightImageUrl] = useState<string | null>(null);
+	const [pickerTarget, setPickerTarget] = useState<"left" | "right" | null>(
 		null,
 	);
 	const [snapshotError, setSnapshotError] = useState<string | null>(null);
@@ -71,14 +76,44 @@ export default function OutfitComparisonPage() {
 	const fallbackOutfitA = selectedProducts[0] ?? null;
 	const fallbackOutfitB = selectedProducts[1] ?? null;
 
-	const leftImageUrl =
+	const defaultLeftImageUrl =
 		selection?.outfitA?.imageUrl || fallbackOutfitA?.imageUrl || null;
-	const rightImageUrl =
+	const defaultRightImageUrl =
 		selection?.outfitB?.imageUrl || fallbackOutfitB?.imageUrl || null;
+
+	useEffect(() => {
+		if (!leftImageUrl && defaultLeftImageUrl) {
+			setLeftImageUrl(defaultLeftImageUrl);
+		}
+	}, [defaultLeftImageUrl, leftImageUrl]);
+
+	useEffect(() => {
+		if (!rightImageUrl && defaultRightImageUrl) {
+			setRightImageUrl(defaultRightImageUrl);
+		}
+	}, [defaultRightImageUrl, rightImageUrl]);
+
 	const isUsingFallbackProducts =
 		!selection?.outfitA?.imageUrl &&
 		!selection?.outfitB?.imageUrl &&
 		Boolean(fallbackOutfitA && fallbackOutfitB);
+	const canCompare = Boolean(leftImageUrl && rightImageUrl);
+
+	const handleChangeImage = (target: "left" | "right") => {
+		setPickerTarget(target);
+	};
+
+	const handleSelectProductImage = (imageUrl: string) => {
+		if (!pickerTarget) return;
+
+		if (pickerTarget === "left") {
+			setLeftImageUrl(imageUrl);
+		} else {
+			setRightImageUrl(imageUrl);
+		}
+
+		setPickerTarget(null);
+	};
 
 	const handleUploadPhoto = () => {
 		router.push("/dashboard?section=me-and-myself&source=outfit-comparison");
@@ -144,31 +179,99 @@ export default function OutfitComparisonPage() {
 							</p>
 						) : null}
 					</div>
+					<div className='flex flex-wrap gap-2'>
+						<button
+							type='button'
+							onClick={() => handleChangeImage("left")}
+							className='rounded-lg border border-white/20 px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-slate-200 hover:bg-white/5'
+						>
+							Change Outfit A Image
+						</button>
+						<button
+							type='button'
+							onClick={() => handleChangeImage("right")}
+							className='rounded-lg border border-white/20 px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-slate-200 hover:bg-white/5'
+						>
+							Change Outfit B Image
+						</button>
+					</div>
 				</div>
 
-				<div className='flex flex-1 flex-col overflow-hidden lg:flex-row'>
-					<ComparisonImagePanel
-						title='Outfit A'
-						imageUrl={leftImageUrl}
-						emptyHint='Outfit A is empty. Upload a photo or select products from discovery first.'
-					/>
-
-					<ComparisonImagePanel
-						title='Outfit B'
-						imageUrl={rightImageUrl}
-						emptyHint='Outfit B is empty. Upload a photo or select products from discovery first.'
-						mirrored
-					/>
+				<div className='flex flex-1 items-center justify-center overflow-hidden p-6'>
+					{canCompare ? (
+						<div className='w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-black/20'>
+							<ReactCompareImage
+								leftImage={leftImageUrl as string}
+								rightImage={rightImageUrl as string}
+								sliderLineColor='#ffffff'
+								handleSize={48}
+								hover
+							/>
+						</div>
+					) : (
+						<p className='max-w-lg text-center text-sm text-slate-300'>
+							Select two images to compare. Use Change Outfit A Image and Change
+							Outfit B Image to pick from your selected products.
+						</p>
+					)}
 				</div>
 
 				<ComparisonActions
-					canSnapshot={Boolean(leftImageUrl && rightImageUrl)}
+					canSnapshot={canCompare}
 					onUploadPhoto={handleUploadPhoto}
 					onSnapshot={handleSnapshot}
 				/>
 
 				{snapshotError ? (
 					<p className='px-6 pb-4 text-sm text-red-300'>{snapshotError}</p>
+				) : null}
+
+				{pickerTarget ? (
+					<div className='absolute inset-0 z-20 flex items-center justify-center bg-black/70 p-4'>
+						<div className='w-full max-w-2xl rounded-xl border border-white/10 bg-[#1f132b] p-4'>
+							<div className='mb-4 flex items-center justify-between gap-3'>
+								<h2 className='text-sm font-semibold uppercase tracking-wide text-white'>
+									Select image for{" "}
+									{pickerTarget === "left" ? "Outfit A" : "Outfit B"}
+								</h2>
+								<button
+									type='button'
+									onClick={() => setPickerTarget(null)}
+									className='rounded-md border border-white/20 px-3 py-1 text-xs text-slate-200'
+								>
+									Close
+								</button>
+							</div>
+
+							{selectedProducts.length ? (
+								<div className='grid max-h-[60vh] grid-cols-2 gap-3 overflow-auto pr-1 sm:grid-cols-3'>
+									{selectedProducts.map((product) => (
+										<button
+											key={`${pickerTarget}-${product.id}`}
+											type='button'
+											onClick={() => handleSelectProductImage(product.imageUrl)}
+											className='group overflow-hidden rounded-lg border border-white/15 text-left'
+										>
+											{/* eslint-disable-next-line @next/next/no-img-element */}
+											<img
+												src={product.imageUrl}
+												alt={product.title}
+												className='h-28 w-full object-cover transition group-hover:scale-105'
+											/>
+											<p className='truncate px-2 py-1 text-xs text-slate-100'>
+												{product.title}
+											</p>
+										</button>
+									))}
+								</div>
+							) : (
+								<p className='text-sm text-slate-300'>
+									No selected products found in your store yet. Select products
+									first, then return here to change either comparison image.
+								</p>
+							)}
+						</div>
+					</div>
 				) : null}
 			</main>
 		</div>
