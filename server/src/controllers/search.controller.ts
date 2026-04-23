@@ -5,6 +5,7 @@ import { extractSearchData } from '#src/utils/groq.ts';
 import {
   checkIntent,
   createSearch,
+  getSearchById,
   getSearchesByUserId,
   setProducts,
 } from '#src/services/search.service.ts';
@@ -93,7 +94,7 @@ export const searchProducts = async (req: AuthRequest, res: Response) => {
     }
 
     const { userInput, location } = req.body;
-    console.log(userInput)
+    console.log(userInput);
 
     if (!userInput || typeof userInput !== 'string') {
       return res.status(400).json({ message: 'Invalid input' });
@@ -268,17 +269,24 @@ export const getProductsBySearchId = async (
       return res.status(400).json({ message: 'Invalid search id' });
     }
 
-    const products = await getProductsBySearchID(searchId);
+    // const products = await getProductsBySearchID(searchId);
+    // const searchIntent = await getSearchById(searchId);
+    const [products, searchIntent] = await Promise.all([
+      getProductsBySearchID(searchId),
+      getSearchById(searchId),
+    ]);
 
     if (!products.length) {
       return res.status(200).json({
         status: 'empty',
+        search: searchIntent.intentKey,
         results: [],
       });
     }
 
     res.status(200).json({
       status: 'cached',
+      search: searchIntent.intentKey,
       results: products,
     });
   } catch (error) {

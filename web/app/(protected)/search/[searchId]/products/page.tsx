@@ -42,6 +42,7 @@ type SearchHistoryItem = {
 
 type SearchHistoryResponse = {
 	status: string;
+	search: string;
 	results: SearchHistoryItem[];
 };
 
@@ -50,6 +51,7 @@ export default function SearchProductsPage() {
 	const searchId = params.searchId;
 	const [results, setResults] = useState<SearchHistoryResponse>({
 		status: "",
+		search: "",
 		results: [],
 	});
 	const [error, setError] = useState<string | null>(null);
@@ -88,7 +90,8 @@ export default function SearchProductsPage() {
 					Search Products
 				</p>
 				<h1 className='mt-2 text-3xl font-bold text-white'>
-					Products for search {searchId}
+					Products for search{" "}
+					{results.search ? `${results.search}` : searchId}
 				</h1>
 			</div>
 			{error ? <p className='mb-4 text-sm text-red-300'>{error}</p> : null}
