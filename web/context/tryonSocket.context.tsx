@@ -9,6 +9,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
 import { toast } from "sonner";
 
@@ -39,6 +40,8 @@ const TRYON_SOCKET_EVENT = {
 	DONE: "tryon:job:done",
 	ERROR: "tryon:job:error",
 } as const;
+
+const MODEL_JOB_TYPES = new Set(["MODEL", "TRYON_MODEL"]);
 
 type SessionPayload = {
 	isAuthenticated: boolean;
@@ -95,6 +98,7 @@ export const TryonSocketProvider = ({
 }: {
 	children: React.ReactNode;
 }) => {
+	const router = useRouter();
 	const socketRef = useRef<Socket | null>(null);
 	const connectingRef = useRef(false);
 	const activeJobIdsRef = useRef(new Set<string>());
@@ -160,6 +164,17 @@ export const TryonSocketProvider = ({
 				jobId: payload.jobId,
 			});
 
+			if (MODEL_JOB_TYPES.has(payload.jobType.toUpperCase())) {
+				toast.success("3D model is ready", {
+					description: "Opening Avatar Studio.",
+					id: `tryon-job-done-${payload.jobId}`,
+				});
+				router.push(
+					`/tryon/model/avatar-studio/${encodeURIComponent(payload.jobId)}`,
+				);
+				return;
+			}
+
 			const tryonId = payload.tryonData?.id;
 			if (tryonId) {
 				toast.success("Try-on completed", {
@@ -178,7 +193,7 @@ export const TryonSocketProvider = ({
 				id: `tryon-job-done-${payload.jobId}`,
 			});
 		},
-		[handleJobStatus],
+		[handleJobStatus, router],
 	);
 
 	const connectIfNeeded = useCallback(async () => {
