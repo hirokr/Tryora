@@ -1,4 +1,3 @@
-import { SearchProductCard } from "@/components/utility/product/ProductCard";
 
 import type {
 	FeedCardHandlers,
@@ -38,28 +37,28 @@ export function RecommendationSection({
 				</div>
 			</div>
 
-			{isLoading ? (
+			{/* {isLoading ? (
 				<p className='text-sm text-slate-300'>
 					Loading personalized recommendations...
 				</p>
 			) : (
 				<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 					{items.map((product, index) => (
-						<SearchProductCard
-							key={product.id || `${product.title}-${index}`}
-							product={product}
-							detailsHref={product.id ? `/discover/${product.id}` : undefined}
-							likeCount={likeCounts[product.id || ""]}
-							viewCount={viewCounts[product.id || ""]}
-							isFavorited={Boolean(favourites[product.id || ""])}
-							tryOnHref={product.tryOnUrl || product.productUrl || undefined}
-							onViewed={onViewed}
-							onLike={onLike}
-							onFavoriteToggle={onFavoriteToggle}
-						/>
+						// <SearchProductCard
+						// 	key={product.id || `${product.title}-${index}`}
+						// 	product={product}
+						// 	detailsHref={product.id ? `/discover/${product.id}` : undefined}
+						// 	likeCount={likeCounts[product.id || ""]}
+						// 	viewCount={viewCounts[product.id || ""]}
+						// 	isFavorited={Boolean(favourites[product.id || ""])}
+						// 	tryOnHref={product.tryOnUrl || product.productUrl || undefined}
+						// 	onViewed={onViewed}
+						// 	onLike={onLike}
+						// 	onFavoriteToggle={onFavoriteToggle}
+						// />
 					))}
 				</div>
-			)}
+			)} */}
 		</section>
 	);
 }
