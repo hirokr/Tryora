@@ -1,4 +1,3 @@
-import { SearchProductCard } from "@/components/utility/product/ProductCard";
 
 import type {
 	FeedCardHandlers,
@@ -48,7 +47,7 @@ export function TrendingTryonsSection({
 				<p className='text-sm text-slate-300'>Loading trending try-ons...</p>
 			) : null}
 
-			<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+			{/* <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 				{items.map((product, index) => (
 					<SearchProductCard
 						key={product.id || `${product.title}-${index}`}
@@ -63,7 +62,7 @@ export function TrendingTryonsSection({
 						onFavoriteToggle={onFavoriteToggle}
 					/>
 				))}
-			</div>
+			</div> */}
 		</section>
 	);
 } // This component, `TrendingTryonsSection`, is responsible for displaying a section of trending try-on products on the Style Discovery page. It takes in props to manage the loading state, error messages, and the list of products to display. Each product is rendered using the `SearchProductCard` component, which includes functionality for viewing, liking, and favoriting products. The section is styled with a dark theme and includes a header and description for the trending try-ons.

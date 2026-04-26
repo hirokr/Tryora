@@ -5,7 +5,7 @@ import Image from "next/image";
 
 import Loader from "@/components/ui/Loader";
 import { useAuth } from "@/context/auth.context";
-import { authFetch } from "@/lib/auth/clientAuthFetch";
+import { authFetch } from "@/lib/auth/authFetch";
 
 type TryonItem = {
 	id: string;

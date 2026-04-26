@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { RefObject } from "react";
 
-import { SearchProductCard } from "@/components/utility/product/ProductCard";
 
 import type {
 	FeedCardHandlers,
@@ -51,7 +50,7 @@ export function DiscoverFeedSection({
 
 			{error ? <p className='mb-4 text-sm text-red-300'>{error}</p> : null}
 
-			<div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+			{/* <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
 				{items.map((product, index) => (
 					<SearchProductCard
 						key={product.id || `${product.title}-${index}`}
@@ -66,7 +65,7 @@ export function DiscoverFeedSection({
 						onFavoriteToggle={onFavoriteToggle}
 					/>
 				))}
-			</div>
+			</div> */}
 
 			{isLoading ? (
 				<p className='mt-4 text-sm text-slate-300'>Loading more products...</p>
