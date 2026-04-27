@@ -1,4 +1,4 @@
-//** 
+//**
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -16,31 +16,65 @@ import {
 
 const PAGE_SIZE = 8;
 
+type RuntimeRecommendation = {
+	id: string;
+	title: string;
+	source: string | null;
+	defaultImageUrl: string | null;
+	price: string | null;
+	viewCount: number;
+	likeCount: number;
+};
+
+type RecommendationResponse = {
+	status?: "success" | "empty";
+	results?: RuntimeRecommendation[];
+	message?: string;
+};
+
 export default function StyleDiscoveryPage() {
 	const { isAuthenticated } = useAuth();
 	const [products, setProducts] = useState<Product[]>([]);
-	const [recommendations, setRecommendations] = useState<Product[]>([]);
+	const [recommendations, setRecommendations] = useState<
+		RuntimeRecommendation[]
+	>([]);
 	const [isLoadingInitial, setIsLoadingInitial] = useState(false);
 	const [isLoadingMore, setIsLoadingMore] = useState(false);
+	const [isLoadingRecommendations, setIsLoadingRecommendations] =
+		useState(false);
 	const [error, setError] = useState("");
+	const [recommendationError, setRecommendationError] = useState("");
+	const [recommendationStatus, setRecommendationStatus] = useState<
+		"idle" | "success" | "empty"
+	>("idle");
 	const [page, setPage] = useState(1);
 	const [hasMore, setHasMore] = useState(true);
 	const loaderRef = useRef<HTMLDivElement | null>(null);
-	const discoverGridRef = useRef<HTMLDivElement | null>(null);
 	const isFetchingRef = useRef(false);
 
-	const getRecomendations = useCallback(async () => {
+	const getRecommendations = useCallback(async () => {
+		setIsLoadingRecommendations(true);
+		setRecommendationError("");
+		setRecommendationStatus("idle");
+
 		try {
-			const response = await authFetch("/api/recommendations");
+			const response = await authFetch("/api/recommendations?limit=10&skip=0");
 			if (!response.ok) {
 				throw new Error("Failed to fetch recommendations");
 			}
-			const data = (await response.json().catch(() => ({}))) as {
-				recommendations?: Product[];
-			};
-			setRecommendations(data.recommendations ?? []);
+			const data = (await response
+				.json()
+				.catch(() => ({}))) as RecommendationResponse;
+			const nextRecommendations = data.results ?? [];
+
+			setRecommendations(nextRecommendations);
+			setRecommendationStatus(data.status === "empty" ? "empty" : "success");
 		} catch {
-			setError("An error occurred while fetching recommendations");
+			setRecommendationError(
+				"An error occurred while fetching recommendations",
+			);
+		} finally {
+			setIsLoadingRecommendations(false);
 		}
 	}, []);
 
@@ -126,7 +160,10 @@ export default function StyleDiscoveryPage() {
 	}, [hasMore, isLoadingInitial, isLoadingMore, loadMore]);
 
 	const toProductDetails = useCallback(
-		(product: Product, index: number): ProductDetails => {
+		(
+			product: Product | RuntimeRecommendation,
+			index: number,
+		): ProductDetails => {
 			const sourceProduct = product as Product & {
 				id?: string;
 				searchProductId?: string | null;
@@ -159,50 +196,59 @@ export default function StyleDiscoveryPage() {
 		[],
 	);
 
-	const toProductCardData = useCallback((product: Product, index: number) => {
-		const sourceProduct = product as Product & {
-			id?: string;
-			searchProductId?: string | null;
-			viewCount?: number;
-			likeCount?: number;
-			rating?: number | null;
-			ratingCount?: number | null;
-			variants?: Array<{
+	const toProductCardData = useCallback(
+		(product: Product | RuntimeRecommendation, index: number) => {
+			const sourceProduct = product as Product & {
 				id?: string;
-				title?: string;
-				price?: string;
-				imageUrl?: string | null;
-			}>;
-			defaultImageUrl?: string | null;
-		};
+				searchProductId?: string | null;
+				viewCount?: number;
+				likeCount?: number;
+				rating?: number | null;
+				ratingCount?: number | null;
+				variants?: Array<{
+					id?: string;
+					title?: string;
+					price?: string;
+					imageUrl?: string | null;
+				}>;
+				defaultImageUrl?: string | null;
+			};
 
-		return {
-			id:
-				sourceProduct.id ||
-				sourceProduct.searchProductId ||
-				`${sourceProduct.title}-${index}`,
-			title: sourceProduct.title,
-			source: sourceProduct.source ?? "Fashion",
-			defaultImageUrl: sourceProduct.defaultImageUrl ?? "",
-			price: sourceProduct.price ?? "",
-			rating: sourceProduct.rating ?? 0,
-			ratingCount: sourceProduct.ratingCount ?? 0,
-			viewCount: sourceProduct.viewCount ?? 0,
-			likeCount: sourceProduct.likeCount ?? 0,
-			variants: (sourceProduct.variants ?? []).map((variant, variantIndex) => ({
-				id: variant.id || `${sourceProduct.title}-${variantIndex}`,
-				title: variant.title || "Variant",
-				price: variant.price || sourceProduct.price || "",
-				imageUrl: variant.imageUrl ?? sourceProduct.defaultImageUrl ?? "",
-			})),
-		};
-	}, []);
+			return {
+				id:
+					sourceProduct.id ||
+					sourceProduct.searchProductId ||
+					`${sourceProduct.title}-${index}`,
+				title: sourceProduct.title,
+				source: sourceProduct.source ?? "Fashion",
+				defaultImageUrl: sourceProduct.defaultImageUrl ?? "",
+				price: sourceProduct.price ?? "",
+				rating: sourceProduct.rating ?? 0,
+				ratingCount: sourceProduct.ratingCount ?? 0,
+				viewCount: sourceProduct.viewCount ?? 0,
+				likeCount: sourceProduct.likeCount ?? 0,
+				variants: (sourceProduct.variants ?? []).map(
+					(variant, variantIndex) => ({
+						id: variant.id || `${sourceProduct.title}-${variantIndex}`,
+						title: variant.title || "Variant",
+						price: variant.price || sourceProduct.price || "",
+						imageUrl: variant.imageUrl ?? sourceProduct.defaultImageUrl ?? "",
+					}),
+				),
+			};
+		},
+		[],
+	);
 
 	useEffect(() => {
 		if (isAuthenticated) {
-			void getRecomendations();
+			void getRecommendations();
+		} else {
+			setRecommendations([]);
+			setRecommendationStatus("idle");
+			setRecommendationError("");
 		}
-	}, [getRecomendations, isAuthenticated]);
+	}, [getRecommendations, isAuthenticated]);
 
 	const refreshProducts = () => {
 		setHasMore(true);
@@ -227,6 +273,8 @@ export default function StyleDiscoveryPage() {
 		return <Loader />;
 	}
 
+	const hasRecommendationCards = recommendations.length > 0;
+
 	return (
 		<section className='relative mx-auto w-full max-w-7xl px-4 pb-14 pt-28 sm:px-6 lg:px-8'>
 			{isAuthenticated ? (
@@ -235,27 +283,40 @@ export default function StyleDiscoveryPage() {
 						Recommendations
 					</p>
 					<h2 className='mt-2 text-2xl font-bold'>Recommended for you</h2>
-					<div className='mt-4 overflow-x-auto pb-2'>
-						<div className='flex gap-4'>
-							{recommendations.slice(0, 10).map((product, index) => {
-								const normalizedPublic = toProductDetails(product, index);
-								const normalizedPrivate = toProductCardData(product, index);
+					{isLoadingRecommendations ? (
+						<p className='mt-4 text-sm text-slate-300'>
+							Loading personalized recommendations...
+						</p>
+					) : recommendationError ? (
+						<p className='mt-4 text-sm text-red-300'>{recommendationError}</p>
+					) : recommendationStatus === "empty" || !hasRecommendationCards ? (
+						<p className='mt-4 text-sm text-slate-300'>
+							No personalized recommendations yet. Keep browsing to build your
+							feed.
+						</p>
+					) : (
+						<div className='mt-4 overflow-x-auto pb-2'>
+							<div className='flex gap-4'>
+								{recommendations.slice(0, 10).map((product, index) => {
+									const normalizedPublic = toProductDetails(product, index);
+									const normalizedPrivate = toProductCardData(product, index);
 
-								return (
-									<div
-										key={`recommendation-${normalizedPublic.id}-${index}`}
-										className='w-[280px] shrink-0 md:w-[320px]'
-									>
-										{isAuthenticated ? (
-											<ProductCard {...normalizedPrivate} />
-										) : (
-											<ProductCardPublic product={normalizedPublic} compact />
-										)}
-									</div>
-								);
-							})}
+									return (
+										<div
+											key={`recommendation-${normalizedPublic.id}-${index}`}
+											className='w-70 shrink-0 md:w-80'
+										>
+											{isAuthenticated ? (
+												<ProductCard {...normalizedPrivate} />
+											) : (
+												<ProductCardPublic product={normalizedPublic} compact />
+											)}
+										</div>
+									);
+								})}
+							</div>
 						</div>
-					</div>
+					)}
 				</div>
 			) : null}
 
@@ -275,27 +336,19 @@ export default function StyleDiscoveryPage() {
 					</button>
 				</div>
 				<div className='mt-8'>
-					<div
-						ref={discoverGridRef}
-						className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'
-					>
+					<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
 						{products.map((product, index) => {
 							const normalizedPublic = toProductDetails(product, index);
 							const normalizedPrivate = toProductCardData(product, index);
 
-							return (
-								isAuthenticated ? (
-									<ProductCard
-										key={normalizedPublic.id}
-										{...normalizedPrivate}
-									/>
-								) : (
-									<ProductCardPublic
-										key={normalizedPublic.id}
-										product={normalizedPublic}
-										compact
-									/>
-								)
+							return isAuthenticated ? (
+								<ProductCard key={normalizedPublic.id} {...normalizedPrivate} />
+							) : (
+								<ProductCardPublic
+									key={normalizedPublic.id}
+									product={normalizedPublic}
+									compact
+								/>
 							);
 						})}
 					</div>
@@ -315,7 +368,9 @@ export default function StyleDiscoveryPage() {
 						</>
 					) : null}
 					{!hasMore && products.length > 0 ? (
-						<p className='mt-4 text-sm text-slate-400'>You have reached the end.</p>
+						<p className='mt-4 text-sm text-slate-400'>
+							You have reached the end.
+						</p>
 					) : null}
 					<div ref={loaderRef} className='h-3' aria-hidden='true' />
 				</div>

@@ -115,15 +115,15 @@ export const fuseProductImages = async (req: AuthRequest, res: Response) => {
       findUserById(req.userId),
       Promise.all(productIds.map((id: string) => findProductById(id))),
     ]);
-
+    
     if (!tryonUser?.userBodyImageUrl) {
       return res.status(400).json({ message: 'User body image not found' });
     }
-
+    
     const productImageUrls = products
-      .map(product => product?.defaultImageUrl)
-      .filter((url): url is string => Boolean(url));
-
+    .map(product => product?.defaultImageUrl)
+    .filter((url): url is string => Boolean(url));
+    
     if (productImageUrls.length === 0) {
       return res.status(400).json({ message: 'No valid product images found' });
     }

@@ -14,7 +14,7 @@ type SearchHistoryItem = {
 
 type SearchHistoryResponse = {
 	status: string;
-	results: SearchHistoryItem[];
+	results: SearchHistoryItem[];  //// The array of history items from the API
 };
 
 function SearchHistory() {
@@ -46,8 +46,8 @@ function SearchHistory() {
 			}
 		};
 
-		void fetchSearchHistory();
-	}, [isLoading, isAuthenticated, user]);
+		void fetchSearchHistory(); //// Standard practice for calling async functions inside useEffect
+	}, [isLoading, isAuthenticated, user]); //// Re-run if auth state changes
 
 	if (isLoading) {
 		return <div>Checking user session...</div>;
@@ -66,7 +66,7 @@ function SearchHistory() {
 			{searchHistory.length > 0 ? (
 				searchHistory.map((item) => (
 					<button
-						key={item.id}
+						key={item.id}  //// Critical for React's reconciliation and performance
 						type="button"
 						onClick={() => handlePrevSearchClick(item.id)}
 						className="block w-full text-left"

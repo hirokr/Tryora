@@ -3,9 +3,11 @@ import {
   getUserSearchHistory,
   searchProducts,
   // updateProductMetrics,
-} from '#src/controllers/search.controller.ts';
-import { authMiddleware } from '#src/middlewares/authenticate.middleware.ts';
-import { Router } from 'express';
+} from '#src/controllers/search.controller.ts'; //// Imports logic handlers from the controller
+import { authMiddleware } from '#src/middlewares/authenticate.middleware.ts'; //// Middleware to verify JWT/user session
+import { Router } from 'express';  //// Express utility to create modular, mountable route handlers
+
+const router = Router();
 
 const router = Router();
 

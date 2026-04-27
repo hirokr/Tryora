@@ -1,5 +1,4 @@
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
+
 import RootLayoutShell from "@/components/RootLayoutShell";
 import { getSession } from "@/lib/auth/session";
 

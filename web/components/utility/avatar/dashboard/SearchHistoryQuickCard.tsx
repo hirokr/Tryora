@@ -1,9 +1,9 @@
 "use client";
 
+import { authFetch } from "@/lib/auth/authFetch";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { authFetch } from "@/lib/auth/clientAuthFetch";
 
 type HistoryItem = {
   id: string;
