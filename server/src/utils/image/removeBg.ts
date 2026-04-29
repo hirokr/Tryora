@@ -26,10 +26,11 @@ export async function removeBackground(cloudImageUrl: string, userId: string) {
       type: 'person',
       outputFile: outputPath,
     });
+    
 
     return { result, outputPath };
   } catch (error) {
-    console.error('Error:', JSON.stringify(error));
+    console.error('Error bg remove:', JSON.stringify(error));
     throw error;
   }
 }

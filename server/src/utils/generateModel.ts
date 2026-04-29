@@ -70,6 +70,7 @@ export const generate3DModelTryon = async (
     headers: buildPixazoHeaders(true),
     body: JSON.stringify(payload),
   });
+  console.log(response)
 
   if (response.status === 402) {
     const errorBody = await response.text();

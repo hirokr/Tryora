@@ -33,32 +33,35 @@ export const generateModelTryon = async (req: AuthRequest, res: Response) => {
     if (!req.userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
-
+    
     const { tryonId, prompt = '' } = req.body;
-
+    
     if (!tryonId || typeof tryonId !== 'string') {
       return res.status(400).json({ message: 'Invalid tryonId' });
     }
-
+    
     const resultUrl = await getTryOnImage(tryonId);
     if (!resultUrl) {
       return res.status(404).json({ message: 'Try-on result not found' });
     }
+    // console.log(resultUrl);
 
-    const { outputPath } = await removeBackground(resultUrl, req.userId);
+
+    // const { outputPath } = await removeBackground(resultUrl, req.userId);
 
     try {
-      const processedImageUrl = await uploadProcessedImage(
-        outputPath,
-        `model-input-${tryonId}.png`
-      );
+      // const processedImageUrl = await uploadProcessedImage(
+      //   resultUrl,
+      //   `model-input-${tryonId}.png`
+      // );
 
       const modelGeneration: HunyuanStatusResponse = await generate3DModelTryon(
         buildHunyuanStartPayload(
-          processedImageUrl,
+          resultUrl,
           typeof prompt === 'string' ? prompt : ''
         )
       );
+      console.log(modelGeneration);
 
       if (!modelGeneration) {
         return res.status(500).json({
@@ -89,7 +92,7 @@ export const generateModelTryon = async (req: AuthRequest, res: Response) => {
         jobId: jobStart.jobId,
       });
     } finally {
-      await unlink(outputPath).catch(() => undefined);
+      // await unlink(outputPath).catch(() => undefined);
     }
   } catch (error) {
     return res.status(500).json({

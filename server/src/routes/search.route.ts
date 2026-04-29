@@ -9,7 +9,6 @@ import { Router } from 'express';  //// Express utility to create modular, mount
 
 const router = Router();
 
-const router = Router();
 
 router.use(authMiddleware);
 
