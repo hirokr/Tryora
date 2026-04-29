@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 
+import { PublicShare } from "@/components/utility/avatar/public-share/PublicShare";
 import { authFetch } from "@/lib/auth/authFetch";
 
 type TryonItemResponse = {
@@ -212,6 +213,7 @@ export default async function TryonDetailsPage({
 				)}
 
 				<div className='mt-8 flex flex-wrap gap-3'>
+					<PublicShare tryonId={tryonRecord.id || tryonId} />
 					<Link
 						href='/tryon'
 						className='rounded-full border border-cyan-300/30 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-300/10'

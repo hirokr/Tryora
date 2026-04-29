@@ -21,7 +21,8 @@ export function proxy(request: NextRequest) {
 
 	const hasSession = Boolean(request.cookies.get("session")?.value);
 	const isAuthRoute = pathname.startsWith("/auth");
-	const isPublicRoute = PUBLIC_ROUTES.has(pathname) || isAuthRoute;
+	const isPublicRoute =
+		PUBLIC_ROUTES.has(pathname) || pathname.startsWith("/public-share") || isAuthRoute;
 
 	if (!hasSession && !isPublicRoute) {
 		const redirectUrl = request.nextUrl.clone();
