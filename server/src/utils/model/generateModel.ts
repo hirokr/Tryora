@@ -1,43 +1,54 @@
 import type {
-  HunyuanStartRequestPayload,
-  HunyuanStatusResponse,
+  TripoResultResponse,
+  TripoStartRequestPayload,
+  TripoStatusResponse,
 } from '#src/types/3d.js';
+import {
+  buildTripoStartPayload,
+  getPixazoApiKey,
+  parseApiResponse,
+  PIXAZO_3D_MODEL_PATH,
+  PIXAZO_BASE_URL,
+  PIXAZO_STATUS_ENDPOINT,
+} from './utils.ts';
 
-const TRIPO_BASE_URL =
-  process.env.TRIPO_BASE_URL?.trim() ||
-  'https://gateway.pixazo.ai/tripo3d-v2-5-413/v1';
-const HUNYUAN_3D_GENERATE_PATH = '/tripo3d-v2-5-request';
-const DEFAULT_TEXTURE = 'standard';
-const DEFAULT_TEXTURE_ALIGNMENT = 'original_image';
-const DEFAULT_ORIENTATION = 'default';
+export const startTripo3DGeneration = async (
+  imageUri: string,
+  prompt: string = ''
+): Promise<string> => {
+  const url = `${PIXAZO_BASE_URL}/${PIXAZO_3D_MODEL_PATH}`;
+  const payload = buildTripoStartPayload(imageUri, prompt);
 
-export const getPixazoBaseUrl = (): string => TRIPO_BASE_URL;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: buildPixazoHeaders(true),
+    body: JSON.stringify(payload),
+  });
 
-export const getPixazoApiKey = (): string => {
-  // Use PIXAZO_API_KEY as the single source of truth
-  const apiKey = process.env.PIXAZO_API_KEY?.trim();
+  const data = await parseApiResponse<TripoStatusResponse>(
+    response,
+    'Start API Error'
+  );
 
-  if (!apiKey) {
-    throw new Error(
-      'Missing PIXAZO_API_KEY. Get it from https://api-console.pixazo.ai/api_keys'
-    );
+  if (!data.request_id) {
+    throw new Error('Invalid response: missing request ID');
   }
 
-  return apiKey;
+  return data.request_id;
 };
 
-export const buildHunyuanPrompt = (_prompt: string = ''): string => '';
+export const getTripoStatus = async (
+  requestId: string
+): Promise<TripoResultResponse> => {
+  const url = `${PIXAZO_STATUS_ENDPOINT}/${encodeURIComponent(requestId)}`;
 
-export const buildHunyuanStartPayload = (
-  imageUri: string,
-  _prompt: string = ''
-): HunyuanStartRequestPayload => ({
-  model: 'tripo3d-v2-5', // Add model field
-  texture: DEFAULT_TEXTURE,
-  texture_alignment: DEFAULT_TEXTURE_ALIGNMENT,
-  orientation: DEFAULT_ORIENTATION,
-  image_url: imageUri,
-});
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: buildPixazoHeaders(),
+  });
+
+  return parseApiResponse<TripoResultResponse>(response, 'Status API Error');
+};
 
 export const buildPixazoHeaders = (
   withJsonContentType = false
@@ -58,9 +69,9 @@ export const buildPixazoHeaders = (
 };
 
 export const generate3DModelTryon = async (
-  payload: HunyuanStartRequestPayload
-): Promise<HunyuanStatusResponse> => {
-  const url = `${getPixazoBaseUrl()}${HUNYUAN_3D_GENERATE_PATH}`;
+  payload: TripoStartRequestPayload
+): Promise<TripoStatusResponse> => {
+  const url = `${PIXAZO_BASE_URL}${PIXAZO_3D_MODEL_PATH}`;
 
   console.debug('[Pixazo] POST', url);
   console.debug('[Pixazo] Payload:', JSON.stringify(payload));
@@ -70,8 +81,6 @@ export const generate3DModelTryon = async (
     headers: buildPixazoHeaders(true),
     body: JSON.stringify(payload),
   });
-  console.log(response)
-
   if (response.status === 402) {
     const errorBody = await response.text();
     throw new Error(
@@ -88,7 +97,7 @@ export const generate3DModelTryon = async (
     );
   }
 
-  const data = (await response.json()) as HunyuanStatusResponse;
+  const data = (await response.json()) as TripoStatusResponse;
 
   if (!data.request_id || !data.polling_url) {
     throw new Error('Tripo3D response missing required fields');

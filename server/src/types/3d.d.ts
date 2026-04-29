@@ -1,7 +1,7 @@
 import type { JobType } from '#src/generated/enums.ts';
 
 // Types to add to your #src/types/3d.ts
-export interface HunyuanStartRequestPayload {
+export interface TripoStartRequestPayload {
   model: 'tripo3d-v2-5' | string; // Add model field
   texture: 'standard' | string;
   texture_alignment: 'original_image' | string;
@@ -9,13 +9,13 @@ export interface HunyuanStartRequestPayload {
   image_url: string;
 }
 
-export interface HunyuanStatusResponse {
+export interface TripoStatusResponse {
   request_id: string;
   status: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   polling_url: string;
 }
 
-export interface HunyuanResultResponse {
+export interface TripoResultResponse {
   request_id: string;
   status:
     | 'QUEUED'
@@ -44,9 +44,9 @@ export interface Generate3DModelJobData {
 }
 
 // {
-//   "request_id": "hunyuan-image_019dxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+//   "request_id": "Tripo-image_019dxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
 //   "status": "COMPLETED",
-//   "model_id": "hunyuan-image",
+//   "model_id": "Tripo-image",
 //   "error": null,
 //   "output": {
 //     "media_url": [

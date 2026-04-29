@@ -2,14 +2,12 @@ import { JobStatus, JobType } from '#src/generated/enums.ts';
 import { enqueue3DModelJob } from '#src/queues/queue.ts';
 import { createJob } from '#src/services/job.service.ts';
 import { getTryOnImage } from '#src/services/tryon.service.ts';
-import { HunyuanStatusResponse } from '#src/types/3d.js';
+import { TripoStatusResponse } from '#src/types/3d.js';
 import { AuthRequest, Response } from '#src/types/authRequest.js';
 import { JobResponseType } from '#src/types/jobs.js';
 import { removeBackground } from '#src/utils/image/removeBg.ts';
-import {
-  buildHunyuanStartPayload,
-  generate3DModelTryon,
-} from '#src/utils/generateModel.ts';
+import { generate3DModelTryon } from '#src/utils/model/generateModel.ts';
+import { buildTripoStartPayload } from '#src/utils/model/utils.ts';
 import { handleFileUpload } from '#src/utils/uploadthings.ts';
 import { unlink } from 'node:fs/promises';
 
@@ -33,19 +31,18 @@ export const generateModelTryon = async (req: AuthRequest, res: Response) => {
     if (!req.userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
-    
+
     const { tryonId, prompt = '' } = req.body;
-    
+
     if (!tryonId || typeof tryonId !== 'string') {
       return res.status(400).json({ message: 'Invalid tryonId' });
     }
-    
+
     const resultUrl = await getTryOnImage(tryonId);
     if (!resultUrl) {
       return res.status(404).json({ message: 'Try-on result not found' });
     }
     // console.log(resultUrl);
-
 
     // const { outputPath } = await removeBackground(resultUrl, req.userId);
 
@@ -55,8 +52,8 @@ export const generateModelTryon = async (req: AuthRequest, res: Response) => {
       //   `model-input-${tryonId}.png`
       // );
 
-      const modelGeneration: HunyuanStatusResponse = await generate3DModelTryon(
-        buildHunyuanStartPayload(
+      const modelGeneration: TripoStatusResponse = await generate3DModelTryon(
+        buildTripoStartPayload(
           resultUrl,
           typeof prompt === 'string' ? prompt : ''
         )

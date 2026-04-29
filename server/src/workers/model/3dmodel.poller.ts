@@ -1,16 +1,8 @@
 import logger from '#src/config/logger.ts';
-import { getHunyuanStatus } from '#src/client/hunyuan3d.client.ts';
+import { getTripoStatus } from '#src/utils/model/generateModel.ts';
 
-const PIXAZO_POLL_INTERVAL_MS =
-  Number(
-    process.env.TRIPO_3D_POLL_INTERVAL_MS ||
-      process.env.PIXAZO_3D_POLL_INTERVAL_MS
-  ) || 10_000;
-const PIXAZO_MAX_POLL_ATTEMPTS =
-  Number(
-    process.env.TRIPO_3D_MAX_POLL_ATTEMPTS ||
-      process.env.PIXAZO_3D_MAX_POLL_ATTEMPTS
-  ) || 30;
+const PIXAZO_POLL_INTERVAL_MS  = Number(process.env.PIXAZO_3D_POLL_INTERVAL_MS) || 10_000;
+const PIXAZO_MAX_POLL_ATTEMPTS = Number( process.env.PIXAZO_3D_MAX_POLL_ATTEMPTS) || 30;
 
 const sleep = (ms: number): Promise<void> =>
   new Promise(resolve => setTimeout(resolve, ms));
@@ -23,7 +15,7 @@ export const pollPixazo3DUntilComplete = async (
   generationJobId: string
 ): Promise<string> => {
   for (let attempt = 1; attempt <= PIXAZO_MAX_POLL_ATTEMPTS; attempt++) {
-    const payload = await getHunyuanStatus(requestId);
+    const payload = await getTripoStatus(requestId);
     const status = normalizeStatus(payload.status);
 
     if (status === 'COMPLETED') {
