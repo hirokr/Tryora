@@ -19,19 +19,20 @@ export const process3DModelJob = async (
     const generationJob = await getJobById(generationJobId);
     jobId = generationJob.id;
 
+    // thirdPartyTaskId now holds the polling_url returned from job submission
     if (!generationJob.thirdPartyTaskId) {
-      throw new Error(`Missing Pixazo request ID for job ${generationJobId}.`);
+      throw new Error(`Missing Pixazo polling URL for job ${generationJobId}.`);
     }
 
     await updateJobStatus(jobId, JobStatus.PROCESSING);
 
     logger.info('[ModelWorker] Polling Pixazo for 3D model result', {
       generationJobId,
-      requestId: generationJob.thirdPartyTaskId,
+      pollingUrl: generationJob.thirdPartyTaskId,
     });
 
     const modelUrl = await pollPixazo3DUntilComplete(
-      generationJob.thirdPartyTaskId,
+      generationJob.thirdPartyTaskId, // this is now the polling_url
       generationJobId
     );
 

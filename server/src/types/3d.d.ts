@@ -7,6 +7,9 @@ export interface TripoStartRequestPayload {
   texture_alignment: 'original_image' | string;
   orientation: 'default' | string;
   image_url: string;
+  face_limit: number; // New field to specify the maximum number of faces in the generated model
+  auto_refine: boolean; // New field to enable or disable automatic refinement of the model
+  texture_quality: 'low' | 'standard' | 'high' | string; // New field to specify the desired texture quality
 }
 
 export interface TripoStatusResponse {

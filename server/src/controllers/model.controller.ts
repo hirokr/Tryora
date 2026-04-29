@@ -51,14 +51,11 @@ export const generateModelTryon = async (req: AuthRequest, res: Response) => {
       //   resultUrl,
       //   `model-input-${tryonId}.png`
       // );
+      const tripoPayload = buildTripoStartPayload(resultUrl, prompt);
 
-      const modelGeneration: TripoStatusResponse = await generate3DModelTryon(
-        buildTripoStartPayload(
-          resultUrl,
-          typeof prompt === 'string' ? prompt : ''
-        )
-      );
-      console.log(modelGeneration);
+      const modelGeneration: TripoStatusResponse =
+        await generate3DModelTryon(tripoPayload);
+      console.log("Model Generation:", modelGeneration);
 
       if (!modelGeneration) {
         return res.status(500).json({

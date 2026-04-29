@@ -9,14 +9,13 @@ import {
   parseApiResponse,
   PIXAZO_3D_MODEL_PATH,
   PIXAZO_BASE_URL,
-  PIXAZO_STATUS_ENDPOINT,
 } from './utils.ts';
 
 export const startTripo3DGeneration = async (
   imageUri: string,
   prompt: string = ''
-): Promise<string> => {
-  const url = `${PIXAZO_BASE_URL}/${PIXAZO_3D_MODEL_PATH}`;
+): Promise<{ requestId: string; pollingUrl: string }> => {
+  const url = `${PIXAZO_BASE_URL}${PIXAZO_3D_MODEL_PATH}`;
   const payload = buildTripoStartPayload(imageUri, prompt);
 
   const response = await fetch(url, {
@@ -30,19 +29,17 @@ export const startTripo3DGeneration = async (
     'Start API Error'
   );
 
-  if (!data.request_id) {
-    throw new Error('Invalid response: missing request ID');
+  if (!data.request_id || !data.polling_url) {
+    throw new Error('Invalid response: missing request_id or polling_url');
   }
 
-  return data.request_id;
+  return { requestId: data.request_id, pollingUrl: data.polling_url };
 };
 
 export const getTripoStatus = async (
-  requestId: string
+  pollingUrl: string
 ): Promise<TripoResultResponse> => {
-  const url = `${PIXAZO_STATUS_ENDPOINT}/${encodeURIComponent(requestId)}`;
-
-  const response = await fetch(url, {
+  const response = await fetch(pollingUrl, {
     method: 'GET',
     headers: buildPixazoHeaders(),
   });
@@ -56,8 +53,8 @@ export const buildPixazoHeaders = (
   const apiKey = getPixazoApiKey();
 
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${apiKey}`, // Primary auth
-    'Ocp-Apim-Subscription-Key': apiKey, // APIM gateway fallback
+    Authorization: `Bearer ${apiKey}`,
+    'Ocp-Apim-Subscription-Key': apiKey,
     'Cache-Control': 'no-cache',
   };
 
@@ -72,15 +69,15 @@ export const generate3DModelTryon = async (
   payload: TripoStartRequestPayload
 ): Promise<TripoStatusResponse> => {
   const url = `${PIXAZO_BASE_URL}${PIXAZO_3D_MODEL_PATH}`;
-
-  console.debug('[Pixazo] POST', url);
-  console.debug('[Pixazo] Payload:', JSON.stringify(payload));
+  console.log(url);
 
   const response = await fetch(url, {
     method: 'POST',
     headers: buildPixazoHeaders(true),
     body: JSON.stringify(payload),
   });
+  console.log('Response:', response);
+
   if (response.status === 402) {
     const errorBody = await response.text();
     throw new Error(
