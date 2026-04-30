@@ -89,6 +89,7 @@ export async function getTryon(limit: number, skip: number) {
     take: limit,
     skip,
     orderBy: { createdAt: 'desc' },
+    where: { status: 'COMPLETED' },
     select: {
       id: true,
       userId: true,
@@ -138,9 +139,9 @@ export async function getTryOnByJobId(jobId: string) {
 
 export async function getTryOnsByUserId(userId: string) {
   console.log(userId);
-  
+
   const jobs = await prisma.job.findMany({
-    where: { userId: userId },
+    where: { userId: userId, status: 'COMPLETED' },
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,
@@ -153,7 +154,7 @@ export async function getTryOnsByUserId(userId: string) {
     },
   });
   console.log(`Fetched try-on jobs for user ${userId}:`, jobs);
-  return jobs.map((job) => mapJobToTryonRecord(job));
+  return jobs.map(job => mapJobToTryonRecord(job));
 }
 
 export async function deleteTryOn(id: string) {

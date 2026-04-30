@@ -94,7 +94,7 @@ export const signup = async (req: Request, res: Response) => {
         .status(400)
         .json({ message: 'Email, password and name are required' });
     }
-    
+
     const user = await findUserByEmail(email);
     if (user) {
       return res.status(409).json({ message: 'User already exists' });
@@ -251,6 +251,16 @@ export const googleAuthCallback = [
       );
 
       const frontend = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+
+      const existingUser = await findUserByEmail(user.email);
+      
+      if (!existingUser) {
+        return res.redirect(
+          `${frontend}/api/auth/google/callback?id=${user.id}&email=${user.email}&name=${user.name}&avatar=${user.avatar || ''}&emailVerified=${user.emailVerified}&isActive=${user.isActive}&accessToken=${accessToken}&refreshToken=${refreshToken}&userBodyImageUrl=${user.userBodyImageUrl || ''}&age=${user.age || ''}`
+        );
+      }
+
       sendWelcomeEmail({
         to: user.email,
         userName: user.name,

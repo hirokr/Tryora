@@ -45,7 +45,6 @@ export async function getTryOnsByUserIdController(req: AuthRequest, res: Respons
     }
 
     const tryons = await getTryOnsByUserId(userId);
-    console.log(tryons)
 
     return res.status(200).json({
       status: 'success',
