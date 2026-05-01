@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 8000
 
 # Default command can be overridden by Render's Docker Command setting.
-CMD ["node", "server.js"]
+CMD ["npx", "tsx", "src/index.ts"]
