@@ -9,11 +9,18 @@ import {
   getTryOnById,
   getTryOnsByUserId,
 } from '#src/services/tryon.service.ts';
-import { discoverTryOns, getTryOnsByUserIdController } from '#src/controllers/tryon.controller.ts';
+import {
+  discoverTryOns,
+  getPublicTryOnByIdController,
+  getTryOnsByUserIdController,
+} from '#src/controllers/tryon.controller.ts';
 import { generateModelTryon } from '#src/controllers/model.controller.ts';
 import { getTryonJobStatus } from '#src/controllers/job.controller.ts';
 
 const router = Router();
+
+router.get('/public/:tryonId', getPublicTryOnByIdController);
+
 router.use(authMiddleware);
 
 router.get('/jobs/:jobId', getTryonJobStatus);

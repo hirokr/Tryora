@@ -1,3 +1,4 @@
+//8
 import { AuthRequest } from '#src/types/authRequest.js';
 import { Response } from 'express';
 
@@ -49,10 +50,11 @@ const uploadSingleImage = async (
 const uploadSerperProductImages = async (
   products: Product[]
 ): Promise<Product[]> => {
-  const CONCURRENCY = 5;
+  const CONCURRENCY = 5;   //// Process 5 images at a time to avoid rate limiting
   const results: Product[] = [];
 
   // 🔥 Deduplicate by image BEFORE upload
+  //// Deduplicate: If multiple stores have the same image, only upload it once
   const uniqueProducts = Array.from(
     new Map(products.map(p => [p.defaultImageUrl, p])).values()
   );
@@ -70,7 +72,7 @@ const uploadSerperProductImages = async (
         );
 
         // 🚨 STRICT MODE: DROP if upload fails
-        if (!uploadedUrl) return null;
+        if (!uploadedUrl) return null; //// Drop product if image fails
 
         return {
           ...product,

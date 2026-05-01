@@ -1,21 +1,24 @@
 import type { JobType } from '#src/generated/enums.ts';
 
 // Types to add to your #src/types/3d.ts
-export interface HunyuanStartRequestPayload {
+export interface TripoStartRequestPayload {
   model: 'tripo3d-v2-5' | string; // Add model field
   texture: 'standard' | string;
   texture_alignment: 'original_image' | string;
   orientation: 'default' | string;
   image_url: string;
+  face_limit: number; // New field to specify the maximum number of faces in the generated model
+  auto_refine: boolean; // New field to enable or disable automatic refinement of the model
+  texture_quality: 'low' | 'standard' | 'high' | string; // New field to specify the desired texture quality
 }
 
-export interface HunyuanStatusResponse {
+export interface TripoStatusResponse {
   request_id: string;
   status: 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   polling_url: string;
 }
 
-export interface HunyuanResultResponse {
+export interface TripoResultResponse {
   request_id: string;
   status:
     | 'QUEUED'
@@ -44,9 +47,9 @@ export interface Generate3DModelJobData {
 }
 
 // {
-//   "request_id": "hunyuan-image_019dxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+//   "request_id": "Tripo-image_019dxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
 //   "status": "COMPLETED",
-//   "model_id": "hunyuan-image",
+//   "model_id": "Tripo-image",
 //   "error": null,
 //   "output": {
 //     "media_url": [

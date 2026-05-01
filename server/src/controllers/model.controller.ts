@@ -2,14 +2,12 @@ import { JobStatus, JobType } from '#src/generated/enums.ts';
 import { enqueue3DModelJob } from '#src/queues/queue.ts';
 import { createJob } from '#src/services/job.service.ts';
 import { getTryOnImage } from '#src/services/tryon.service.ts';
-import { HunyuanStatusResponse } from '#src/types/3d.js';
+import { TripoStatusResponse } from '#src/types/3d.js';
 import { AuthRequest, Response } from '#src/types/authRequest.js';
 import { JobResponseType } from '#src/types/jobs.js';
 import { removeBackground } from '#src/utils/image/removeBg.ts';
-import {
-  buildHunyuanStartPayload,
-  generate3DModelTryon,
-} from '#src/utils/generateModel.ts';
+import { generate3DModelTryon } from '#src/utils/model/generateModel.ts';
+import { buildTripoStartPayload } from '#src/utils/model/utils.ts';
 import { handleFileUpload } from '#src/utils/uploadthings.ts';
 import { unlink } from 'node:fs/promises';
 
@@ -44,21 +42,20 @@ export const generateModelTryon = async (req: AuthRequest, res: Response) => {
     if (!resultUrl) {
       return res.status(404).json({ message: 'Try-on result not found' });
     }
+    // console.log(resultUrl);
 
-    const { outputPath } = await removeBackground(resultUrl, req.userId);
+    // const { outputPath } = await removeBackground(resultUrl, req.userId);
 
     try {
-      const processedImageUrl = await uploadProcessedImage(
-        outputPath,
-        `model-input-${tryonId}.png`
-      );
+      // const processedImageUrl = await uploadProcessedImage(
+      //   resultUrl,
+      //   `model-input-${tryonId}.png`
+      // );
+      const tripoPayload = buildTripoStartPayload(resultUrl, prompt);
 
-      const modelGeneration: HunyuanStatusResponse = await generate3DModelTryon(
-        buildHunyuanStartPayload(
-          processedImageUrl,
-          typeof prompt === 'string' ? prompt : ''
-        )
-      );
+      const modelGeneration: TripoStatusResponse =
+        await generate3DModelTryon(tripoPayload);
+      console.log("Model Generation:", modelGeneration);
 
       if (!modelGeneration) {
         return res.status(500).json({
@@ -89,7 +86,7 @@ export const generateModelTryon = async (req: AuthRequest, res: Response) => {
         jobId: jobStart.jobId,
       });
     } finally {
-      await unlink(outputPath).catch(() => undefined);
+      // await unlink(outputPath).catch(() => undefined);
     }
   } catch (error) {
     return res.status(500).json({

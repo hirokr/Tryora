@@ -2,16 +2,16 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import { SELECTED_TRYON_PRODUCTS_STORAGE_KEY } from "@/constants/flow";
-
+// data type and data structure declaration for each product
 export type SelectedProduct = {
   id: string;
   title: string;
   imageUrl: string;
   source?: string | null;
   price?: string | null;
-  selectedAt: string;
+  selectedAt: string;     // time of product selection
 };
-
+//state and function type definition of store
 type SelectedProductsState = {
   selectedProducts: SelectedProduct[];
   isSelected: (productId: string) => boolean;
@@ -20,19 +20,19 @@ type SelectedProductsState = {
   toggleProduct: (product: Omit<SelectedProduct, "selectedAt">) => void;
   clearSelectedProducts: () => void;
 };
-
+// max 20 products can be added to the list
 const MAX_SELECTED_PRODUCTS = 20;
 
 export const useSelectedProductsStore = create<SelectedProductsState>()(
   persist(
     (set, get) => ({
-      selectedProducts: [],
+      selectedProducts: [], //primary state:list of selected products
 
-      isSelected: (productId) => {
+      isSelected: (productId) => {   //check if any spicific product is in list or not
         return get().selectedProducts.some((item) => item.id === productId);
       },
 
-      selectProduct: (product) => {
+      selectProduct: (product) => {  //adding new products to the list
         set((state) => {
           const exists = state.selectedProducts.some((item) => item.id === product.id);
           if (exists) {

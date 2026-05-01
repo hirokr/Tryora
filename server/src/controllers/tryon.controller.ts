@@ -45,7 +45,6 @@ export async function getTryOnsByUserIdController(req: AuthRequest, res: Respons
     }
 
     const tryons = await getTryOnsByUserId(userId);
-    console.log(tryons)
 
     return res.status(200).json({
       status: 'success',
@@ -88,6 +87,31 @@ export async function getTryOnByIdController(req: AuthRequest, res: Response) {
   } catch (error) {
     return res.status(500).json({
       message: 'failed to fetch try-on',
+    });
+  }
+}
+
+export async function getPublicTryOnByIdController(req: AuthRequest, res: Response) {
+  try {
+    const tryonId = firstParam(req.params.tryonId);
+
+    if (!tryonId) {
+      return res.status(400).json({ message: 'Invalid tryonId' });
+    }
+
+    const tryon = await getTryOnById(tryonId);
+
+    if (!tryon) {
+      return res.status(404).json({ message: 'Try-on not found' });
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      data: tryon,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: 'failed to fetch public try-on',
     });
   }
 }
