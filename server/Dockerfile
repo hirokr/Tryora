@@ -16,6 +16,8 @@ ENV NODE_ENV=development
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+RUN npx prisma generate
+
 EXPOSE 8000
 
 # Default command can be overridden by Render's Docker Command setting.
