@@ -9,7 +9,9 @@ FROM node:22-alpine AS runner
 
 WORKDIR /app
 
-ENV NODE_ENV=production
+RUN apk add --no-cache bash
+
+ENV NODE_ENV=development
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -17,4 +19,4 @@ COPY . .
 EXPOSE 8000
 
 # Default command can be overridden by Render's Docker Command setting.
-CMD ["npx", "tsx", "src/index.ts"]
+CMD ["npm", "run", "dev:all"]
