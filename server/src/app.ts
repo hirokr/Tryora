@@ -19,7 +19,11 @@ import searchRoutes from './routes/search.route.ts';
 const app = express();
 app.use(helmet());
 
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://tryora.vercel.app',
+];
 
 app.use(
   cors({
@@ -90,9 +94,7 @@ export const redisClient = redis.createClient({
 });
 
 app.use((req, res) => {
-  res
-    .status(404)
-    .json({ succes: false, error: 'Route not found' });
+  res.status(404).json({ succes: false, error: 'Route not found' });
 });
 
 export default app;
