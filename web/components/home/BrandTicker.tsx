@@ -14,8 +14,8 @@ export default function BrandTicker({ brands }: BrandTickerProps) {
 				</p>
 			</div>
 			<div className='relative flex overflow-x-hidden'>
-				<div className='animate-scroll flex items-center gap-12 px-4 sm:gap-16 md:gap-24'>
-					<div className='flex items-center gap-12 sm:gap-16 md:gap-24'>
+				<div className='animate-scroll flex items-center gap-8 px-4 sm:gap-12 md:gap-20'>
+					<div className='flex items-center gap-8 sm:gap-12 md:gap-20'>
 						{brands.map((brand) => (
 							<span
 								key={`a-${brand}`}
@@ -25,7 +25,7 @@ export default function BrandTicker({ brands }: BrandTickerProps) {
 							</span>
 						))}
 					</div>
-					<div className='flex items-center gap-12 sm:gap-16 md:gap-24'>
+					<div className='flex items-center gap-8 sm:gap-12 md:gap-20'>
 						{brands.map((brand) => (
 							<span
 								key={`b-${brand}`}

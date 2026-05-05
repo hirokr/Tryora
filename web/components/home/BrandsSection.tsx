@@ -22,7 +22,7 @@ export default function BrandsSection() {
 	return (
 		<section className='border-t border-primary/10 bg-background-dark px-6 py-20 sm:py-24 lg:px-20 lg:py-32'>
 			<div className='mx-auto max-w-7xl'>
-				<div className='mb-12 text-center sm:mb-16' data-reveal>
+				<div className='mb-6 text-center sm:mb-16' data-reveal>
 					<h2 className='mb-6 font-serif text-3xl font-bold text-white sm:text-4xl md:text-5xl'>
 						Elevate Your Brand with Tryora
 					</h2>
@@ -32,7 +32,7 @@ export default function BrandsSection() {
 						experiences.
 					</p>
 				</div>
-				<div className='mb-12 grid gap-6 md:grid-cols-3 md:gap-8' data-stagger>
+				<div className='mb-6 grid gap-2 md:grid-cols-3 md:gap-8' data-stagger>
 					{cards.map((card) => (
 						<div
 							key={card.title}
