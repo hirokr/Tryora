@@ -10,15 +10,15 @@ export async function handleUrlUpload(
   productUrl: string,
   fileName: string
 ): Promise<UploadResult> {
-  try {
-    const response = await utapi.uploadFilesFromUrl({
-      url: productUrl,
-      name: fileName,
-    });
-    return [response];
-  } catch (error) {
-    throw error;
-  }
+  const normalizedName = fileName.endsWith('.png')
+    ? fileName
+    : `${fileName}.png`;
+
+  const response = await utapi.uploadFilesFromUrl({
+    url: productUrl,
+    name: normalizedName,
+  });
+  return [response];
 }
 
 export async function handleFileUpload(
@@ -27,7 +27,11 @@ export async function handleFileUpload(
 ): Promise<UploadResult> {
   const buffer = await fs.readFile(filePath);
 
-  const file = new File([buffer], fileName, { type: 'image/png' });
+  // Ensure .png extension in filename
+  const normalizedName = fileName.endsWith('.png')
+    ? fileName
+    : `${fileName}.png`;
+  const file = new File([buffer], normalizedName, { type: 'image/png' });
 
   const response = await utapi.uploadFiles(file);
   return [response];

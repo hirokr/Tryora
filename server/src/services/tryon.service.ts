@@ -138,8 +138,6 @@ export async function getTryOnByJobId(jobId: string) {
 }
 
 export async function getTryOnsByUserId(userId: string) {
-  console.log(userId);
-
   const jobs = await prisma.job.findMany({
     where: { userId: userId, status: 'COMPLETED' },
     orderBy: { createdAt: 'desc' },
@@ -153,7 +151,6 @@ export async function getTryOnsByUserId(userId: string) {
       createdAt: true,
     },
   });
-  console.log(`Fetched try-on jobs for user ${userId}:`, jobs);
   return jobs.map(job => mapJobToTryonRecord(job));
 }
 
