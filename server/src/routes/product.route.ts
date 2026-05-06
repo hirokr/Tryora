@@ -26,10 +26,6 @@ router.post('/favourite/:productId', addFavoriteProduct);
 // router.post('/unlike/:productId', unlikeProduct);
 
 // router.post('/remove-favorite/:productId', removeFavoriteProduct);
-
-
-
-
 router.post('/search-filter', searchProductsByQuery);
 
 router.use(authMiddleware);

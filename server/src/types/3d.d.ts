@@ -2,14 +2,10 @@ import type { JobType } from '#src/generated/enums.ts';
 
 // Types to add to your #src/types/3d.ts
 export interface TripoStartRequestPayload {
-  model: 'tripo3d-v2-5' | string; // Add model field
   texture: 'standard' | string;
   texture_alignment: 'original_image' | string;
   orientation: 'default' | string;
   image_url: string;
-  face_limit: number; // New field to specify the maximum number of faces in the generated model
-  auto_refine: boolean; // New field to enable or disable automatic refinement of the model
-  texture_quality: 'low' | 'standard' | 'high' | string; // New field to specify the desired texture quality
 }
 
 export interface TripoStatusResponse {
@@ -61,3 +57,15 @@ export interface Generate3DModelJobData {
 //   "updated_at": "2026-03-31T10:00:15.000Z",
 //   "completed_at": "2026-03-31T10:00:15.000Z"
 // }
+
+export interface Hunyuan3DRequestPayload {
+  input_image_url: string;
+  prompt?: string;
+  face_count?: number;
+}
+
+export interface Hunyuan3DStartResponse {
+  request_id: string;
+  status: string;
+  polling_url: string;
+}
