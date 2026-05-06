@@ -1,4 +1,0 @@
-- [ ] show all users tryons
-- [ ] dashboard update profile problem
-- [ ] searching not working
-- [ ] market place product not showing
