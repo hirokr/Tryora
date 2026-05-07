@@ -93,7 +93,10 @@ export function AvatarStudioModelViewer({
 			<div className='border-b border-white/10 px-5 py-4 text-xs uppercase tracking-[0.22em] text-slate-400'>
 				3D Preview
 			</div>
-			<div ref={containerRef} className={`relative w-full ${minHeightClass}`}>
+			<div
+				ref={containerRef}
+				className={`relative w-full min-h-full ${minHeightClass}`}
+			>
 				{isVisible ? (
 					<Suspense fallback={<LoadingState minHeightClass={minHeightClass} />}>
 						<Canvas
