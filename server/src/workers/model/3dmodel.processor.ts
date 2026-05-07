@@ -36,6 +36,8 @@ export const process3DModelJob = async (
       generationJob.thirdPartyTaskId, 
     );
 
+    
+
     await updateJobResult(jobId, modelUrl);
 
     logger.info('[ModelWorker] 3D model generation completed', {

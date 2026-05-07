@@ -29,7 +29,7 @@ export const startHunyuan3DGeneration = async (
 
   const payload = {
     input_image_url: imageUri,
-    face_count: 40000,
+    face_count: 50000,
     prompt,
   };
 

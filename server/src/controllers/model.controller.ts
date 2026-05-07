@@ -28,7 +28,6 @@ const uploadProcessedImage = async (
   return uploadedUrl;
 };
 
-// todo: generate 3d model
 export const generateModelTryon = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.userId) {
