@@ -27,7 +27,7 @@
 		"socket.io-client": "^4.8.3",
 		"sonner": "^2.0.7",
 		"tailwind-merge": "^3.4.0",
-		"three": "^0.183.2",
+		"three": "^0.182.2",
 		"uploadthing": "^7.7.4",
 		"zustand": "^5.0.11"
 	},
