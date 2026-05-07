@@ -84,6 +84,43 @@ export const getSearchesByUserId = async (userId: string) => {
       id: true,
       prompt: true,
       intentKey: true,
-    }
+    },
   });
+};
+
+const uniqueIntentKeys = (values: Array<string | null | undefined>) => {
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  values.forEach(value => {
+    if (!value || seen.has(value)) {
+      return;
+    }
+
+    seen.add(value);
+    result.push(value);
+  });
+
+  return result;
+};
+
+export const getRecentIntentKeysByUser = async (userId: string, limit = 30) => {
+  const searches = await prisma.productSearch.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    select: { intentKey: true },
+  });
+
+  return uniqueIntentKeys(searches.map(search => search.intentKey));
+};
+
+export const getRecentIntentKeysGlobal = async (limit = 10) => {
+  const searches = await prisma.productSearch.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    select: { intentKey: true },
+  });
+
+  return uniqueIntentKeys(searches.map(search => search.intentKey));
 };

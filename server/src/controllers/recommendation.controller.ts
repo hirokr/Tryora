@@ -2,6 +2,12 @@
 import { AuthRequest } from '#src/types/authRequest.js';
 import { Response } from 'express';
 import { getRuntimeRecommendations } from '#src/services/product.service.ts';
+import {
+  getRecentIntentKeysByUser,
+  getRecentIntentKeysGlobal,
+  getSearchByIntent,
+} from '#src/services/search.service.ts';
+import { recommendIntentKey } from '#src/utils/openrouter.ts';
 
 const parseNumberQuery = (value: unknown, fallbackValue: number) => {
   if (typeof value !== 'string') {
@@ -21,10 +27,45 @@ export const getRuntimeProductRecommendations = async (
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const limit  = parseNumberQuery(req.query.limit, 20);
-    const skip  = parseNumberQuery(req.query.skip, 0);
+    const limit = parseNumberQuery(req.query.limit, 20);
+    const skip = parseNumberQuery(req.query.skip, 0);
     const category =
       typeof req.query.category === 'string' ? req.query.category : undefined;
+
+    const userRecentIntents = await getRecentIntentKeysByUser(req.userId, 30);
+    const globalRecentIntents = await getRecentIntentKeysGlobal(10);
+    const intentCandidates = Array.from(
+      new Set([...userRecentIntents, ...globalRecentIntents])
+    );
+
+    if (intentCandidates.length > 0) {
+      const intentResult = await recommendIntentKey({
+        userRecentIntents,
+        globalRecentIntents,
+        candidates: intentCandidates,
+      });
+
+      if (intentResult.status) {
+        const search = await getSearchByIntent(intentResult.intentKey);
+
+        if (search?.products?.length) {
+          const results = search.products.map(product => ({
+            id: product.id,
+            title: product.title,
+            source: product.source,
+            defaultImageUrl: product.defaultImageUrl,
+            price: product.price,
+            viewCount: product.viewCount,
+            likeCount: product.likeCount,
+          }));
+
+          return res.status(200).json({
+            status: 'success',
+            results,
+          });
+        }
+      }
+    }
 
     const recommendations = await getRuntimeRecommendations({
       userId: req.userId,
