@@ -14,7 +14,7 @@ import {
   getPublicTryOnByIdController,
   getTryOnsByUserIdController,
 } from '#src/controllers/tryon.controller.ts';
-import { generateModelTryon } from '#src/controllers/model.controller.ts';
+import { generateModelTryon, getUserGeneratedModels } from '#src/controllers/model.controller.ts';
 import { getTryonJobStatus } from '#src/controllers/job.controller.ts';
 
 const router = Router();
@@ -34,6 +34,8 @@ router.post(`/image/generate`, fuseProductImages);
 router.post('/image/edit', updateProductAppearance);
 
 router.get(`/user/:userId`, getTryOnsByUserIdController);
+
+router.get('/models/user', getUserGeneratedModels);
 
 router.get('/item/:tryonId', getTryOnById);
 

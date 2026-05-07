@@ -23,6 +23,22 @@ export const JOB_SUMMARY_SELECT = {
   createdAt: true,
 } as const;
 
+export const getUserModels = async (userId: string) => {
+  return prisma.job.findMany({
+    where: {
+      userId,
+      jobType: JobType.MODEL,
+      status: JobStatus.COMPLETED,
+    },
+    select: {
+      id: true,
+      outputresultUrl: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+};
+
 export const JOB_FULL_SELECT = {
   id: true,
   userId: true,

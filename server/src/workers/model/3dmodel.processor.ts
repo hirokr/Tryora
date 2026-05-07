@@ -28,12 +28,12 @@ export const process3DModelJob = async (
 
     logger.info('[ModelWorker] Polling Pixazo for 3D model result', {
       generationJobId,
-      pollingUrl: generationJob.thirdPartyTaskId,
+      pollingUrl: generationJob.outputresultUrl,
     });
 
     const modelUrl = await pollPixazo3DUntilComplete(
-      generationJob.thirdPartyTaskId, // this is now the polling_url
-      generationJobId
+      generationJob.outputresultUrl, //this is the pooling url
+      generationJob.thirdPartyTaskId, 
     );
 
     await updateJobResult(jobId, modelUrl);

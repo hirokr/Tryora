@@ -129,7 +129,9 @@ export default async function AvatarStudioDetailsPage({
 			method: "GET",
 			cache: "no-store",
 		});
-		const payload = (await response.json().catch(() => ({}))) as AvatarStudioJobResponse;
+		const payload = (await response
+			.json()
+			.catch(() => ({}))) as AvatarStudioJobResponse;
 
 		if (!response.ok) {
 			requestError = payload.message || "Could not load Avatar Studio job.";
@@ -159,7 +161,9 @@ export default async function AvatarStudioDetailsPage({
 						<p className='text-xs uppercase tracking-[0.2em] text-cyan-100'>
 							Avatar Studio
 						</p>
-						<h1 className='font-serif text-3xl sm:text-4xl'>3D model preview</h1>
+						<h1 className='font-serif text-3xl sm:text-4xl'>
+							3D model preview
+						</h1>
 						<p className='text-sm leading-6 text-slate-300 sm:text-base'>
 							This page loads the try-on job by id and renders the generated 3D
 							model when the backend returns a model URL.
@@ -185,10 +189,10 @@ export default async function AvatarStudioDetailsPage({
 				) : null}
 
 				{job ? (
-					<div className='mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.55fr)]'>
+					<div className='mt-6 grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.45fr)]'>
 						<div className='space-y-4'>
 							{modelUrl ? (
-								<AvatarStudioModelViewer modelUrl={modelUrl} />
+								<AvatarStudioModelViewer modelUrl={modelUrl} size='large' />
 							) : (
 								<div className='flex min-h-104 items-center justify-center rounded-4xl border border-white/10 bg-[radial-gradient(circle_at_top,rgba(140,43,238,0.18),transparent_60%),linear-gradient(180deg,rgba(11,10,18,0.98),rgba(8,8,14,0.98))] p-8 text-center'>
 									<div className='max-w-sm space-y-3'>
@@ -197,8 +201,8 @@ export default async function AvatarStudioDetailsPage({
 											Waiting for the 3D model
 										</p>
 										<p className='text-sm text-slate-300'>
-											The job is still being resolved. Refresh this page once the
-											model URL is available.
+											The job is still being resolved. Refresh this page once
+											the model URL is available.
 										</p>
 									</div>
 								</div>

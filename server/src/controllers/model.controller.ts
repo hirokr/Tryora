@@ -1,6 +1,6 @@
 import { JobStatus, JobType } from '#src/generated/enums.ts';
 import { enqueue3DModelJob } from '#src/queues/queue.ts';
-import { createJob } from '#src/services/job.service.ts';
+import { createJob, getUserModels } from '#src/services/job.service.ts';
 import { getTryOnImage } from '#src/services/tryon.service.ts';
 import { Hunyuan3DStartResponse, TripoStatusResponse } from '#src/types/3d.js';
 import { AuthRequest, Response } from '#src/types/authRequest.js';
@@ -97,6 +97,26 @@ export const generateModelTryon = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to fuse product images',
+    });
+  }
+};
+
+export const getUserGeneratedModels = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const userModels = await getUserModels(req.userId);
+
+    return res.status(200).json({
+      success: true,
+      data: userModels,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user models',
     });
   }
 };
