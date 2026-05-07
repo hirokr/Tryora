@@ -1,2 +1,2 @@
 export const BACKEND_URL =
-	process.env.BACKEND_URL || "https://tryora-main.onrender.com";
+	process.env.BACKEND_URL || "http://localhost:8000";
